@@ -187,7 +187,7 @@ local function Update()
     local facing
     if rotate and GetPlayerFacing then
         local ok, f = pcall(GetPlayerFacing)
-        if ok then facing = f end
+        if ok then facing = ns.Plain(f) end
     end
     local cosF, sinF
     if facing then cosF, sinF = math.cos(facing), math.sin(facing) end
@@ -249,7 +249,8 @@ ticker:SetScript("OnUpdate", function(_, dt)
     elapsed = elapsed + dt
     if elapsed < UPDATE_EVERY then return end
     elapsed = 0
-    Update()
+    -- restricted positions (instances, secret values) must never spam errors
+    if not pcall(Update) then HideAll() end
 end)
 
 local function MarkDirty() dirty = true end

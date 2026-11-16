@@ -1,3 +1,8 @@
+# FarmAtlas 1.1.2
+
+- Hardening for the new client restrictions: minimap pins, addon sync and recipe scanning can no longer show Lua error popups in instances or combat
+- Minimap facing value is checked before use
+
 # FarmAtlas 1.1.1
 
 - Fixed: Lua error on mob tooltips ("Secret values are only allowed during untainted execution") in combat / restricted situations

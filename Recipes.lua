@@ -231,7 +231,7 @@ ns:SafeRegister(f, "TRAINER_SHOW")
 ns:SafeRegister(f, "MERCHANT_SHOW")
 ns:SafeRegister(f, "LOOT_OPENED")
 local tsPending = false
-f:SetScript("OnEvent", function(_, event)
+local function OnRecipeEvent(_, event)
     if not ns.db then return end
     if event:find("^TRADE_SKILL") or event == "NEW_RECIPE_LEARNED" then
         if tsPending then return end
@@ -244,7 +244,8 @@ f:SetScript("OnEvent", function(_, event)
     elseif event == "LOOT_OPENED" then
         ScanLootForRecipes()
     end
-end)
+end
+f:SetScript("OnEvent", function(...) pcall(OnRecipeEvent, ...) end)
 
 ------------------------------------------------------------------------
 -- Queries

@@ -390,7 +390,11 @@ end
 ------------------------------------------------------------------------
 local frame = CreateFrame("Frame")
 ns:SafeRegister(frame, "CHAT_MSG_ADDON")
-frame:SetScript("OnEvent", function(_, _, ...) OnAddonMessage(...) end)
+frame:SetScript("OnEvent", function(_, _, prefix, msg, channel, sender)
+    prefix, msg, channel, sender = ns.Plain(prefix), ns.Plain(msg), ns.Plain(channel), ns.Plain(sender)
+    if not (prefix and msg and sender) then return end
+    pcall(OnAddonMessage, prefix, msg, channel, sender)
+end)
 
 ns:On("LOGIN", function()
     if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
