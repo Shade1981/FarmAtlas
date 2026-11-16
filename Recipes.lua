@@ -167,7 +167,7 @@ end
 local function ScanTrainer()
     if not (GetNumTrainerServices and GetTrainerServiceInfo) then return end
     if IsTradeskillTrainer and not IsTradeskillTrainer() then return end
-    local npc = UnitName("npc")
+    local npc = ns.Plain(UnitName("npc"))
     local mapID, x, y = PlayerPos()
     for i = 1, GetNumTrainerServices() do
         local name, _, category = GetTrainerServiceInfo(i)
@@ -184,7 +184,7 @@ end
 ------------------------------------------------------------------------
 local function ScanMerchant()
     if not (GetMerchantNumItems and GetMerchantItemInfo) then return end
-    local npc = UnitName("npc")
+    local npc = ns.Plain(UnitName("npc"))
     local mapID, x, y = PlayerPos()
     local found = false
     for i = 1, GetMerchantNumItems() do
@@ -216,7 +216,7 @@ local function ScanLootForRecipes()
         if itemID then
             local _, _, _, _, _, classID = GetItemInfoInstant(itemID)
             if classID == 9 then
-                local npc = UnitExists("target") and UnitIsDead("target") and UnitName("target") or nil
+                local npc = UnitExists("target") and ns.Plain(UnitIsDead("target")) and ns.Plain(UnitName("target")) or nil
                 ns:AddRecipeSource(RecipeNameFromItem(link:match("%[(.-)%]")),
                     { type = "drop", npc = npc or "?", mapID = mapID, x = x, y = y, itemID = itemID })
             end

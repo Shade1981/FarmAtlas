@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.1.0"
+ns.version = "1.1.1"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -106,6 +106,17 @@ end
 -- (WoW Forever, Classic Era, ...). Unknown events are silently skipped.
 -- API compatibility: newer clients moved item functions into C_Item.
 -- Kept addon-local (never as globals, globals would taint Blizzard code).
+-- Midnight-era clients hand addons "secret" values (unit tokens, GUIDs,
+-- names) in combat / restricted contexts. Using them in tainted code throws,
+-- so every unit lookup checks this first.
+function ns.IsSecret(v)
+    return issecretvalue ~= nil and issecretvalue(v) == true
+end
+function ns.Plain(v)
+    if ns.IsSecret(v) then return nil end
+    return v
+end
+
 ns.GetItemInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 ns.GetItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
 ns.GetItemIconByID = (C_Item and C_Item.GetItemIconByID) or GetItemIcon

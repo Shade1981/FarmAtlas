@@ -4,8 +4,11 @@ local _, ns = ...
 local function AddLines(tooltip)
     if not (ns.db and ns.db.settings.tooltip and ns.mobIndex) then return end
     local _, unit = tooltip:GetUnit()
-    if not unit or UnitIsPlayer(unit) then return end
-    local name = UnitName(unit)
+    unit = ns.Plain(unit)
+    if not unit then return end
+    local isPlayer = ns.Plain(UnitIsPlayer(unit))
+    if isPlayer ~= false then return end
+    local name = ns.Plain(UnitName(unit))
     if not name then return end
 
     local items = {}
@@ -15,7 +18,7 @@ local function AddLines(tooltip)
         for id in pairs(known) do items[#items + 1] = id; seen[id] = true end
     end
     -- learned drops by NPC id
-    local guid = UnitGUID(unit)
+    local guid = ns.Plain(UnitGUID(unit))
     local npcID = guid and ns.NpcFromGUID(guid)
     if npcID then
         for id in pairs(ns.db.learned) do
@@ -44,6 +47,7 @@ local function AddItemLines(tooltip)
     if not (ns.db and ns.db.settings.tooltip) then return end
     if not tooltip.GetItem then return end
     local _, link = tooltip:GetItem()
+    link = ns.Plain(link)
     local key = link and ns:KeyForLink(link)
     if key == nil then return end
     local L = ns.L
@@ -69,18 +73,18 @@ end
 local function Install()
     if TooltipDataProcessor and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Item then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
-            if tooltip == GameTooltip or tooltip == ItemRefTooltip then AddItemLines(tooltip) end
+            if tooltip == GameTooltip or tooltip == ItemRefTooltip then pcall(AddItemLines, tooltip) end
         end)
     else
-        GameTooltip:HookScript("OnTooltipSetItem", AddItemLines)
-        if ItemRefTooltip then ItemRefTooltip:HookScript("OnTooltipSetItem", AddItemLines) end
+        GameTooltip:HookScript("OnTooltipSetItem", function(t) pcall(AddItemLines, t) end)
+        if ItemRefTooltip then ItemRefTooltip:HookScript("OnTooltipSetItem", function(t) pcall(AddItemLines, t) end) end
     end
     if TooltipDataProcessor and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Unit then
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
-            if tooltip == GameTooltip then AddLines(tooltip) end
+            if tooltip == GameTooltip then pcall(AddLines, tooltip) end
         end)
     else
-        GameTooltip:HookScript("OnTooltipSetUnit", AddLines)
+        GameTooltip:HookScript("OnTooltipSetUnit", function(t) pcall(AddLines, t) end)
     end
 end
 

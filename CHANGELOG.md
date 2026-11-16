@@ -1,3 +1,8 @@
+# FarmAtlas 1.1.1
+
+- Fixed: Lua error on mob tooltips ("Secret values are only allowed during untainted execution") in combat / restricted situations
+- Tooltip, kill counting and loot learning now skip restricted (secret) values safely
+
 # FarmAtlas 1.1.0
 
 Faction-aware recipe sources.

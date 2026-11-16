@@ -32,7 +32,8 @@ ns.NpcFromGUID = NpcFromGUID
 
 local function UnitForGUID(guid)
     for _, unit in ipairs({ "target", "mouseover", "focus" }) do
-        if UnitExists(unit) and UnitGUID(unit) == guid then return unit end
+        local g = UnitExists(unit) and ns.Plain(UnitGUID(unit))
+        if g and g == guid then return unit end
     end
 end
 
@@ -108,8 +109,8 @@ local function Record(itemID, link, count, mapID, x, y, npcID, unit, isFishing)
         local m = entry.mobs[npcID] or { n = 0 }
         m.n = m.n + 1
         if unit then
-            m.name = UnitName(unit) or m.name
-            m.lvl = UnitLevel(unit) or m.lvl
+            m.name = ns.Plain(UnitName(unit)) or m.name
+            m.lvl = ns.Plain(UnitLevel(unit)) or m.lvl
             ns.db.npcNames[npcID] = m.name
         else
             m.name = m.name or ns.db.npcNames[npcID]
@@ -127,17 +128,18 @@ ns:SafeRegister(frame, "LOOT_OPENED")
 if frame.RegisterUnitEvent then
     pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target")
 end
-frame:SetScript("OnEvent", function(_, event)
+local function OnEvent(_, event)
     if not (ns.db and ns.db.settings.learn) then return end
 
     if event == "UNIT_HEALTH" then
         -- your target just died and it was tagged by you / your group
-        if UnitExists("target") and UnitIsDead("target") and not UnitIsPlayer("target")
-            and not (UnitIsTapDenied and UnitIsTapDenied("target")) then
-            local guid = UnitGUID("target")
+        if not UnitExists("target") then return end
+        if ns.Plain(UnitIsDead("target")) == true and ns.Plain(UnitIsPlayer("target")) == false
+            and not (UnitIsTapDenied and ns.Plain(UnitIsTapDenied("target")) ~= false) then
+            local guid = ns.Plain(UnitGUID("target"))
             local npcID = NpcFromGUID(guid)
             if npcID and CountKill(guid, npcID) then
-                ns.db.npcNames[npcID] = ns.db.npcNames[npcID] or UnitName("target")
+                ns.db.npcNames[npcID] = ns.db.npcNames[npcID] or ns.Plain(UnitName("target"))
                 ns:Fire("KILL_RECORDED", npcID)
             end
         end
@@ -157,7 +159,7 @@ frame:SetScript("OnEvent", function(_, event)
     local kills = {}
 
     for slot = 1, GetNumLootItems() do
-        local guid = GetLootSourceInfo and GetLootSourceInfo(slot)
+        local guid = GetLootSourceInfo and ns.Plain(GetLootSourceInfo(slot))
         local npcID = NpcFromGUID(guid)
         -- every looted corpse counts as one kill (for the drop rate)
         if npcID and CountKill(guid, npcID) then kills[#kills + 1] = npcID end
@@ -181,7 +183,9 @@ frame:SetScript("OnEvent", function(_, event)
     for _, npcID in ipairs(kills) do ns:Fire("KILL_RECORDED", npcID) end
     for _, c in ipairs(changed) do ns:Fire("LOOT_RECORDED", c.key, c.mapID, c.cell, c.npcID) end
     if #changed > 0 then ns:Fire("LEARNED_CHANGED") end
-end)
+end
+-- never let a restricted (secret) value break the game UI
+frame:SetScript("OnEvent", function(...) pcall(OnEvent, ...) end)
 
 -- data recorded by older versions belongs to you
 ns:On("DB_READY", function()
