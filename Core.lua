@@ -556,6 +556,8 @@ SlashCmdList.FARMATLAS = function(msg)
         local list = ns.db.blocked or {}
         if #list == 0 then ns:Print("no blocked actions recorded") end
         for _, line in ipairs(list) do ns:Print(line) end
+    elseif cmd == "news" then
+        if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then
         if ns.Goals then ns.Goals:Toggle() end
     elseif cmd == "help" then
