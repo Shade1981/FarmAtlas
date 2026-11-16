@@ -1,0 +1,322 @@
+-- FarmAtlas - interface language (English / Magyar)
+-- Only the INTERFACE is translated. Item, recipe, mob and zone names always stay
+-- English, exactly as they appear in the game's recipe book.
+local _, ns = ...
+
+local L = {}
+ns.Locales = L
+
+L.en = {
+    subtitle      = "Find where to farm meat, fish, leather and scales - right on your map",
+    placeholder   = "Search item, mob or zone...  e.g. boar, raptor, stag, eel",
+    cat_all = "All", cat_cooking = "Cooking", cat_skinning = "Skinning",
+    cat_fishing = "Fishing", cat_learned = "Learned", cat_recipes = "Recipes", cat_tracked = "Tracked",
+    results       = "%d results",
+    result1       = "1 result",
+    empty         = "Nothing found.\nTry |cffffd200boar|r, |cffffd200stag|r, |cffffd200raptor|r or a zone name.",
+    zones         = "%d zones",
+    zone1         = "1 zone",
+    looted        = "%d looted",
+    row_hint      = "|cff3fc7ebClick|r details   |cff3fc7ebRight-click|r track on map",
+    track         = "Track on map",
+    tracking      = "Tracking on map",
+    open_best     = "Open best zone",
+    link          = "Link",
+    link_tip      = "Put the item link into your chat box",
+    used_for      = "Used for:",
+    where         = "Where to farm",
+    areas         = "(%d areas)",
+    recommended   = "[recommended]",
+    dangerous     = "(dangerous)",
+    looted_here   = "you looted %d here",
+    lv            = "Lv",
+    drop          = "drop",
+    discoveries   = "Discoveries",
+    from_loot     = "(your loot + party / guild + community)",
+    drop_rate     = "%s: %d%% (%d/%d)",
+    drop_count    = "%s x%d",
+    sync_status   = "  ·  Sync |cff3fc7eb%d|r players",
+    spots_rec     = "%d spots recorded",
+    top_sources   = "Top sources: ",
+    no_data       = "No data yet",
+    loot_once     = "Loot this item once",
+    will_remember = "FarmAtlas will remember where you found it.",
+    show_on_map   = "Show on map >>",
+    welcome =
+        "|cffffffffWelcome to FarmAtlas!|r\n\n" ..
+        "1.  Search for what you need - |cffffd200boar|r, |cffffd200stag meat|r, |cffffd200raptor|r...\n" ..
+        "2.  Pick an item to see every zone, mob, level range and drop chance.\n" ..
+        "3.  Hit |cff3fc7ebTrack on map|r - the farm areas appear on your world map.\n" ..
+        "4.  Click a zone card to jump straight to that map.\n\n" ..
+        "|cffcc8cffFarmAtlas learns while you play:|r every meat, hide or fish you loot is " ..
+        "saved with its exact position, so the map gets more precise over time.\n\n" ..
+        "Item names are always shown in English, exactly as in your recipe book.",
+    t_pins        = "Map pins",
+    t_continent   = "Continent map",
+    t_learn       = "Learn from loot",
+    t_tooltip     = "Mob tooltips",
+    t_minimap     = "Minimap",
+    mm_dist       = "%d yards away",
+    clear         = "Clear tracked",
+    stats         = "Tracked |cffffffff%d|r  ·  Learned |cffcc8cff%d|r items / |cffcc8cff%d|r spots",
+    lang_tip      = "Interface language",
+    -- goals / inventory / recipes
+    goals_title   = "Farm goals",
+    goals_hint    = "Edit the number to change a goal. Add goals from the FarmAtlas window.",
+    goals_empty   = "No farm goals yet - set one in the FarmAtlas window (Goal box, or Ctrl-click a result).",
+    goal_reached  = "Goal reached: %s  %d/%d",
+    goal_row_hint = "|cff3fc7ebClick|r open in FarmAtlas   |cff3fc7ebx|r remove goal",
+    goal_label    = "Goal",
+    goal_set      = "Set",
+    goal_tip      = "How many do you need? Enter 0 to remove the goal.",
+    goals_btn     = "Goals",
+    inv_bags      = "Bags",
+    inv_bank      = "Bank",
+    inv_bags_short = "Bags %d",
+    inv_bank_short = "Bank %d",
+    inv_alts_short = "Alts %d",
+    inv_line      = "You have:  Bags |cffffffff%d|r  ·  Bank |cffffffff%d|r  ·  Alts |cffcc8cff%d|r",
+    recipes_head  = "Recipes using it",
+    unverified    = "(locations not yet confirmed for Forever)",
+    buy_head      = "Buy it - no farming needed",
+    buy_where     = "Sold by",
+    known         = "Known",
+    not_known     = "Not known",
+    known_by      = "Known by: %s",
+    src_trainer   = "Cooking trainer",
+    src_vendor    = "Vendor",
+    src_quest     = "Quest",
+    src_drop      = "Drop",
+    src_unknown   = "Source not known yet - FarmAtlas learns it when you see it at a vendor or trainer.",
+    src_faction   = "Not available for your faction",
+    scan_hint     = "Open your Cooking window once so FarmAtlas knows which recipes you have.",
+    more          = "+%d more",
+    seen          = "(seen)",
+    tt_have       = "Bags %d  ·  Bank %d  ·  Alts %d",
+    tt_goal       = "Goal: %d / %d",
+    tt_recipes    = "Used in %d recipe(s), you know %d",
+    row_ctrl      = "|cff3fc7ebCtrl-click|r add as farm goal",
+    c_goals       = "/farm goals    - show/hide the farm goals window",
+    -- map / tooltips
+    tt_wp_hint    = "|cff3fc7ebRight-click|r remove this marker",
+    tt_source     = "Source",
+    tt_level      = "Level",
+    tt_drop       = "Drop chance",
+    tt_looted     = "You looted this %d time(s) in this zone.",
+    tt_pin_hint   = "|cff3fc7ebClick|r open in FarmAtlas   |cff3fc7ebRight-click|r stop tracking",
+    mb_tracking   = "Tracking %d",
+    mb_off        = "(off)",
+    mb_nothing    = "Nothing tracked yet.",
+    mb_hint       = "|cff3fc7ebClick|r open atlas   |cff3fc7ebRight-click|r toggle pins",
+    mm_tracking   = "Tracking %d item(s)",
+    mm_hint       = "|cff3fc7ebClick|r open   |cff3fc7ebRight-click|r toggle map pins",
+    mm_drag       = "|cff3fc7ebDrag|r move",
+    mm_goals      = "|cff3fc7ebShift-click|r farm goals window",
+    mb_goals_hint = "|cff3fc7ebClick|r show/hide the farm goals window",
+    tracked_tag   = "(tracked)",
+    -- chat
+    c_cleared     = "All tracked items cleared.",
+    c_pins_on     = "Map pins enabled.",
+    c_pins_off    = "Map pins disabled.",
+    c_learn_on    = "Loot learning enabled.",
+    c_learn_off   = "Loot learning disabled.",
+    c_lang        = "Language: English",
+    rc_known      = "Known",
+    rc_unknown    = "Not known",
+    rc_craft      = "You can make %d",
+    rc_craft0     = "Missing ingredients",
+    rc_empty      = "No known recipes yet.\nOpen your Cooking window once, or search an ingredient (e.g. |cffffd200boar|r).",
+    scan_done     = "read %d known recipes (%s).",
+    c_report      = "please send a screenshot of this line to the FarmAtlas author",
+    c_combat_map  = "The map can't be opened by addons during combat - try again after the fight.",
+    c_sync_on     = "Background sharing with party / raid / guild: ON",
+    c_sync_off    = "Background sharing with party / raid / guild: OFF",
+    c_gsync_on    = "Guild sharing: ON",
+    c_gsync_off   = "Guild sharing: OFF",
+    c_help = {
+        "/farm [search]  - open the atlas (optionally searching)",
+        "/farm clear     - stop tracking everything",
+        "/farm pins      - toggle world map pins",
+        "/farm learn     - toggle learning spots from your loot",
+        "/farm minimap   - toggle the minimap button",
+        "/farm lang en|hu - interface language",
+        "/farm sync       - background sharing on/off (default: on)",
+        "/farm guildsync  - guild sharing on/off",
+        "/farm debug      - show blocked-action reports",
+        "Alt + click any item: open it in FarmAtlas",
+        "Shift + click an item while the FarmAtlas search box is active: search for it",
+    },
+}
+
+L.hu = {
+    subtitle      = "Megmutatja, hol farmolhatsz húst, halat, bőrt és pikkelyt - a térképeden",
+    placeholder   = "Keress tárgyat, mobot vagy zónát...  pl. boar, raptor, stag, eel",
+    cat_all = "Mind", cat_cooking = "Főzés", cat_skinning = "Nyúzás",
+    cat_fishing = "Horgászat", cat_learned = "Tanult", cat_recipes = "Receptek", cat_tracked = "Követett",
+    results       = "%d találat",
+    result1       = "1 találat",
+    empty         = "Nincs találat.\nPróbáld: |cffffd200boar|r, |cffffd200stag|r, |cffffd200raptor|r vagy egy zóna neve.",
+    zones         = "%d zóna",
+    zone1         = "1 zóna",
+    looted        = "%d lootolva",
+    row_hint      = "|cff3fc7ebKattintás|r részletek   |cff3fc7ebJobb klikk|r követés a térképen",
+    track         = "Követés a térképen",
+    tracking      = "Követve a térképen",
+    open_best     = "Legjobb zóna",
+    link          = "Link",
+    link_tip      = "A tárgy linkjét beteszi a chatbe",
+    used_for      = "Felhasználás:",
+    where         = "Hol farmolható",
+    areas         = "(%d terület)",
+    recommended   = "[ajánlott]",
+    dangerous     = "(veszélyes)",
+    looted_here   = "itt %d db-ot lootoltál",
+    lv            = "Szint",
+    drop          = "esés",
+    discoveries   = "Felfedezések",
+    from_loot     = "(saját loot + party / guild + közösség)",
+    drop_rate     = "%s: %d%% (%d/%d)",
+    drop_count    = "%s x%d",
+    sync_status   = "  ·  Szinkron |cff3fc7eb%d|r játékos",
+    spots_rec     = "%d hely rögzítve",
+    top_sources   = "Fő források: ",
+    no_data       = "Még nincs adat",
+    loot_once     = "Lootold egyszer ezt a tárgyat",
+    will_remember = "A FarmAtlas megjegyzi, hol találtad.",
+    show_on_map   = "Térképen >>",
+    welcome =
+        "|cffffffffÜdv a FarmAtlasban!|r\n\n" ..
+        "1.  Keresd meg, ami kell - |cffffd200boar|r, |cffffd200stag meat|r, |cffffd200raptor|r...\n" ..
+        "2.  Válassz egy tárgyat: látod az összes zónát, mobot, szintet és esési esélyt.\n" ..
+        "3.  Nyomd meg a |cff3fc7ebKövetés a térképen|r gombot - a farmterületek megjelennek a világtérképen.\n" ..
+        "4.  Egy zónakártyára kattintva egyből oda ugrik a térkép.\n\n" ..
+        "|cffcc8cffA FarmAtlas tanul játék közben:|r minden húst, bőrt vagy halat, amit lootolsz, " ..
+        "a pontos helyével együtt elment, így a térkép egyre pontosabb lesz.\n\n" ..
+        "A tárgyak neve mindig angol, pont úgy, ahogy a receptkönyvben szerepel.",
+    t_pins        = "Térképjelölők",
+    t_continent   = "Kontinens térkép",
+    t_learn       = "Tanulás a lootból",
+    t_tooltip     = "Mob tooltip",
+    t_minimap     = "Minimap",
+    mm_dist       = "%d yardra",
+    clear         = "Követés törlése",
+    stats         = "Követve |cffffffff%d|r  ·  Tanult |cffcc8cff%d|r tárgy / |cffcc8cff%d|r hely",
+    lang_tip      = "A felület nyelve",
+    goals_title   = "Farm célok",
+    goals_hint    = "Írd át a számot a cél módosításához. Új célt a FarmAtlas ablakban adhatsz hozzá.",
+    goals_empty   = "Még nincs farm célod - állíts be egyet a FarmAtlas ablakban (Cél mező, vagy Ctrl+klikk egy találatra).",
+    goal_reached  = "Cél teljesítve: %s  %d/%d",
+    goal_row_hint = "|cff3fc7ebKattintás|r megnyitás   |cff3fc7ebx|r cél törlése",
+    goal_label    = "Cél",
+    goal_set      = "Ok",
+    goal_tip      = "Mennyi kell belőle? 0 = cél törlése.",
+    goals_btn     = "Célok",
+    inv_bags      = "Táska",
+    inv_bank      = "Bank",
+    inv_bags_short = "Táska %d",
+    inv_bank_short = "Bank %d",
+    inv_alts_short = "Altok %d",
+    inv_line      = "Nálad:  Táska |cffffffff%d|r  ·  Bank |cffffffff%d|r  ·  Altok |cffcc8cff%d|r",
+    recipes_head  = "Receptek, amikhez kell",
+    unverified    = "(a helyek Forever-re még nincsenek megerősítve)",
+    buy_head      = "Megvásárolható - nem kell farmolni",
+    buy_where     = "Árusítja",
+    known         = "Ismert",
+    not_known     = "Nem ismert",
+    known_by      = "Ismeri: %s",
+    src_trainer   = "Főzés tréner",
+    src_vendor    = "Vendor",
+    src_quest     = "Quest",
+    src_drop      = "Drop",
+    src_unknown   = "A forrás még ismeretlen - a FarmAtlas megtanulja, amikor egy vendornál vagy trénernél látod.",
+    src_faction   = "A frakciód számára nem elérhető",
+    scan_hint     = "Nyisd meg egyszer a Cooking ablakot, hogy a FarmAtlas lássa, milyen recepteket ismersz.",
+    more          = "+%d további",
+    seen          = "(látott)",
+    tt_have       = "Táska %d  ·  Bank %d  ·  Altok %d",
+    tt_goal       = "Cél: %d / %d",
+    tt_recipes    = "%d receptben kell, ebből %d-et ismersz",
+    row_ctrl      = "|cff3fc7ebCtrl+klikk|r farm célként hozzáadás",
+    c_goals       = "/farm goals     - farm célok ablak ki/be",
+    tt_wp_hint    = "|cff3fc7ebJobb klikk|r jelölő törlése",
+    tt_source     = "Forrás",
+    tt_level      = "Szint",
+    tt_drop       = "Esési esély",
+    tt_looted     = "Ebben a zónában %d alkalommal lootoltad.",
+    tt_pin_hint   = "|cff3fc7ebKattintás|r megnyitás   |cff3fc7ebJobb klikk|r követés leállítása",
+    mb_tracking   = "Követve: %d",
+    mb_off        = "(ki)",
+    mb_nothing    = "Még semmit nem követsz.",
+    mb_hint       = "|cff3fc7ebKattintás|r megnyitás   |cff3fc7ebJobb klikk|r jelölők ki/be",
+    mm_tracking   = "Követve: %d tárgy",
+    mm_hint       = "|cff3fc7ebKattintás|r megnyitás   |cff3fc7ebJobb klikk|r jelölők ki/be",
+    mm_drag       = "|cff3fc7ebHúzás|r áthelyezés",
+    mm_goals      = "|cff3fc7ebShift+klikk|r farm célok ablak",
+    mb_goals_hint = "|cff3fc7ebKattintás|r farm célok ablak ki/be",
+    tracked_tag   = "(követve)",
+    c_cleared     = "Minden követés törölve.",
+    c_pins_on     = "Térképjelölők bekapcsolva.",
+    c_pins_off    = "Térképjelölők kikapcsolva.",
+    c_learn_on    = "Tanulás a lootból bekapcsolva.",
+    c_learn_off   = "Tanulás a lootból kikapcsolva.",
+    c_lang        = "Nyelv: Magyar",
+    rc_known      = "Ismert",
+    rc_unknown    = "Nem ismert",
+    rc_craft      = "%d db-ot tudsz készíteni",
+    rc_craft0     = "Hiányzik hozzávaló",
+    rc_empty      = "Még nincs ismert recepted.\nNyisd meg egyszer a Cooking ablakot, vagy keress egy hozzávalóra (pl. |cffffd200boar|r).",
+    scan_done     = "%d ismert receptet olvastam be (%s).",
+    c_report      = "kérlek küldd el erről a sorról a képet a FarmAtlas készítőjének",
+    c_combat_map  = "Harc közben addon nem nyithatja meg a térképet - próbáld újra a harc után.",
+    c_sync_on     = "Háttér-megosztás party / raid / guild felé: BE",
+    c_sync_off    = "Háttér-megosztás party / raid / guild felé: KI",
+    c_gsync_on    = "Guild megosztás: BE",
+    c_gsync_off   = "Guild megosztás: KI",
+    c_help = {
+        "/farm [keresés]  - megnyitja az atlaszt (kereséssel)",
+        "/farm clear      - minden követés törlése",
+        "/farm pins       - térképjelölők ki/be",
+        "/farm learn      - tanulás a lootból ki/be",
+        "/farm minimap    - minimap gomb ki/be",
+        "/farm lang en|hu - a felület nyelve",
+        "/farm sync       - háttér-megosztás ki/be (alapból be)",
+        "/farm guildsync  - guild megosztás ki/be",
+        "/farm debug      - tiltott műveletek jelentése",
+        "Alt + klikk bármely tárgyra: megnyitja a FarmAtlasban",
+        "Shift + klikk egy tárgyra, amíg a FarmAtlas keresője aktív: rákeres",
+    },
+}
+
+-- The default WoW fonts have no ő / ű glyphs (they show as boxes), so the
+-- Hungarian texts use ö / ü instead. Item names stay English anyway.
+do
+    local map = { ["ő"] = "ö", ["ű"] = "ü", ["Ő"] = "Ö", ["Ű"] = "Ü" }
+    local function fix(v)
+        if type(v) == "string" then return (v:gsub("\197[\145\177\144\176]", map)) end
+        if type(v) == "table" then for i, x in ipairs(v) do v[i] = fix(x) end end
+        return v
+    end
+    for k, v in pairs(L.hu) do L.hu[k] = fix(v) end
+end
+
+function ns:Lang()
+    local lang = self.db and self.db.settings.lang
+    if lang and L[lang] then return lang end
+    return "en"
+end
+
+-- ns.L("key", ...) -> translated (and formatted) string
+function ns.L(key, ...)
+    local tbl = L[ns:Lang()] or L.en
+    local s = tbl[key]
+    if s == nil then s = L.en[key] end
+    if s == nil then return key end
+    if select("#", ...) > 0 and type(s) == "string" then return s:format(...) end
+    return s
+end
+
+function ns:SetLang(lang)
+    if not L[lang] then return end
+    self.db.settings.lang = lang
+    self:Fire("LANG_CHANGED")
+end

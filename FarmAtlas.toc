@@ -1,0 +1,30 @@
+## Interface: 16001
+## Title: |cff3fc7ebFarm|r|cffffd200Atlas|r
+## Notes: Search any cooking meat, leather, scale or fish and see exactly where to farm it on your world map.
+## Author: Shade
+## Version: 1.0.0
+## SavedVariables: FarmAtlasDB
+## IconTexture: Interface\Icons\INV_Misc_Food_14
+## Category: Professions
+## X-Category: Professions
+## X-License: MIT
+
+Core.lua
+Locale.lua
+Data\Zones.lua
+Data\Cooking.lua
+Data\Skinning.lua
+Data\Fishing.lua
+Data\Recipes.lua
+Data\Community.lua
+Learn.lua
+Sync.lua
+Inventory.lua
+Recipes.lua
+Goals.lua
+MapPins.lua
+MapPins.xml
+UI.lua
+Tooltip.lua
+Minimap.lua
+MinimapPins.lua
