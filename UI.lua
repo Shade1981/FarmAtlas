@@ -460,6 +460,25 @@ function UI:GetRow(i)
                 GameTooltip:AddLine(" ")
                 GameTooltip:AddLine(L("known_by", table.concat(rc.alts, ", ")), 0.6, 0.6, 0.6, true)
             end
+            if not rc.known then
+                local srcType, sources, note = ns:RecipeSources(rc.name)
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine(L("rc_where"), 1, 0.82, 0)
+                if srcType == "faction" then
+                    GameTooltip:AddLine(L("src_enemy"), 1, 0.5, 0.25, true)
+                elseif #sources == 0 then
+                    GameTooltip:AddLine(note or L("src_unknown"), 0.7, 0.7, 0.7, true)
+                end
+                for i = 1, math.min(4, #sources) do
+                    local s = sources[i]
+                    local loc = (s.zone or "?") .. ((s.x and s.y) and (" %.1f, %.1f"):format(s.x, s.y) or "")
+                    if s.note then loc = loc .. " (" .. s.note .. ")" end
+                    if s.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
+                    GameTooltip:AddDoubleLine(s.npc or "?", s.price or "", 1, 1, 1, 1, 0.82, 0)
+                    GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
+                end
+                if #sources > 4 then GameTooltip:AddLine(L("more", #sources - 4), 0.55, 0.59, 0.66) end
+            end
             if self.itemID then
                 GameTooltip:AddLine(" ")
                 GameTooltip:AddLine(L("row_hint"), 0.8, 0.8, 0.8)
@@ -888,7 +907,9 @@ function UI:RefreshDetail()
                     local txt = (s.npc or "?") .. " - " .. loc
                     if s.price then txt = txt .. "  " .. s.price end
                     if s.note then txt = txt .. " (" .. s.note .. ")" end
-                    if s.learned then txt = txt .. " |cffcc8cff" .. L("seen") .. "|r" end
+                    if s.neutral then txt = txt .. " |cff8c96a8[" .. L("src_neutral") .. "]|r" end
+                    if s.learned then txt = txt .. " |cffcc8cff" .. L("seen") .. "|r"
+                    elseif s.shared then txt = txt .. " |cffcc8cff" .. L("src_shared") .. "|r" end
                     parts[#parts + 1] = txt
                 end
                 local label = srcLabel[srcType]
@@ -901,6 +922,8 @@ function UI:RefreshDetail()
                         point = { zone = s1.zone, mapID = s1.mapID, x = s1.x, y = s1.y,
                             label = recipe, sub = (s1.npc or "?") .. (s1.price and ("  " .. s1.price) or "") }
                     end
+                elseif srcType == "faction" then
+                    l2 = "|cffff8040" .. L("src_enemy") .. "|r"
                 elseif label then
                     l2 = "|cffffd200" .. label .. "|r" .. (note and (" - " .. note) or "")
                 else

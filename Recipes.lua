@@ -36,10 +36,28 @@ function ns:AddRecipeSource(recipe, src)
         if s.type == src.type and s.npc == src.npc then
             -- refresh position/price
             for k, v in pairs(src) do s[k] = v end
+            self:Fire("RECIPE_SOURCE_ADDED", recipe, s)
             return
         end
     end
     list[#list + 1] = src
+    self:Fire("RECIPE_SOURCE_ADDED", recipe, src)
+end
+
+-- NPCs that stand in neutral towns (Booty Bay, Gadgetzan, Everlook...):
+-- both factions can buy from them, whoever saw them first.
+function ns:IsNeutralNPC(npc)
+    if not npc then return false end
+    if not self.neutralNPCs then
+        local t = {}
+        for _, info in pairs(self.Recipes) do
+            for _, w in ipairs(info.where or {}) do
+                if w.faction == "N" then t[w.npc] = true end
+            end
+        end
+        self.neutralNPCs = t
+    end
+    return self.neutralNPCs[npc] or false
 end
 
 ------------------------------------------------------------------------
@@ -179,7 +197,7 @@ local function ScanMerchant()
                 local recipe = RecipeNameFromItem(name or link:match("%[(.-)%]"))
                 ns:AddRecipeSource(recipe, { type = "vendor", npc = npc, mapID = mapID, x = x, y = y,
                     price = price and price > 0 and GetCoinTextureString and GetCoinTextureString(price) or nil,
-                    itemID = itemID, faction = UnitFactionGroup("player") })
+                    copper = price and price > 0 and price or nil, itemID = itemID, faction = UnitFactionGroup("player") })
                 found = true
             end
         end
@@ -269,40 +287,62 @@ function ns:HasScannedRecipes()
     return c.recipesScanned ~= nil
 end
 
--- Where to learn: static data + learned sources, filtered to your faction.
--- Returns srcType, list of { npc, zone, mapID, x, y, price, note, learned }
+-- Where to learn: static data + your own and shared discoveries, filtered
+-- to your faction. Neutral-town vendors ("N") count for both factions.
+-- Returns srcType, list of { npc, zone, mapID, x, y, price, note, learned,
+-- shared, neutral }, note, enemyCount (sources only the other faction has).
+local function ShortFaction(fac)
+    if fac == "Alliance" then return "A" elseif fac == "Horde" then return "H" end
+    return fac
+end
+
 function ns:RecipeSources(recipe)
-    local myFaction = UnitFactionGroup("player")
-    local short = (myFaction == "Alliance" and "A") or (myFaction == "Horde" and "H") or nil
+    local short = ShortFaction(UnitFactionGroup("player"))
+    if short ~= "A" and short ~= "H" then short = nil end
     local info = self.Recipes[recipe]
     local srcType = info and info.src or nil
     local list, seen = {}, {}
+    local enemy = 0
 
-    local function ok(fac)
-        if not fac or not short then return true end
-        if fac == "Alliance" then fac = "A" elseif fac == "Horde" then fac = "H" end
-        return fac == short
+    local function check(fac, npc)
+        fac = ShortFaction(fac)
+        if fac == "N" or self:IsNeutralNPC(npc) then return true, true end
+        if not fac or fac == "" or not short then return true, false end
+        if fac == short then return true, false end
+        enemy = enemy + 1
+        return false, false
     end
-
-    for _, s in ipairs(self.db.recipeSources[recipe] or {}) do
-        if ok(s.faction) then
-            local zoneKey = s.mapID and self:ZoneKeyForMap(s.mapID)
-            local zone = zoneKey and self:ZoneName(zoneKey)
-            if not zone and s.mapID and C_Map and C_Map.GetMapInfo then
-                local mi = C_Map.GetMapInfo(s.mapID)
-                zone = mi and mi.name
-            end
-            list[#list + 1] = { npc = s.npc, zone = zone, mapID = s.mapID, x = s.x, y = s.y,
-                price = s.price, learned = true, type = s.type }
+    local function zoneOf(mapID)
+        local zoneKey = mapID and self:ZoneKeyForMap(mapID)
+        local zone = zoneKey and self:ZoneName(zoneKey)
+        if not zone and mapID and C_Map and C_Map.GetMapInfo then
+            local mi = C_Map.GetMapInfo(mapID)
+            zone = mi and mi.name
+        end
+        return zone
+    end
+    local function addFound(s, shared)
+        local pass, neutral = check(s.faction, s.npc)
+        if pass and not seen[s.npc or "?"] then
+            list[#list + 1] = { npc = s.npc, zone = zoneOf(s.mapID), mapID = s.mapID, x = s.x, y = s.y,
+                price = s.price or (s.copper and GetCoinTextureString and GetCoinTextureString(s.copper)) or nil,
+                learned = not shared, shared = shared, neutral = neutral, type = s.type }
             seen[s.npc or "?"] = true
             srcType = srcType or s.type
         end
     end
+
+    for _, s in ipairs(self.db.recipeSources[recipe] or {}) do addFound(s, false) end
+    for _, p in pairs(self.db.shared or {}) do
+        for _, s in ipairs(p.recipes and p.recipes[recipe] or {}) do addFound(s, true) end
+    end
     if info and info.where then
         for _, w in ipairs(info.where) do
-            if ok(w.faction) and not seen[w.npc] then
+            local pass, neutral = check(w.faction, w.npc)
+            if pass and not seen[w.npc] then
                 list[#list + 1] = { npc = w.npc, zone = w.zone, x = w.x, y = w.y,
-                    price = w.price, note = w.note, type = info.src }
+                    price = w.price, note = w.note, neutral = neutral, type = info.src }
+                seen[w.npc] = true
             end
         end
     end
@@ -315,14 +355,19 @@ function ns:RecipeSources(recipe)
         for pass = 1, 2 do
             for _, t in ipairs(self.Trainers) do
                 local here = (t.zone == cur)
-                if ok(t.faction) and ((pass == 1) == here) then
+                local okFac = check(t.faction, t.npc)
+                if okFac and ((pass == 1) == here) then
                     list[#list + 1] = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, type = "trainer" }
                 end
             end
         end
     end
-    if info and info.faction and not ok(info.faction) then srcType = "faction" end
-    return srcType or "unknown", list, info and info.note
+    -- nothing for you, but the other faction can learn it -> say so (AH hint)
+    if #list == 0 and enemy > 0 then srcType = "faction" end
+    if info and info.faction and short and info.faction ~= "N" and info.faction ~= short and #list == 0 then
+        srcType = "faction"
+    end
+    return srcType or "unknown", list, info and info.note, enemy
 end
 
 ------------------------------------------------------------------------

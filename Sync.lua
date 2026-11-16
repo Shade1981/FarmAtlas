@@ -13,6 +13,7 @@
 --   C^key^cat^mapID^ck,x,y,n;ck,x,y,n...   loot cells of an item on a map
 --   M^key^npcID^n^lvl^name                  how often an NPC dropped the item
 --   K^npcID^n                               how many of that NPC were killed
+--   R^recipe^type^npc^mapID^x^y^fac^copper  where a recipe is sold / drops
 local _, ns = ...
 
 local PREFIX = "FarmAtlas"
@@ -24,6 +25,9 @@ local TRICKLE_EVERY = 20     -- seconds between two background items
 local MAX_PLAYERS = 300      -- shared players kept
 local MAX_ITEMS_PER_PLAYER = 400
 local RATE_PER_MIN = 60      -- incoming messages per sender per minute
+local MAX_RECIPES_PER_PLAYER = 300
+local MAX_SOURCES_PER_RECIPE = 4
+local VALID_SRC = { vendor = true, drop = true }
 
 local Sync = {}
 ns.Sync = Sync
@@ -155,6 +159,28 @@ local function QueueKill(npcID)
     Enqueue("K:" .. npcID, table.concat({ "K", tostring(npcID), tostring(k) }, SEP))
 end
 
+local function FacShort(f)
+    if f == "Alliance" or f == "A" then return "A" end
+    if f == "Horde" or f == "H" then return "H" end
+    if f == "N" then return "N" end
+    return ""
+end
+
+local function QueueRecipeSource(recipe, src)
+    if not (recipe and src and VALID_SRC[src.type] and src.mapID and src.x and src.y) then return end
+    local fac = ns:IsNeutralNPC(src.npc) and "N" or FacShort(src.faction)
+    Enqueue("R:" .. recipe .. ":" .. tostring(src.npc), table.concat({
+        "R", Clean(recipe):sub(1, 60), src.type, Clean(src.npc or "?"):sub(1, 40), tostring(src.mapID),
+        Fmt(src.x), Fmt(src.y), fac, tostring(math.floor(tonumber(src.copper) or 0)),
+    }, SEP))
+end
+
+-- live: a recipe vendor or recipe drop you just saw
+ns:On("RECIPE_SOURCE_ADDED", function(recipe, src)
+    if not Enabled() then return end
+    QueueRecipeSource(recipe, src)
+end)
+
 -- live: right after you loot something
 ns:On("LOOT_RECORDED", function(key, mapID, cellKey, npcID)
     if not Enabled() then return end
@@ -181,10 +207,19 @@ local function TrickleOne()
         for key, e in pairs(ns.db.learned) do
             if e.own and e.zones and next(e.zones) then trickleKeys[#trickleKeys + 1] = key end
         end
+        for recipe, list in pairs(ns.db.recipeSources or {}) do
+            for _, src in ipairs(list) do
+                if VALID_SRC[src.type] then trickleKeys[#trickleKeys + 1] = { recipe = recipe }; break end
+            end
+        end
         if #trickleKeys == 0 then return end
     end
     trickleIndex = trickleIndex + 1
     local key = trickleKeys[trickleIndex]
+    if type(key) == "table" then
+        for _, src in ipairs(ns.db.recipeSources[key.recipe] or {}) do QueueRecipeSource(key.recipe, src) end
+        return
+    end
     local entry = ns.db.learned[key]
     if not entry then return end
     for mapID in pairs(entry.zones or {}) do QueueCells(key, mapID) end
@@ -199,6 +234,7 @@ end
 ------------------------------------------------------------------------
 local rate = {}
 local refreshPending = false
+local recipePending = false
 
 local function ScheduleRefresh()
     if refreshPending then return end
@@ -288,6 +324,35 @@ local function HandleK(s, f)
     s.kills[npcID] = cnt
 end
 
+local function HandleR(s, f)
+    local recipe, typ, npc = f[2], f[3], f[4]
+    local mapID, x, y = tonumber(f[5]), tonumber(f[6]), tonumber(f[7])
+    local fac, copper = f[8], tonumber(f[9])
+    if not (recipe and npc and mapID and x and y) then return end
+    if #recipe < 3 or #recipe > 60 or #npc < 2 or #npc > 40 then return end
+    if not recipe:match("^[%w%s%'%-%.:]+$") or not npc:match("^[%w%s%'%-%.]+$") then return end
+    if not VALID_SRC[typ] then return end
+    if x < 0 or x > 100 or y < 0 or y > 100 then return end
+    if fac ~= "A" and fac ~= "H" and fac ~= "N" then fac = nil end
+    if copper and (copper < 0 or copper > 100000000) then copper = nil end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    s.recipes = s.recipes or {}
+    local list = s.recipes[recipe]
+    if not list then
+        if (s.nRecipes or 0) >= MAX_RECIPES_PER_PLAYER then return end
+        list = {}
+        s.recipes[recipe] = list
+        s.nRecipes = (s.nRecipes or 0) + 1
+    end
+    local entry = { type = typ, npc = npc, mapID = mapID, x = x, y = y, faction = fac,
+        copper = (copper and copper > 0) and copper or nil }
+    for i, old in ipairs(list) do
+        if old.npc == npc and old.type == typ then list[i] = entry; return end
+    end
+    if #list >= MAX_SOURCES_PER_RECIPE then return end
+    list[#list + 1] = entry
+end
+
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
@@ -309,6 +374,13 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if f[1] == "C" then HandleC(s, f)
     elseif f[1] == "M" then HandleM(s, f)
     elseif f[1] == "K" then HandleK(s, f)
+    elseif f[1] == "R" then
+        HandleR(s, f)
+        if not recipePending then
+            recipePending = true
+            C_Timer.After(2, function() recipePending = false; ns:Fire("RECIPES_CHANGED") end)
+        end
+        return
     else return end
     ScheduleRefresh()
 end

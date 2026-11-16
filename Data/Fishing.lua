@@ -64,7 +64,7 @@ ns:AddItems("fishing", {
             { z = 1445, x = 70, y = 50, r = 10, mobs = "Dustwallow coast", lvl = "skill 175+" },
         } },
     [4603] = { name = "Raw Spotted Yellowtail", tags = "fish hal",
-        uses = { "Cooked Spotted Yellowtail", "Specklefin Feast" },
+        uses = { "Spotted Yellowtail", "Specklefin Feast" },
         spots = {
             { z = 1446, x = 66, y = 24, r = 9, mobs = "Steamwheedle Port coast - best spot", lvl = "skill 225+" },
             { z = 1447, x = 70, y = 50, r = 14, mobs = "Azshara coast", lvl = "skill 225+" },
