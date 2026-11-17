@@ -109,7 +109,7 @@ function ns:TrainerPinsOn(prof)
     local s = self.db and self.db.settings
     if not s then return false end
     s.trainerPins = s.trainerPins or {}
-    if s.trainerPins[prof] == nil then return true end
+    if s.trainerPins[prof] == nil then return false end
     return s.trainerPins[prof]
 end
 
@@ -117,6 +117,64 @@ function ns:SetTrainerPins(prof, on)
     self.db.settings.trainerPins = self.db.settings.trainerPins or {}
     self.db.settings.trainerPins[prof] = on and true or false
     self:Fire("TRACKING_CHANGED")
+end
+
+-- trainers of the guide step you are on now (train / special steps only)
+local curCache, curAt = nil, -100
+function ns:GuideCurrentTrainers()
+    local now = GetTime and GetTime() or 0
+    if curCache and now - curAt < 3 then return curCache end
+    local out = {}
+    for _, prof in ipairs(self.GUIDE_ORDER) do
+        local skill = self:ProfSkill(prof)
+        if skill then
+            for _, r in ipairs(self:GuideRows(prof)) do
+                local s = r.step
+                if r.prof == prof and r.current and s and (s.kind == "train" or s.kind == "special") then
+                    for _, t in ipairs(self:GuideTrainers(prof, s.kind == "special" and s.npcs or nil)) do
+                        if t.mapID and t.x and t.y then
+                            out[#out + 1] = { prof = prof, npc = t.npc, mapID = t.mapID, x = t.x, y = t.y,
+                                note = t.note, rank = s.rank, guide = true }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    curCache, curAt = out, now
+    return out
+end
+ns:On("TRACKING_CHANGED", function() curCache = nil end)
+
+-- everything the world map shows: guide step + town + "all trainers" switch
+function ns:MapTrainerList()
+    local out, seen = {}, {}
+    local function add(list, flag)
+        for _, t in ipairs(list) do
+            if not seen[t.npc] then
+                seen[t.npc] = true
+                local e = {}
+                for k, v in pairs(t) do e[k] = v end
+                if flag then e[flag] = true end
+                out[#out + 1] = e
+            end
+        end
+    end
+    add(self:GuideCurrentTrainers(), "guide")
+    if self.TownTrainers then add(self:TownTrainers(), "town") end
+    add(self:TrainerPins())
+    return out
+end
+
+-- the minimap shows the town trainers and the current guide step
+function ns:MinimapTrainerList()
+    local out, seen = {}, {}
+    for _, list in ipairs({ self.TownTrainers and self:TownTrainers() or {}, self:GuideCurrentTrainers() }) do
+        for _, t in ipairs(list) do
+            if not seen[t.npc] then seen[t.npc] = true; out[#out + 1] = t end
+        end
+    end
+    return out
 end
 
 -- every trainer / guide NPC with coordinates for the switched-on professions

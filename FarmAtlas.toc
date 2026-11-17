@@ -31,4 +31,5 @@ UI.lua
 Tooltip.lua
 Minimap.lua
 MinimapPins.lua
+Towns.lua
 News.lua

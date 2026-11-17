@@ -243,6 +243,88 @@ local function Update()
     if inside then ShowGlow(inside.cr, inside.cg, inside.cb) elseif glow then glow:Hide() end
 end
 
+------------------------------------------------------------------------
+-- trainer icons on the minimap (town trainers + current guide step)
+------------------------------------------------------------------------
+local tpins = {}
+local function NewTrainerPin()
+    local p = CreateFrame("Frame", nil, Minimap)
+    p:SetSize(18, 18)
+    p:SetFrameStrata(Minimap:GetFrameStrata())
+    p:SetFrameLevel(Minimap:GetFrameLevel() + 6)
+    p.ring = p:CreateTexture(nil, "BACKGROUND")
+    p.ring:SetTexture(CIRCLE)
+    p.ring:SetPoint("TOPLEFT", -2, 2)
+    p.ring:SetPoint("BOTTOMRIGHT", 2, -2)
+    p.tex = p:CreateTexture(nil, "ARTWORK")
+    p.tex:SetAllPoints()
+    p.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local mask = p:CreateMaskTexture()
+    mask:SetTexture(CIRCLE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(p.tex)
+    p.tex:AddMaskTexture(mask)
+    p:EnableMouse(true)
+    p:SetScript("OnEnter", function(self)
+        local t = self.t
+        if not t then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(t.npc, 1, 0.82, 0)
+        GameTooltip:AddLine(L("cat_" .. t.prof) .. " - " .. (t.rank or L("g_trainer")), 1, 1, 1)
+        if t.note then GameTooltip:AddLine(t.note, 0.7, 0.7, 0.7, true) end
+        if self.dist then GameTooltip:AddLine(L("mm_dist", math.floor(self.dist + 0.5)), 1, 1, 1) end
+        GameTooltip:Show()
+    end)
+    p:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return p
+end
+
+local function HideTrainers() for _, p in ipairs(tpins) do p:Hide() end end
+
+local function UpdateTrainers()
+    if not (ns.db and ns.MinimapTrainerList) or not Minimap:IsVisible() then HideTrainers() return end
+    local list = ns:MinimapTrainerList()
+    if #list == 0 then HideTrainers() return end
+    local cont, pwx, pwy = ns:PlayerWorldPos()
+    if not cont then HideTrainers() return end
+    local zoom = Minimap:GetZoom() or 0
+    local indoors = IsIndoors and IsIndoors()
+    local diameter = (indoors and INDOOR or OUTDOOR)[zoom] or 466
+    local w = Minimap:GetWidth()
+    local scale = w / diameter
+    local mapRadius = w / 2
+    local facing
+    if GetCVar and GetCVar("rotateMinimap") == "1" and GetPlayerFacing then
+        local ok, f = pcall(GetPlayerFacing)
+        if ok then facing = ns.Plain(f) end
+    end
+    local used = 0
+    for _, t in ipairs(list) do
+        local c, wx, wy = WorldPos(t.mapID, t.x / 100, t.y / 100)
+        if c == cont then
+            local north, west = wx - pwx, wy - pwy
+            local sx, sy = -west * scale, north * scale
+            if facing then
+                local cf, sf = math.cos(facing), math.sin(facing)
+                sx, sy = sx * cf - sy * sf, sx * sf + sy * cf
+            end
+            local pd = math.sqrt(sx * sx + sy * sy)
+            if pd <= mapRadius - 6 then
+                used = used + 1
+                local p = tpins[used] or NewTrainerPin()
+                tpins[used] = p
+                p.t, p.dist = t, math.sqrt(north * north + west * west)
+                p.tex:SetTexture(ns.Guides[t.prof].icon)
+                local cc = ns.CAT_COLORS[t.prof] or ns.CAT_COLORS.learned
+                p.ring:SetVertexColor(cc[1], cc[2], cc[3], 1)
+                p:ClearAllPoints()
+                p:SetPoint("CENTER", Minimap, "CENTER", sx, sy)
+                p:Show()
+            end
+        end
+    end
+    for i = used + 1, #tpins do tpins[i]:Hide() end
+end
+
 local ticker = CreateFrame("Frame")
 local elapsed = 0
 ticker:SetScript("OnUpdate", function(_, dt)
@@ -251,6 +333,7 @@ ticker:SetScript("OnUpdate", function(_, dt)
     elapsed = 0
     -- restricted positions (instances, secret values) must never spam errors
     if not pcall(Update) then HideAll() end
+    if not pcall(UpdateTrainers) then HideTrainers() end
 end)
 
 local function MarkDirty() dirty = true end

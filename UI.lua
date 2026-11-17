@@ -430,7 +430,7 @@ function UI:GetRow(i)
 
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row:SetScript("OnClick", function(self, button)
-        if self.guide then UI:GuideClick(self.guide) return end
+        if self.guide then UI:GuideClick(self.guide, button) return end
         if not self.itemID then return end
         if IsControlKeyDown() then
             local g = ns:GetGoal(self.itemID)
@@ -684,8 +684,8 @@ function UI:FillGuideRow(row, r)
         row.icon.icon:SetTexture(r.icon)
         local skill = r.skill and ("|cff8c96a8(" .. L("g_skill", r.skill) .. ")|r") or ("|cff8c96a8(" .. L("g_noprof") .. ")|r")
         row.name:SetText(("|cff%02x%02x%02x%s|r  %s"):format(math.floor(cc[1] * 255), math.floor(cc[2] * 255), math.floor(cc[3] * 255), string.upper(L("cat_" .. r.prof)), skill))
-        local on = ns:TrainerPinsOn(r.prof)
-        row.sub:SetText(L("g_pins") .. ": " .. (on and ("|cff66e070" .. L("on") .. "|r") or ("|cffff6666" .. L("off") .. "|r")) .. "  |cff8c96a8(" .. L("g_pins_click") .. ")|r")
+        local function OnOff(v) return v and ("|cff66e070" .. L("on") .. "|r") or ("|cffff6666" .. L("off") .. "|r") end
+        row.sub:SetText(L("g_town") .. ": " .. OnOff(ns:TownAlertOn(r.prof)) .. "   ·   " .. L("g_pins") .. ": " .. OnOff(ns:TrainerPinsOn(r.prof)))
         row.strip:SetVertexColor(cc[1], cc[2], cc[3], 1)
         return
     end
@@ -723,7 +723,8 @@ function UI:GuideTooltip(r)
         end
         if #list > 6 then GameTooltip:AddLine(L("more", #list - 6), 0.55, 0.59, 0.66) end
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine(L("g_pins_click"), 0.8, 0.8, 0.8)
+        GameTooltip:AddLine(L("g_head_left"), 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(L("g_head_right"), 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
         return
     end
@@ -784,10 +785,14 @@ function UI:GuideTooltip(r)
     GameTooltip:Show()
 end
 
-function UI:GuideClick(r)
+function UI:GuideClick(r, button)
     local action, arg = ns:GuideAction(r)
     if action == "pins" then
-        ns:SetTrainerPins(arg, not ns:TrainerPinsOn(arg))
+        if button == "RightButton" then
+            ns:SetTrainerPins(arg, not ns:TrainerPinsOn(arg))
+        else
+            ns:SetTownAlert(arg, not ns:TownAlertOn(arg))
+        end
         self:RefreshList(true)
     elseif action == "item" then
         self:Select(arg)

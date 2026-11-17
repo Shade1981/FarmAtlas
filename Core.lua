@@ -567,6 +567,14 @@ SlashCmdList.FARMATLAS = function(msg)
         for _, p in ipairs(ns.GUIDE_ORDER or {}) do if ns:TrainerPinsOn(p) then any = true end end
         for _, p in ipairs(ns.GUIDE_ORDER or {}) do ns:SetTrainerPins(p, not any) end
         ns:Print(L("g_pins") .. ": " .. (any and L("off") or L("on")))
+    elseif cmd == "banner" then
+        if rest == "off" or rest == "on" then
+            ns:SetBannerOn(rest == "on")
+            ns:Print(L("tb_name") .. ": " .. (rest == "on" and L("on") or L("off")))
+        else
+            local unlocked = ns:ToggleBannerEdit()
+            ns:Print(unlocked and L("tb_unlocked") or L("tb_locked"))
+        end
     elseif cmd == "news" then
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then
