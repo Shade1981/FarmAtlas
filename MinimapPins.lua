@@ -57,17 +57,45 @@ local function Rebuild()
             spots[#spots + 1] = { itemID = itemID, mapID = mapID, cont = cont, wx = wx, wy = wy,
                 wr = math.max(wr, 15), cr = cr, cg = cg, cb = cb }
         end
+        -- real-shape regions (enough loot recorded in that zone)
+        local shaped = {}
+        if ns.LearnedRegions then
+            for _, lz in ipairs(ns:GetLearnedZones(itemID)) do
+                local regions = ns:LearnedRegions(itemID, lz.mapID)
+                local cell = ns.SHAPE_CELL or 2
+                for _, reg in ipairs(regions) do
+                    local cont, wx, wy = WorldPos(lz.mapID, reg.cx / 100, reg.cy / 100)
+                    if cont then
+                        shaped[lz.mapID] = true
+                        local cells, far = {}, 0
+                        for _, c in ipairs(reg.cells) do
+                            local cc, cx, cy = WorldPos(lz.mapID, (c[1] + 0.5) * cell / 100, (c[2] + 0.5) * cell / 100)
+                            if cc == cont then
+                                cells[#cells + 1] = { cx, cy }
+                                far = math.max(far, math.sqrt((cx - wx) ^ 2 + (cy - wy) ^ 2))
+                            end
+                        end
+                        local _, ax, ay = WorldPos(lz.mapID, 0, 0)
+                        local _, bx, by = WorldPos(lz.mapID, cell / 100, 0)
+                        local cellYds = (ax and bx) and math.sqrt((bx - ax) ^ 2 + (by - ay) ^ 2) or 30
+                        spots[#spots + 1] = { itemID = itemID, mapID = lz.mapID, cont = cont, wx = wx, wy = wy,
+                            wr = math.max(far + cellYds / 2, 15), cr = cr, cg = cg, cb = cb,
+                            region = reg, cells = cells, cellYds = cellYds }
+                    end
+                end
+            end
+        end
         if data then
             for _, s in ipairs(data.spots or {}) do
                 local mapID = ns:ResolveZone(s.z)
-                if mapID then add(mapID, s.x / 100, s.y / 100, (s.r or 6) / 100) end
+                if mapID and not shaped[mapID] then add(mapID, s.x / 100, s.y / 100, (s.r or 6) / 100) end
             end
         end
         -- your learned spots (the strongest cell per zone)
         for _, lz in ipairs(ns:GetLearnedZones(itemID)) do
             local best
             for _, c in ipairs(lz.cells) do if not best or c.n > best.n then best = c end end
-            if best and not data then add(lz.mapID, best.x / 100, best.y / 100, 0.02) end
+            if best and not data and not shaped[lz.mapID] then add(lz.mapID, best.x / 100, best.y / 100, 0.02) end
         end
     end
 end
@@ -199,7 +227,18 @@ local function Update()
             local north = s.wx - pwx
             local west = s.wy - pwy
             local dist = math.sqrt(north * north + west * west)
-            if dist <= s.wr then inside = inside or s end
+            local isInside
+            if s.region then
+                if mapID == s.mapID then
+                    local cell = ns.SHAPE_CELL or 2
+                    isInside = s.region.set[math.floor(px * 100 / cell) .. ":" .. math.floor(py * 100 / cell)] and true
+                else
+                    isInside = dist <= s.cellYds
+                end
+            else
+                isInside = dist <= s.wr
+            end
+            if isInside then inside = inside or s end
             local sx, sy = -west * scale, north * scale
             if facing then
                 sx, sy = sx * cosF - sy * sinF, sx * sinF + sy * cosF
@@ -213,7 +252,48 @@ local function Update()
             p.ring:SetVertexColor(s.cr, s.cg, s.cb, 1)
             p.tex:SetTexture(ns:GetItemIcon(s.itemID))
             p:ClearAllPoints()
-            if pd + rpx <= mapRadius - 2 and dist > s.wr then
+            -- pins are reused: reset what the shape branch changes
+            if p.cellFrame then p.cellFrame:Hide() end
+            p.icon:ClearAllPoints()
+            p.icon:SetPoint("CENTER")
+            if s.region and (pd - rpx <= mapRadius or isInside) then
+                -- real shape: the cells as squares, rotated with the minimap
+                p:SetPoint("CENTER", Minimap, "CENTER", 0, 0)
+                p:SetSize(w, w)
+                p.area:Hide()
+                p.cellFrame = p.cellFrame or CreateFrame("Frame", nil, p)
+                p.cellFrame:SetAllPoints(Minimap)
+                p.cellFrame:SetAlpha(0.3)
+                p.cellTex = p.cellTex or {}
+                local side = s.cellYds * scale
+                local n = 0
+                for _, c in ipairs(s.cells) do
+                    local cn, cwst = c[1] - pwx, c[2] - pwy
+                    local cx, cy = -cwst * scale, cn * scale
+                    if facing then cx, cy = cx * cosF - cy * sinF, cx * sinF + cy * cosF end
+                    if math.sqrt(cx * cx + cy * cy) <= mapRadius - side * 0.5 then
+                        n = n + 1
+                        local t = p.cellTex[n]
+                        if not t then
+                            t = p.cellFrame:CreateTexture(nil, "BACKGROUND")
+                            t:SetColorTexture(1, 1, 1, 1)
+                            p.cellTex[n] = t
+                        end
+                        t:ClearAllPoints()
+                        t:SetPoint("CENTER", Minimap, "CENTER", cx, cy)
+                        t:SetSize(side, side)
+                        if t.SetRotation then t:SetRotation(facing or 0) end
+                        t:SetVertexColor(s.cr, s.cg, s.cb, 1)
+                        t:Show()
+                    end
+                end
+                for i = n + 1, #p.cellTex do p.cellTex[i]:Hide() end
+                p.cellFrame:Show()
+                -- the icon sits on the busiest part of the area
+                p.icon:ClearAllPoints()
+                p.icon:SetPoint("CENTER", Minimap, "CENTER", sx, sy)
+                p.icon:SetAlpha(isInside and 0 or 1)
+            elseif pd + rpx <= mapRadius - 2 and dist > s.wr then
                 -- whole area fits: translucent circle + icon in the middle
                 p:SetPoint("CENTER", Minimap, "CENTER", sx, sy)
                 p:SetSize(rpx * 2, rpx * 2)

@@ -4,6 +4,7 @@
 - Trainers of your current guide step marked on the world map and minimap automatically
 - Town alert: a movable, resizable banner when you arrive at a town / village / camp with a trainer you switched on, plus map and minimap marks (marks only right after login); /farm banner
 - Every trainer of a profession on the world map on demand (right-click the Guide header or /farm trainers), exact WoW Forever coordinates, faction-filtered
+- Farm areas follow the real shape of the spots (from recorded loot, yours + shared + community) on the world map and minimap, instead of circles
 - Auction house prices (optional: Auctionator / TSM) on item tooltips and cards, value of 100 kills from real drop rates
 - Price addons can plug in with FarmAtlas_AddPriceSource()
 - New: "What's new" window after each update (/farm news)

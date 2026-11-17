@@ -19,6 +19,7 @@ Data\Recipes.lua
 Data\Guides.lua
 Data\Community.lua
 Learn.lua
+Shapes.lua
 Sync.lua
 Inventory.lua
 Prices.lua

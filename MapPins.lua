@@ -4,6 +4,7 @@ local L = ns.L
 
 local AREA_TEMPLATE = "FarmAtlasAreaPinTemplate"
 local ICON_TEMPLATE = "FarmAtlasIconPinTemplate"
+local SHAPE_TEMPLATE = "FarmAtlasShapePinTemplate"
 local CIRCLE_MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 
@@ -102,6 +103,94 @@ function FarmAtlasAreaPinMixin:OnAcquired(info)
         end
     end
     self:SetPosition(info.x, info.y)
+end
+
+------------------------------------------------------------------------
+-- Shape pin: a farm area shaped like the real spots (grid cells from loot)
+--   info.region (Shapes.lua), info.cr/cg/cb; drawn only on the zone's own map
+------------------------------------------------------------------------
+FarmAtlasShapePinMixin = CreateFromMixins(MapCanvasPinMixin)
+
+function FarmAtlasShapePinMixin:OnLoad()
+    if self.faBuilt then return end
+    self.faBuilt = true
+    self.SetPassThroughButtons = function() end
+    self.SetPropagateMouseClicks = function() end
+    self.SetPropagateMouseMotion = function() end
+    self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI")
+    self.FillFrame = CreateFrame("Frame", nil, self)
+    self.FillFrame:SetAllPoints()
+    self.EdgeFrame = CreateFrame("Frame", nil, self)
+    self.EdgeFrame:SetAllPoints()
+    self.squares, self.dashes = {}, {}
+    self:EnableMouse(false)
+end
+
+function FarmAtlasShapePinMixin:ApplyFrameLevel()
+    self:SetFrameLevel(BaseLevel(self) - 2)
+end
+
+local function CanvasSize(map)
+    local c = map:GetCanvas()
+    return c:GetWidth(), c:GetHeight()
+end
+
+function FarmAtlasShapePinMixin:OnAcquired(info)
+    self.info = info
+    local reg = info.region
+    local cw, ch = CanvasSize(self:GetMap())
+    local cell = ns.SHAPE_CELL or 2
+    local w = (reg.maxX - reg.minX) / 100 * cw
+    local h = (reg.maxY - reg.minY) / 100 * ch
+    local cpx, cpy = cell / 100 * cw, cell / 100 * ch
+    self:SetSize(math.max(w, 1), math.max(h, 1))
+    local r, g, b = info.cr, info.cg, info.cb
+    -- cells tile exactly (no overlap), so one alpha on the frame looks even
+    self.FillFrame:SetAlpha(math.min((ns.db.settings.areaAlpha or 0.12) * 1.5, 0.4))
+    local used = 0
+    for _, c in ipairs(reg.cells) do
+        used = used + 1
+        local t = self.squares[used]
+        if not t then
+            t = self.FillFrame:CreateTexture(nil, "BACKGROUND")
+            t:SetColorTexture(1, 1, 1, 1)
+            self.squares[used] = t
+        end
+        t:ClearAllPoints()
+        t:SetPoint("TOPLEFT", self.FillFrame, "TOPLEFT", (c[1] * cell - reg.minX) / 100 * cw, -((c[2] * cell - reg.minY) / 100 * ch))
+        t:SetSize(cpx, cpy)
+        t:SetVertexColor(r, g, b, 1)
+        t:Show()
+    end
+    for i = used + 1, #self.squares do self.squares[i]:Hide() end
+    -- dashed outline along the outer edges (like quest areas)
+    local d = 0
+    local dash = math.max(2, math.min(4, cpx / 6))
+    local function Dash(x, y, horizontal, len)
+        d = d + 1
+        local t = self.dashes[d]
+        if not t then
+            t = self.EdgeFrame:CreateTexture(nil, "ARTWORK")
+            t:SetColorTexture(1, 1, 1, 1)
+            self.dashes[d] = t
+        end
+        t:ClearAllPoints()
+        t:SetPoint("CENTER", self.EdgeFrame, "TOPLEFT", x, -y)
+        if horizontal then t:SetSize(len, dash) else t:SetSize(dash, len) end
+        t:SetVertexColor(r, g, b, 0.95)
+        t:Show()
+    end
+    for _, c in ipairs(reg.cells) do
+        local x0 = (c[1] * cell - reg.minX) / 100 * cw
+        local y0 = (c[2] * cell - reg.minY) / 100 * ch
+        local function has(dx, dy) return reg.set[(c[1] + dx) .. ":" .. (c[2] + dy)] end
+        if not has(0, -1) then Dash(x0 + cpx * 0.25, y0, true, cpx * 0.35); Dash(x0 + cpx * 0.75, y0, true, cpx * 0.35) end
+        if not has(0, 1) then Dash(x0 + cpx * 0.25, y0 + cpy, true, cpx * 0.35); Dash(x0 + cpx * 0.75, y0 + cpy, true, cpx * 0.35) end
+        if not has(-1, 0) then Dash(x0, y0 + cpy * 0.25, false, cpy * 0.35); Dash(x0, y0 + cpy * 0.75, false, cpy * 0.35) end
+        if not has(1, 0) then Dash(x0 + cpx, y0 + cpy * 0.25, false, cpy * 0.35); Dash(x0 + cpx, y0 + cpy * 0.75, false, cpy * 0.35) end
+    end
+    for i = d + 1, #self.dashes do self.dashes[i]:Hide() end
+    self:SetPosition((reg.minX + reg.maxX) / 200, (reg.minY + reg.maxY) / 200)
 end
 
 ------------------------------------------------------------------------
@@ -272,6 +361,7 @@ function Provider:RemoveAllData()
     local map = self:GetMap()
     map:RemoveAllPinsByTemplate(AREA_TEMPLATE)
     map:RemoveAllPinsByTemplate(ICON_TEMPLATE)
+    map:RemoveAllPinsByTemplate(SHAPE_TEMPLATE)
 end
 
 function Provider:RefreshAllData()
@@ -318,6 +408,22 @@ function Provider:RefreshAllData()
         local data = ns.Items[itemID]
         local learnedZones = {}
         for _, lz in ipairs(ns:GetLearnedZones(itemID)) do learnedZones[lz.mapID] = lz end
+        -- real-shape areas on the zone's own map (enough loot recorded there)
+        local shaped = {}
+        if ns.LearnedRegions and learnedZones[mapID] then
+            local regions = ns:LearnedRegions(itemID, mapID)
+            if #regions > 0 then
+                shaped[mapID] = true
+                for _, reg in ipairs(regions) do
+                    map:AcquirePin(SHAPE_TEMPLATE, { itemID = itemID, region = reg, cr = cr, cg = cg, cb = cb })
+                end
+                if not data then
+                    local reg = regions[1]
+                    map:AcquirePin(ICON_TEMPLATE, { itemID = itemID, zoneKey = ns:ZoneKeyForMap(mapID) or mapID,
+                        x = reg.cx / 100, y = reg.cy / 100, cr = cr, cg = cg, cb = cb, learnedCount = learnedZones[mapID].n })
+                end
+            end
+        end
 
         -- built-in areas
         if data then
@@ -332,15 +438,17 @@ function Provider:RefreshAllData()
                             x = x, y = y, r = r, cr = cr, cg = cg, cb = cb,
                             learnedCount = lz and lz.n or 0,
                         }
-                        map:AcquirePin(AREA_TEMPLATE, info)
+                        -- the real shape replaces the circle; the icon stays
+                        if not shaped[zMap] then map:AcquirePin(AREA_TEMPLATE, info) end
                         map:AcquirePin(ICON_TEMPLATE, info)
                     end
                 end
             end
         end
 
-        -- learned spots (small solid dots)
+        -- learned spots (small solid dots) where no shape is drawn
         for zMap, lz in pairs(learnedZones) do
+            if shaped[zMap] then lz = { cells = {} } end
             for _, c in ipairs(lz.cells) do
                 local x, y, r = Translate(zMap, c.x / 100, c.y / 100, 0.006, mapID)
                 if x then
