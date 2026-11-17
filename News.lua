@@ -7,22 +7,27 @@ local _, ns = ...
 local HISTORY = {
     { v = "1.2.1", date = "2026-11-17",
       en = {
+        "Every farm spot: each meat, leather, scale and fish now lists all the zones where it can be farmed (746 new areas in 410 more zones), with mobs, levels and drop chances - and 3 new fish: Slitherskin Mackerel, Sagefish, Greater Sagefish.",
         "The minimap button no longer disappears when two minimap addons are used together (e.g. a button collector bar plus a minimap skin that groups buttons): FarmAtlas makes sure it shows in the collector bar.",
         "FarmAtlas is also in the game's addon menu next to the minimap: always reachable, even if another addon hides the button.",
       },
       hu = {
+        "Minden farmhely: minden hús, bőr, pikkely és hal az összes zónát mutatja, ahol farmolható (746 új terület, 410 új zónában), mobokkal, szintekkel, esési eséllyel - és 3 új hal: Slitherskin Mackerel, Sagefish, Greater Sagefish.",
         "A minimap gomb nem tűnik el, ha két minimap addon fut együtt (pl. egy gombgyűjtő sáv és egy gombokat csoportosító minimap skin): a FarmAtlas gondoskodik róla, hogy a gyűjtő sávban látszódjon.",
         "A FarmAtlas a játék minimap melletti addon menüjében is megjelenik: mindig elérhető, akkor is, ha egy másik addon elrejti a gombot.",
       },
       fr = {
+        "Tous les lieux de farm : chaque viande, cuir, écaille et poisson indique maintenant toutes les zones où le farmer (746 nouvelles zones de farm dans 410 zones de plus), avec monstres, niveaux et chances de butin - et 3 nouveaux poissons : Slitherskin Mackerel, Sagefish, Greater Sagefish.",
         "Le bouton de la minicarte ne disparaît plus quand deux addons de minicarte sont utilisés ensemble (une barre qui regroupe les boutons et un skin de minicarte qui les range) : FarmAtlas s'assure qu'il apparaît dans la barre.",
         "FarmAtlas est aussi dans le menu des addons du jeu à côté de la minicarte : toujours accessible, même si un autre addon cache le bouton.",
       },
       de = {
+        "Alle Farmorte: jedes Fleisch, Leder, jede Schuppe und jeder Fisch zeigt jetzt alle Zonen, in denen man es farmen kann (746 neue Gebiete in 410 weiteren Zonen), mit Gegnern, Stufen und Beutechancen - und 3 neue Fische: Slitherskin Mackerel, Sagefish, Greater Sagefish.",
         "Der Minikarten-Knopf verschwindet nicht mehr, wenn zwei Minikarten-Addons zusammen laufen (eine Knopf-Sammelleiste und ein Minikarten-Skin, der Knöpfe gruppiert): FarmAtlas sorgt dafür, dass er in der Sammelleiste erscheint.",
         "FarmAtlas steht auch im Addon-Menü des Spiels neben der Minikarte: immer erreichbar, auch wenn ein anderes Addon den Knopf versteckt.",
       },
       es = {
+        "Todos los lugares de farmeo: cada carne, cuero, escama y pescado muestra ahora todas las zonas donde farmearlo (746 áreas nuevas en 410 zonas más), con enemigos, niveles y probabilidades de botín - y 3 peces nuevos: Slitherskin Mackerel, Sagefish, Greater Sagefish.",
         "El botón del minimapa ya no desaparece cuando se usan dos addons de minimapa a la vez (una barra que recoge botones y un skin de minimapa que los agrupa): FarmAtlas se asegura de que aparezca en la barra.",
         "FarmAtlas también está en el menú de addons del juego junto al minimapa: siempre accesible, aunque otro addon oculte el botón.",
       } },

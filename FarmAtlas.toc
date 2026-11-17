@@ -21,6 +21,7 @@ Data\Zones.lua
 Data\Cooking.lua
 Data\Skinning.lua
 Data\Fishing.lua
+Data\Extra.lua
 Data\Recipes.lua
 Data\RecipeInfo.lua
 Data\Guides.lua

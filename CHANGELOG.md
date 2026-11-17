@@ -1,5 +1,6 @@
 # FarmAtlas 1.2.1
 
+- New: every meat, leather, scale and fish lists all the zones where it can be farmed - 746 new farm areas in 410 more zones, with mobs, levels and drop chances (compiled from public WoW Classic drop and fishing data); 3 new fish: Raw Slitherskin Mackerel, Raw Sagefish, Raw Greater Sagefish
 - Fixed: the minimap button could disappear when a minimap button collector (e.g. OneForAll) and a minimap skin that groups buttons (e.g. EllesmereUI Minimap) were used together; FarmAtlas now makes sure it shows in the collector bar
 - New: FarmAtlas in the game's addon compartment menu next to the minimap (left-click: open, Shift: goals, right-click: map pins)
 

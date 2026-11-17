@@ -118,6 +118,29 @@ function ns:AddItems(cat, list)
     end
 end
 
+-- More areas for items that already exist (Data/Extra.lua). A new spot is
+-- skipped when a hand-made spot of the same item already covers that place.
+function ns:AddSpots(list)
+    for key, spots in pairs(list) do
+        local data = self.Items[key]
+        if data then
+            data.spots = data.spots or {}
+            local base = #data.spots
+            for _, s in ipairs(spots) do
+                local covered = false
+                for i = 1, base do
+                    local o = data.spots[i]
+                    if o.z == s.z then
+                        local d = math.sqrt((o.x - s.x) ^ 2 + (o.y - s.y) ^ 2)
+                        if d < math.max(o.r or 8, 8) then covered = true; break end
+                    end
+                end
+                if not covered then data.spots[#data.spots + 1] = s end
+            end
+        end
+    end
+end
+
 -- Real in-game item ID for a data key (keys can be an English name when the ID
 -- was unknown; numeric keys get corrected if the game reports a different ID).
 -- Register events safely: some events don't exist in every client build
