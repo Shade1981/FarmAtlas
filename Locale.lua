@@ -50,7 +50,7 @@ L.en = {
         "4.  Click a zone card to jump straight to that map.\n\n" ..
         "|cffcc8cffFarmAtlas learns while you play:|r every meat, hide or fish you loot is " ..
         "saved with its exact position, so the map gets more precise over time.\n\n" ..
-        "Item names are always shown in English, exactly as in your recipe book.",
+        "Item names are shown the way your game client names them, exactly as in your recipe book.",
     t_pins        = "Map pins",
     t_continent   = "Continent map",
     t_learn       = "Learn from loot",
@@ -105,7 +105,7 @@ L.en = {
     rc_effect_unknown = "The exact numbers appear once FarmAtlas has seen the item (bags, AH, a link).",
     cat_guide     = "Guide",
     ah_price      = "AH: %s (%s)",
-    per100        = "≈ %s / 100 kills",
+    per100        = "~%s / 100 kills",
     op_title      = "Settings",
     op_general    = "General",
     op_map        = "Map & minimap",
@@ -246,7 +246,7 @@ L.en = {
         "/farm pins      - toggle world map pins",
         "/farm learn     - toggle learning spots from your loot",
         "/farm minimap   - toggle the minimap button",
-        "/farm lang en|hu - interface language",
+        "/farm lang en|hu|fr|de|es - interface language",
         "/farm sync       - background sharing on/off (default: on)",
         "/farm guildsync  - guild sharing on/off",
         "/farm debug      - show blocked-action reports",
@@ -357,7 +357,7 @@ L.hu = {
     rc_effect_unknown = "A pontos számok akkor jelennek meg, amikor a FarmAtlas egyszer látta a tárgyat (táska, AH, link).",
     cat_guide     = "Útmutató",
     ah_price      = "AH: %s (%s)",
-    per100        = "≈ %s / 100 ölés",
+    per100        = "~%s / 100 ölés",
     op_title      = "Beállítások",
     op_general    = "Általános",
     op_map        = "Térkép és minimap",
@@ -496,7 +496,7 @@ L.hu = {
         "/farm pins       - térképjelölők ki/be",
         "/farm learn      - tanulás a lootból ki/be",
         "/farm minimap    - minimap gomb ki/be",
-        "/farm lang en|hu - a felület nyelve",
+        "/farm lang en|hu|fr|de|es - a felület nyelve",
         "/farm sync       - háttér-megosztás ki/be (alapból be)",
         "/farm guildsync  - guild megosztás ki/be",
         "/farm debug      - tiltott műveletek jelentése",
@@ -510,7 +510,9 @@ L.hu = {
 }
 
 -- The default WoW fonts have no ő / ű glyphs (they show as boxes), so the
--- Hungarian texts use ö / ü instead. Item names stay English anyway.
+-- Hungarian texts use ö / ü instead. ns.FixGlyphs is used for every text
+-- that is not in these tables (guide notes, news). Item names come from the
+-- data or the game anyway.
 do
     local map = { ["ő"] = "ö", ["ű"] = "ü", ["Ő"] = "Ö", ["Ű"] = "Ü" }
     local function fix(v)
@@ -518,11 +520,28 @@ do
         if type(v) == "table" then for i, x in ipairs(v) do v[i] = fix(x) end end
         return v
     end
+    ns.FixGlyphs = fix
     for k, v in pairs(L.hu) do L.hu[k] = fix(v) end
 end
 
+-- interface languages, in the order of the language menu
+ns.LANGS = {
+    { key = "en", name = "English" },
+    { key = "hu", name = "Magyar" },
+    { key = "fr", name = "Français" },
+    { key = "de", name = "Deutsch" },
+    { key = "es", name = "Español" },
+}
+-- the game client's language picks the interface language until you choose one
+local AUTO = { frFR = "fr", deDE = "de", esES = "es", esMX = "es" }
+
 function ns:Lang()
-    local lang = self.db and self.db.settings.lang
+    local s = self.db and self.db.settings
+    local lang = s and s.lang
+    if s and not s.langChosen and (lang == nil or lang == "en") then
+        local auto = AUTO[ns.clientLocale or ""]
+        if auto and L[auto] then return auto end
+    end
     if lang and L[lang] then return lang end
     return "en"
 end
@@ -540,5 +559,6 @@ end
 function ns:SetLang(lang)
     if not L[lang] then return end
     self.db.settings.lang = lang
+    self.db.settings.langChosen = true
     self:Fire("LANG_CHANGED")
 end

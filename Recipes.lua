@@ -107,16 +107,22 @@ local function ScanTradeSkillModern(isRetry)
     ns.db.recipeIDs = ns.db.recipeIDs or {}
     ns.db.recipeLine = ns.db.recipeLine or {}
     local changed, missing, count = false, false, 0
+    local seen = {}
     for _, recipeID in ipairs(ids) do
         local info = T.GetRecipeInfo(recipeID)
         if info and info.name and info.learned then
             count = count + 1
+            local schem = T.GetRecipeSchematic and T.GetRecipeSchematic(recipeID, false)
+            local out = schem and ns.Plain(schem.outputItemID)
+            -- the same recipe on every client language: matched by the item it makes
+            local name = (type(out) == "number" and ns:RecipeForItem(out)) or info.name
+            info = { name = name, learned = true }
+            seen[name] = true
             if not c.recipes[info.name] then changed = true end
             c.recipes[info.name] = line
             -- remembered so a click in FarmAtlas can open the window on this recipe
             if type(ns.Plain(recipeID)) == "number" then ns.db.recipeIDs[info.name] = recipeID end
             if profID then ns.db.recipeLine[info.name] = profID end
-            local schem = T.GetRecipeSchematic and T.GetRecipeSchematic(recipeID, false)
             if schem and schem.reagentSlotSchematics then
                 local reagents = {}
                 for _, slot in ipairs(schem.reagentSlotSchematics) do
@@ -132,8 +138,14 @@ local function ScanTradeSkillModern(isRetry)
                 if next(reagents) then ns.db.recipeReagents[info.name] = reagents end
             end
             -- what the recipe makes (for tooltips of recipes you don't know on other characters)
-            local out = schem and ns.Plain(schem.outputItemID)
             if type(out) == "number" and out > 0 then ns:SetRecipeItem(info.name, out) end
+        end
+    end
+    -- a full list of this profession: forget recipes stored under another name
+    -- before (e.g. the client language changed)
+    if count > 0 and line ~= "?" then
+        for r, l in pairs(c.recipes) do
+            if l == line and not seen[r] then c.recipes[r] = nil; changed = true end
         end
     end
     c.recipesScanned = time()
@@ -317,6 +329,51 @@ function ns:IsRecipeName(name)
     return rr and rr[name] ~= nil or false
 end
 
+-- crafted item ID -> FarmAtlas recipe name (English, as in the data)
+local itemToRecipe
+function ns:RecipeForItem(itemID)
+    if not itemToRecipe then
+        itemToRecipe = {}
+        for name, info in pairs(self.RecipeInfo or {}) do
+            if info.item then itemToRecipe[info.item] = name end
+        end
+    end
+    local r = itemToRecipe[itemID]
+    if r then return r end
+    for name, id in pairs(self.db and self.db.recipeOut or {}) do
+        if id == itemID and (self.RecipeInfo and self.RecipeInfo[name] or self.Recipes and self.Recipes[name]) then
+            return name
+        end
+    end
+end
+
+-- the name to show for a recipe: English on an English client, the game's
+-- own name (= the name of the dish) on any other client
+function ns:RecipeLabel(recipe)
+    if not (self.localNames and recipe) then return recipe end
+    local id = self:RecipeItemID(recipe)
+    if not id then return recipe end
+    local nm
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, v = pcall(C_Item.GetItemNameByID, id)
+        nm = ok and self.Plain(v)
+    end
+    if type(nm) ~= "string" or nm == "" then
+        local ok, v = pcall(ns.GetItemInfo or GetItemInfo, id)
+        nm = ok and self.Plain(v)
+    end
+    if type(nm) == "string" and nm ~= "" then return nm end
+    return recipe
+end
+
+-- an ingredient name from the data, the way the game client names it
+function ns:MatLabel(name)
+    if not (self.localNames and name) then return name end
+    local key = self.ItemsByName and self.ItemsByName[string.lower(name)]
+    if key ~= nil then return (self:GetItemName(key)) end
+    return name
+end
+
 function ns:RecipeItemID(recipe)
     local info = self.RecipeInfo and self.RecipeInfo[recipe]
     if info and info.item then return info.item end
@@ -342,7 +399,7 @@ function ns:AddRecipeTooltip(tip, recipe, opts)
         tip:SetHyperlink("item:" .. made)
         tip:AddLine(" ")
     else
-        tip:AddLine(recipe, 1, 0.82, 0)
+        tip:AddLine(self:RecipeLabel(recipe), 1, 0.82, 0)
     end
     local known = self:RecipeKnown(recipe)
     tip:AddLine(known and L("rc_known") or L("rc_unknown"), known and 0.3 or 1, known and 0.9 or 0.4, known and 0.35 or 0.4)
@@ -377,7 +434,7 @@ function ns:AddRecipeTooltip(tip, recipe, opts)
                 have = (b or 0) + (k or 0)
             end
             local enough = have >= m[2]
-            tip:AddDoubleLine("   " .. m[2] .. "x " .. m[1], have .. " / " .. m[2], 1, 1, 1,
+            tip:AddDoubleLine("   " .. m[2] .. "x " .. self:MatLabel(m[1]), have .. " / " .. m[2], 1, 1, 1,
                 enough and 0.3 or 1, enough and 0.9 or 0.5, enough and 0.35 or 0.4)
         end
         tip:AddLine(info.oven and L("ri_oven") or L("ri_fire"), 0.6, 0.6, 0.6)
@@ -395,7 +452,7 @@ function ns:AddRecipeTooltip(tip, recipe, opts)
         end
         for i = 1, math.min(4, #sources) do
             local src = sources[i]
-            local loc = (src.zone or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
+            local loc = (self:ZoneLabel(src.zone) or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
             if src.note then loc = loc .. " (" .. src.note .. ")" end
             if src.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
             tip:AddDoubleLine(src.npc or "?", src.price or "", 1, 1, 1, 1, 0.82, 0)
@@ -548,7 +605,7 @@ local function ReagentsFor(recipe)
 end
 
 function ns:SearchRecipes(query)
-    query = string.lower(query or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    query = ns.Lower(query or ""):gsub("^%s+", ""):gsub("%s+$", "")
     local names, seen = {}, {}
     local function add(r) if r and not seen[r] then seen[r] = true; names[#names + 1] = r end end
     for charKey, c in pairs(self.db.chars) do
@@ -568,10 +625,12 @@ function ns:SearchRecipes(query)
     local out = {}
     for _, recipe in ipairs(names) do
         local reagents, exact = ReagentsFor(recipe)
-        local match = query == "" or string.lower(recipe):find(query, 1, true)
+        local match = query == "" or ns.Lower(recipe):find(query, 1, true)
+            or (self.localNames and ns.Lower(self:RecipeLabel(recipe)):find(query, 1, true))
         local list, mainKey, craft = {}, nil, exact and math.huge or nil
         for rname, need in pairs(reagents) do
-            if not match and string.lower(rname):find(query, 1, true) then match = true end
+            if not match and ns.Lower(rname):find(query, 1, true) then match = true end
+            if not match and self.localNames and ns.Lower(self:MatLabel(rname)):find(query, 1, true) then match = true end
             local have, key = CountByName(rname)
             list[#list + 1] = { name = rname, need = need, have = have, key = key }
             if key ~= nil then
@@ -653,7 +712,7 @@ function ns:OpenCraft(recipe)
     end
     if not asked then asked = ByLine() end
     if not asked then
-        self:Print(L("craft_manual", recipe))
+        self:Print(L("craft_manual", self:RecipeLabel(recipe)))
         return false
     end
     -- the window should be up a moment later; if not, try the other way, then say so
@@ -661,10 +720,10 @@ function ns:OpenCraft(recipe)
         if CraftWindowShown() then return end
         if ByLine() then
             C_Timer.After(0.6, function()
-                if not CraftWindowShown() then ns:Print(L("craft_manual", recipe)) end
+                if not CraftWindowShown() then ns:Print(L("craft_manual", ns:RecipeLabel(recipe))) end
             end)
         else
-            ns:Print(L("craft_manual", recipe))
+            ns:Print(L("craft_manual", ns:RecipeLabel(recipe)))
         end
     end)
     return true

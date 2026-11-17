@@ -1,5 +1,7 @@
 # FarmAtlas 1.2.0
 
+- New: French, German and Spanish interface (header language menu, settings, /farm lang fr|de|es); starts in the game client's language. On non-English clients item, recipe and zone names follow the game, and recipes are recognised by the item they make
+- Fixed: accented letters in upper-case labels (e.g. profession headers) and Hungarian guide notes
 - New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever, faction-aware, with your current step highlighted
 - Trainers of your current guide step marked on the world map and minimap automatically
 - Town alert: a movable, resizable banner when you arrive at a town / village / camp with a trainer you switched on, plus map and minimap marks (marks only right after login); /farm banner

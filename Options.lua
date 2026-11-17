@@ -286,10 +286,18 @@ function Options:ShowPage(id)
             label:SetPoint("LEFT")
             label:SetText(L("op_lang"))
             local prev
-            for _, lang in ipairs({ "hu", "en" }) do
+            for i = #ns.LANGS, 1, -1 do
+                local lang = ns.LANGS[i].key
                 local b = Button(row)
                 b:SetSize(44, 22)
                 b.label:SetText(lang:upper())
+                local langName = ns.LANGS[i].name
+                b:HookScript("OnEnter", function(self)
+                    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                    GameTooltip:AddLine(langName, 1, 1, 1)
+                    GameTooltip:Show()
+                end)
+                b:HookScript("OnLeave", function() GameTooltip:Hide() end)
                 if prev then b:SetPoint("RIGHT", prev, "LEFT", -6, 0) else b:SetPoint("RIGHT", row, "RIGHT", -4, 0) end
                 if ns:Lang() == lang then b:SetBackdropBorderColor(unpack(C.accent)) end
                 b:SetScript("OnClick", function()

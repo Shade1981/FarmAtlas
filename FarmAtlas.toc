@@ -11,6 +11,9 @@
 
 Core.lua
 Locale.lua
+Locales\fr.lua
+Locales\de.lua
+Locales\es.lua
 Data\Zones.lua
 Data\Cooking.lua
 Data\Skinning.lua

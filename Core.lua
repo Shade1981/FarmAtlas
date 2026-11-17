@@ -9,6 +9,14 @@ ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,m
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
 
+-- the game client's language: on a non-English client FarmAtlas shows item,
+-- recipe and zone names the way the game does (see GetItemName / RecipeLabel)
+do
+    local ok, loc = pcall(function() return GetLocale and GetLocale() end)
+    ns.clientLocale = (ok and type(loc) == "string") and loc or "enUS"
+    ns.localNames = not (ns.clientLocale == "enUS" or ns.clientLocale == "enGB")
+end
+
 ns.CATEGORIES = {
     { key = "all",      icon = "Interface\\Icons\\INV_Misc_Map_01" },
     { key = "cooking",  icon = "Interface\\Icons\\INV_Misc_Food_15" },
@@ -226,6 +234,26 @@ function ns:ShowPoint(p)
     self:OpenMapID(mapID)
 end
 
+-- an English zone name from the data, the way the game client names it
+local localZoneCache, localLabelCache = {}, {}
+function ns:ZoneLabel(name)
+    if not (self.localNames and type(name) == "string") then return name end
+    if localLabelCache[name] then return localLabelCache[name] end
+    local mapID = self:ResolveZoneName(name)
+    if mapID and C_Map and C_Map.GetMapInfo then
+        local ok, info = pcall(C_Map.GetMapInfo, mapID)
+        local nm = ok and info and self.Plain(info.name)
+        if type(nm) == "string" and nm ~= "" then localLabelCache[name] = nm; return nm end
+    end
+    return name
+end
+
+function ns:ZoneList(zones)
+    local t = {}
+    for i, z in ipairs(zones or {}) do t[i] = ns:ZoneLabel(z) or z end
+    return table.concat(t, ", ")
+end
+
 -- reverse: uiMapID -> our zone key
 function ns:ZoneKeyForMap(mapID)
     for key in pairs(self.Zones) do
@@ -233,9 +261,17 @@ function ns:ZoneKeyForMap(mapID)
     end
 end
 
--- Zone names stay English (same as all game names in FarmAtlas).
+-- Zone names: English on an English client, the game's own name otherwise.
 function ns:ZoneName(zoneKey)
     local z = self.Zones[zoneKey]
+    if z and self.localNames and C_Map and C_Map.GetMapInfo then
+        local cached = localZoneCache[zoneKey]
+        if cached then return cached end
+        local mapID = self:ResolveZone(zoneKey)
+        local ok, info = pcall(C_Map.GetMapInfo, mapID or z.id)
+        local nm = ok and info and self.Plain(info.name)
+        if type(nm) == "string" and nm ~= "" then localZoneCache[zoneKey] = nm; return nm end
+    end
     if z then return z.name end
     if type(zoneKey) == "number" and C_Map and C_Map.GetMapInfo then
         local info = C_Map.GetMapInfo(zoneKey)
@@ -271,10 +307,18 @@ function ns:GetItemIcon(key)
     return icon or 134400
 end
 
--- Item names are ALWAYS the English name from the data (recipe book names).
+-- English game client: item names are the English names from the data
+-- (exactly as in the recipe book). Any other client language (French,
+-- German, Spanish...): the game's own name for the item, so it matches what
+-- the player sees in bags, recipes and loot. The English name still works
+-- in the search box.
 function ns:GetItemName(key)
     local data = self.Items[key]
     local infoName, _, quality = self:ItemInfo(key)
+    infoName = self.Plain(infoName)
+    if self.localNames and type(infoName) == "string" and infoName ~= "" then
+        return infoName, quality or 1
+    end
     local name = (data and data.name)
         or (self.db and self.db.learned[key] and self.db.learned[key].name)
         or infoName or ("item:" .. tostring(key))
@@ -318,7 +362,30 @@ end
 ------------------------------------------------------------------------
 -- Search
 ------------------------------------------------------------------------
-local function lower(s) return s and string.lower(s) or "" end
+-- string.upper / string.lower only change A-Z: accented letters (á é ö ü ç
+-- ñ ä ...) stay as they were, and a word like "Nyúzás" comes out "NYúZáS".
+-- These also change the accented Latin letters (UTF-8, 2 bytes).
+local function UpAcc(a, b)
+    local n = b:byte()
+    if a == "\195" and n >= 160 and n <= 190 and n ~= 183 then return a .. string.char(n - 32) end
+    if a == "\197" and (n == 145 or n == 177) then return a .. string.char(n - 1) end
+    return a .. b
+end
+local function LowAcc(a, b)
+    local n = b:byte()
+    if a == "\195" and n >= 128 and n <= 158 and n ~= 151 then return a .. string.char(n + 32) end
+    if a == "\197" and (n == 144 or n == 176) then return a .. string.char(n + 1) end
+    return a .. b
+end
+function ns.Upper(s)
+    if type(s) ~= "string" then return s end
+    return (string.upper(s):gsub("([\195\197])([\128-\191])", UpAcc))
+end
+function ns.Lower(s)
+    if type(s) ~= "string" then return s end
+    return (string.lower(s):gsub("([\195\197])([\128-\191])", LowAcc))
+end
+local function lower(s) return s and ns.Lower(s) or "" end
 
 function ns:AllItemIDs()
     local ids, seen = {}, {}
@@ -342,6 +409,8 @@ function ns:ItemMatches(itemID, query)
         for _, s in ipairs(data.spots) do
             hay[#hay + 1] = lower(s.mobs)
             hay[#hay + 1] = lower(self:ZoneName(s.z))
+            local z = self.Zones[s.z]
+            if z and self.localNames then hay[#hay + 1] = lower(z.name) end
         end
     end
     local l = self.db and self.db.learned[itemID]
@@ -585,7 +654,16 @@ SlashCmdList.FARMATLAS = function(msg)
         ns:Fire("MINIMAP_SETTING")
     elseif cmd == "lang" then
         local lang = lower(rest)
-        if lang ~= "en" and lang ~= "hu" then lang = (ns:Lang() == "en") and "hu" or "en" end
+        local known = false
+        for _, lg in ipairs(ns.LANGS or {}) do if lg.key == lang then known = true end end
+        if not known then
+            -- no / unknown code: next language in the list
+            local cur, list = ns:Lang(), ns.LANGS or { { key = "en" } }
+            lang = list[1].key
+            for i, lg in ipairs(list) do
+                if lg.key == cur then lang = (list[i + 1] or list[1]).key end
+            end
+        end
         ns:SetLang(lang)
         ns:Print(L("c_lang"))
     elseif cmd == "sync" then

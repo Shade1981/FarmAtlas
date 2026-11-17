@@ -97,6 +97,13 @@ local function FlatButton(parent, label, width, height)
     return b
 end
 
+-- grow a button to its (translated) label, never below its design width
+local function Fit(b, minW)
+    b.minW = b.minW or minW or b:GetWidth()
+    local w = (b.text:GetStringWidth() or 0) + 18
+    b:SetWidth(math.max(b.minW, math.floor(w + 0.5)))
+end
+
 local function Toggle(parent, labelKey, get, set)
     local b = CreateFrame("Button", nil, parent)
     b:SetHeight(18)
@@ -239,19 +246,32 @@ function UI:Build()
     close:SetScript("OnEnter", function(s) s.x:SetTextColor(1, 0.35, 0.35) end)
     close:SetScript("OnLeave", function(s) s.x:SetTextColor(unpack(C.muted)) end)
 
-    -- language switch (HU | EN)
+    -- language: one button (current language) with a small menu
     self.langButtons = {}
-    local prevLang
-    for _, lang in ipairs({ "en", "hu" }) do
-        local lb = FlatButton(header, lang:upper(), 34, 22)
-        if prevLang then lb:SetPoint("RIGHT", prevLang, "LEFT", -4, 0)
-        else lb:SetPoint("RIGHT", close, "LEFT", -10, 0) end
-        lb.lang = lang
-        lb:SetScript("OnClick", function() ns:SetLang(lang) end)
-        lb.tooltip = "Language / Nyelv"
+    local langBtn = FlatButton(header, "EN", 40, 22)
+    langBtn:SetPoint("RIGHT", close, "LEFT", -10, 0)
+    langBtn.tooltip = "Language / Nyelv / Langue / Sprache / Idioma"
+    self.langButton = langBtn
+    local menu = CreateFrame("Frame", nil, langBtn, "BackdropTemplate")
+    menu:SetFrameStrata("FULLSCREEN_DIALOG")
+    menu:SetPoint("TOPRIGHT", langBtn, "BOTTOMRIGHT", 0, -2)
+    menu:SetSize(116, 6 + #ns.LANGS * 22)
+    SetBG(menu, C.bg, C.accent)
+    menu:EnableMouse(true)
+    menu:Hide()
+    for i, lg in ipairs(ns.LANGS) do
+        local lb = FlatButton(menu, lg.name, 108, 20)
+        lb:SetPoint("TOPLEFT", 4, -3 - (i - 1) * 22)
+        lb.lang = lg.key
+        lb:SetScript("OnClick", function()
+            menu:Hide()
+            ns:SetLang(lg.key)
+        end)
         self.langButtons[#self.langButtons + 1] = lb
-        prevLang = lb
     end
+    langBtn:SetScript("OnClick", function() menu:SetShown(not menu:IsShown()) end)
+    f:HookScript("OnHide", function() menu:Hide() end)
+    local prevLang = langBtn
     local gear = FlatButton(header, "", 26, 22)
     gear:SetPoint("RIGHT", prevLang, "LEFT", -10, 0)
     gear.icon = gear:CreateTexture(nil, "ARTWORK")
@@ -655,12 +675,12 @@ function UI:RefreshList(keepResults)
             row.itemID = rc.mainKey
             row.icon.icon:SetTexture(rc.mainKey ~= nil and ns:GetItemIcon(rc.mainKey) or "Interface\\Icons\\INV_Scroll_03")
             local col = rc.known and "|cff66e070" or "|cffd08080"
-            row.name:SetText(col .. rc.name .. "|r")
+            row.name:SetText(col .. ns:RecipeLabel(rc.name) .. "|r")
             local parts = {}
             for _, r in ipairs(rc.reagents) do
                 local enough = r.need > 0 and r.have >= r.need
                 local c = enough and "|cff66e070" or "|cffd0d4dc"
-                parts[#parts + 1] = c .. r.name .. (r.need > 0 and (" " .. r.have .. "/" .. r.need) or "") .. "|r"
+                parts[#parts + 1] = c .. ns:MatLabel(r.name) .. (r.need > 0 and (" " .. r.have .. "/" .. r.need) or "") .. "|r"
             end
             local lead
             if not rc.known then lead = "|cffff6666" .. L("rc_unknown") .. "|r"
@@ -728,9 +748,9 @@ local BOOK_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local function GuideTitle(r)
     local s = r.step
     local range = s.from and (s.from .. "-" .. s.to) or tostring(s.at or "")
-    if s.kind == "craft" then return range .. "  " .. s.recipe end
+    if s.kind == "craft" then return range .. "  " .. ns:RecipeLabel(s.recipe) end
     if s.kind == "area" then
-        local z = s.zones[1] .. ((#s.zones > 1) and (" +" .. (#s.zones - 1)) or "")
+        local z = ns:ZoneLabel(s.zones[1]) .. ((#s.zones > 1) and (" +" .. (#s.zones - 1)) or "")
         return range .. "  " .. z
     end
     return range .. "  " .. L("g_train", s.rank or "")
@@ -743,11 +763,11 @@ local function GuideSub(r)
         if s.count then t = t .. "  ·  " .. L("g_crafts", s.count) end
         return t
     elseif s.kind == "area" then
-        return s.mobs or ns.GuideNote(s) or table.concat(s.zones, ", ")
+        return s.mobs or ns.GuideNote(s) or ns:ZoneList(s.zones)
     elseif s.kind == "special" then
         local names = {}
         local list = ns:GuideTrainers(r.prof, s.npcs)
-        for _, t in ipairs(list) do names[#names + 1] = t.npc .. " (" .. t.zone .. ")" end
+        for _, t in ipairs(list) do names[#names + 1] = t.npc .. " (" .. (ns:ZoneLabel(t.zone) or "?") .. ")" end
         return table.concat(names, ", ")
     end
     return L("g_any_trainer")
@@ -761,7 +781,7 @@ function UI:FillGuideRow(row, r)
         row:SetBackdropColor(unpack(C.card))
         row.icon.icon:SetTexture(r.icon)
         local skill = r.skill and ("|cff8c96a8(" .. L("g_skill", r.skill) .. ")|r") or ("|cff8c96a8(" .. L("g_noprof") .. ")|r")
-        row.name:SetText(("|cff%02x%02x%02x%s|r  %s"):format(math.floor(cc[1] * 255), math.floor(cc[2] * 255), math.floor(cc[3] * 255), string.upper(L("cat_" .. r.prof)), skill))
+        row.name:SetText(("|cff%02x%02x%02x%s|r  %s"):format(math.floor(cc[1] * 255), math.floor(cc[2] * 255), math.floor(cc[3] * 255), ns.Upper(L("cat_" .. r.prof)), skill))
         local function OnOff(v) return v and ("|cff66e070" .. L("on") .. "|r") or ("|cffff6666" .. L("off") .. "|r") end
         row.sub:SetText(L("g_town") .. ": " .. OnOff(ns:TownAlertOn(r.prof)) .. "   ·   " .. L("g_pins") .. ": " .. OnOff(ns:TrainerPinsOn(r.prof)))
         row.strip:SetVertexColor(cc[1], cc[2], cc[3], 1)
@@ -795,7 +815,7 @@ function UI:GuideTooltip(r)
         local list = ns:GuideTrainers(r.prof)
         for i = 1, math.min(6, #list) do
             local t = list[i]
-            local loc = t.zone .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
+            local loc = (ns:ZoneLabel(t.zone) or "?") .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
             GameTooltip:AddDoubleLine(t.npc, t.learned and L("g_exact") or "", 1, 1, 1, 0.8, 0.55, 1)
             GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
         end
@@ -811,7 +831,7 @@ function UI:GuideTooltip(r)
     local note = ns.GuideNote(s)
     if s.kind == "craft" then
         GameTooltip:AddLine(L("g_mats"), 1, 0.82, 0)
-        GameTooltip:AddLine("   " .. s.item .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
+        GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
         if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
         GameTooltip:AddLine(" ")
@@ -825,7 +845,7 @@ function UI:GuideTooltip(r)
         end
         for i = 1, math.min(4, #sources) do
             local src = sources[i]
-            local loc = (src.zone or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
+            local loc = (ns:ZoneLabel(src.zone) or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
             if src.note then loc = loc .. " (" .. src.note .. ")" end
             if src.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
             GameTooltip:AddDoubleLine(src.npc or "?", src.price or "", 1, 1, 1, 1, 0.82, 0)
@@ -834,7 +854,7 @@ function UI:GuideTooltip(r)
         if #sources > 4 then GameTooltip:AddLine(L("more", #sources - 4), 0.55, 0.59, 0.66) end
     elseif s.kind == "area" then
         GameTooltip:AddLine(L("g_zones"), 1, 0.82, 0)
-        GameTooltip:AddLine("   " .. table.concat(s.zones, ", "), 1, 1, 1, true)
+        GameTooltip:AddLine("   " .. ns:ZoneList(s.zones), 1, 1, 1, true)
         if s.mobs then
             GameTooltip:AddLine(L("g_mobs"), 1, 0.82, 0)
             GameTooltip:AddLine("   " .. s.mobs, 1, 1, 1, true)
@@ -844,7 +864,7 @@ function UI:GuideTooltip(r)
         local list = ns:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
         for i = 1, math.min(6, #list) do
             local t = list[i]
-            local loc = t.zone .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
+            local loc = (ns:ZoneLabel(t.zone) or "?") .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
             if t.faction == "N" then loc = loc .. " [" .. L("src_neutral") .. "]" end
             GameTooltip:AddDoubleLine(t.npc, t.learned and L("g_exact") or "", 1, 1, 1, 0.8, 0.55, 1)
             GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
@@ -858,7 +878,7 @@ function UI:GuideTooltip(r)
     local action, arg = ns:GuideAction(r)
     if action then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine(action == "item" and L("g_click_item", r.step.item) or L("g_click_map"), 0.8, 0.8, 0.8)
+        GameTooltip:AddLine(action == "item" and L("g_click_item", ns:MatLabel(r.step.item)) or L("g_click_map"), 0.8, 0.8, 0.8)
     end
     GameTooltip:Show()
 end
@@ -1108,7 +1128,7 @@ function UI:RefreshDetail()
     local qc = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
     if qc then d.icon.ring:SetVertexColor(qc.r, qc.g, qc.b) end
     d.name:SetText(ns:GetItemColoredName(id))
-    d.badge:SetText(("|cff%02x%02x%02x%s|r"):format(cc[1] * 255, cc[2] * 255, cc[3] * 255, string.upper(L("cat_" .. cat))))
+    d.badge:SetText(("|cff%02x%02x%02x%s|r"):format(cc[1] * 255, cc[2] * 255, cc[3] * 255, ns.Upper(L("cat_" .. cat))))
     if data and data.unverified then
         d.badge:SetText(d.badge:GetText() .. "  |cffff9933" .. L("unverified") .. "|r")
     end
@@ -1120,6 +1140,7 @@ function UI:RefreshDetail()
     local tracked = ns:IsTracked(id)
     d.track:SetActive(tracked)
     d.track.text:SetText(tracked and L("tracking") or L("track"))
+    Fit(d.track, 140)
 
     local goal = ns:GetGoal(id)
     if not d.goalEdit:HasFocus() then d.goalEdit:SetText(goal and tostring(goal.need) or "") end
@@ -1195,7 +1216,7 @@ function UI:RefreshDetail()
                 local parts = {}
                 for i = 1, math.min(2, #sources) do
                     local s = sources[i]
-                    local loc = s.zone or "?"
+                    local loc = ns:ZoneLabel(s.zone) or "?"
                     if s.x and s.y then loc = loc .. (" %.1f, %.1f"):format(s.x, s.y) end
                     local txt = (s.npc or "?") .. " - " .. loc
                     if s.price then txt = txt .. "  " .. s.price end
@@ -1227,7 +1248,7 @@ function UI:RefreshDetail()
                 local t = L("known_by", table.concat(altsKnow, ", "))
                 l3 = l3 and (l3 .. "   " .. t) or t
             end
-            Card(recipe, status, sr, sg, sb, l2, l3, strip, nil, nil, point, recipe, not mine)
+            Card(ns:RecipeLabel(recipe), status, sr, sg, sb, l2, l3, strip, nil, nil, point, recipe, not mine)
         end
         y = y + 6
     end
@@ -1322,7 +1343,7 @@ function UI:RecipeClick(recipe, itemID)
 end
 
 local function SourceText(s)
-    local loc = s.zone or "?"
+    local loc = ns:ZoneLabel(s.zone) or "?"
     if s.x and s.y then loc = loc .. (" %.1f, %.1f"):format(s.x, s.y) end
     local txt = "|cffffffff" .. (s.npc or "?") .. "|r  -  " .. loc
     if s.price then txt = txt .. "   |cffffd200" .. s.price .. "|r" end
@@ -1389,7 +1410,7 @@ function UI:ShowRecipeBox(recipe)
     end
 
     b.head:SetText(L("rc_cant"))
-    b.name:SetText(recipe)
+    b.name:SetText(ns:RecipeLabel(recipe))
     local lines = {}
     local srcType, sources, note = ns:RecipeSources(recipe)
     local srcLabel = { trainer = L("src_trainer"), vendor = L("src_vendor"), quest = L("src_quest"),
@@ -1470,16 +1491,22 @@ function UI:ApplyLocale()
     self.list.empty:SetText(L("empty"))
     local d = self.detail
     d.open.text:SetText(L("open_best"))
+    Fit(d.open, 120)
     d.link.text:SetText(L("link"))
+    Fit(d.link, 56)
     d.link.tooltip = L("link_tip")
     d.welcome:SetText(L("welcome"))
     for _, c in ipairs(d.cards) do c.go:SetText(L("show_on_map")) end
     self.clearButton.text:SetText(L("clear"))
+    Fit(self.clearButton, 130)
     for _, t in ipairs(self.toggles) do t:Update() end
     for _, lb in ipairs(self.langButtons) do lb:SetActive(lb.lang == ns:Lang()) end
+    if self.langButton then self.langButton.text:SetText(ns:Lang():upper()) end
     self.goalsButton.text:SetText(L("goals_btn"))
+    Fit(self.goalsButton, 70)
     d.goalLabel:SetText(L("goal_label"))
     d.goalBtn.text:SetText(L("goal_set"))
+    Fit(d.goalBtn, 34)
     d.goalBtn.tooltip = L("goal_tip")
 end
 

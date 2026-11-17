@@ -46,6 +46,20 @@ local function Clean(s)
     return (s:gsub("[%^;,|\n\r]", " "))
 end
 
+-- shorten to n bytes without cutting an accented letter (UTF-8) in half
+local function Cut(s, n)
+    if #s <= n then return s end
+    s = s:sub(1, n)
+    local i = #s
+    while i > 0 and s:byte(i) >= 128 and s:byte(i) < 192 do i = i - 1 end
+    if i > 0 and s:byte(i) >= 192 then
+        local b = s:byte(i)
+        local need = (b >= 240 and 4) or (b >= 224 and 3) or 2
+        if #s - i + 1 < need then s = s:sub(1, i - 1) end
+    end
+    return s
+end
+
 local function EncodeKey(key)
     if type(key) == "number" then return tostring(key) end
     return Clean(key)
@@ -149,7 +163,7 @@ local function QueueMob(key, npcID)
     if not m then return end
     Enqueue("M:" .. tostring(key) .. ":" .. npcID, table.concat({
         "M", EncodeKey(key), tostring(npcID), tostring(m.n), tostring(m.lvl or 0),
-        Clean(m.name or ns.db.npcNames[npcID] or ""):sub(1, 40),
+        Cut(Clean(m.name or ns.db.npcNames[npcID] or ""), 40),
     }, SEP))
 end
 
@@ -170,7 +184,7 @@ local function QueueRecipeSource(recipe, src)
     if not (recipe and src and VALID_SRC[src.type] and src.mapID and src.x and src.y) then return end
     local fac = ns:IsNeutralNPC(src.npc) and "N" or FacShort(src.faction)
     Enqueue("R:" .. recipe .. ":" .. tostring(src.npc), table.concat({
-        "R", Clean(recipe):sub(1, 60), src.type, Clean(src.npc or "?"):sub(1, 40), tostring(src.mapID),
+        "R", Cut(Clean(recipe), 60), src.type, Cut(Clean(src.npc or "?"), 40), tostring(src.mapID),
         Fmt(src.x), Fmt(src.y), fac, tostring(math.floor(tonumber(src.copper) or 0)),
     }, SEP))
 end
@@ -313,7 +327,7 @@ local function HandleM(s, f)
     if npcID < 1 or npcID > 9999999 or cnt < 1 or cnt > 100000 then return end
     local it = ItemBucket(s, key)
     if not it then return end
-    local name = f[6] and f[6] ~= "" and f[6]:sub(1, 40) or nil
+    local name = f[6] and f[6] ~= "" and Cut(f[6], 40) or nil
     it.mobs[npcID] = { n = cnt, lvl = (lvl and lvl > 0 and lvl <= 63) and lvl or nil, name = name }
     if name and not ns.db.npcNames[npcID] then ns.db.npcNames[npcID] = name end
 end

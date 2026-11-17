@@ -208,7 +208,7 @@ end
 
 local function Note(step)
     local n = step.note
-    if type(n) == "table" then return n[ns:Lang()] or n.en end
+    if type(n) == "table" then return ns.FixGlyphs(n[ns:Lang()] or n.en) end
     return n
 end
 ns.GuideNote = Note
@@ -216,7 +216,7 @@ ns.GuideNote = Note
 -- Rows for the guide tab: a header per profession, then its steps.
 -- query filters by profession / recipe / material / zone / mob text.
 function ns:GuideRows(query, onlyProf)
-    query = query and query:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
+    query = query and ns.Lower(query):gsub("^%s+", ""):gsub("%s+$", "") or ""
     local mine = MyFaction()
     local rows = {}
     for _, prof in ipairs(self.GUIDE_ORDER) do
@@ -229,7 +229,10 @@ function ns:GuideRows(query, onlyProf)
         for _, s in ipairs(g.steps) do
             if FactionOK(s.faction, mine) then
                 local hay = table.concat({ prof, profName, s.recipe or "", s.item or "", s.extra or "", s.mobs or "",
-                    s.rank or "", table.concat(s.zones or {}, " "), Note(s) or "" }, " "):lower()
+                    s.rank or "", table.concat(s.zones or {}, " "), Note(s) or "",
+                    s.recipe and ns:RecipeLabel(s.recipe) or "", s.item and ns:MatLabel(s.item) or "",
+                    ns:ZoneList(s.zones or {}) }, " ")
+                hay = ns.Lower(hay)
                 if query == "" or hay:find(query, 1, true) then
                     local r = { kind = "step", prof = prof, step = s, skill = skill }
                     local lo = s.from or s.at or 0

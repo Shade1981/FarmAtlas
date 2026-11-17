@@ -16,7 +16,7 @@ Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the
 - **Bags, bank and alts**: every character's bags and bank are remembered. The atlas, the goals window and item tooltips show what you have and what your alts have.
 - **Recipes**: for any ingredient, see every recipe that uses it, whether you or your alts know it, and where to learn it (trainer, vendor with location and price, quest or drop). Click a recipe you know to open the profession window on it, ready to craft; click one you don't know to see where to buy or learn it, with a marker on the map. The **On me** button shows only what is in your bags (on the Recipes tab: **Craftable now**).
 - **Self-learning**: FarmAtlas learns from your Cooking window (known recipes and exact reagents), from trainers, from every vendor that sells recipes, and from recipe drops.
-- **English / Hungarian interface** (EN | HU buttons, or `/farm lang hu`). Item, recipe, mob and zone names always stay in English, exactly as they appear in the in-game recipe book.
+- **English, Hungarian, French, German and Spanish interface** (language button in the header, the settings, or `/farm lang en|hu|fr|de|es`). On a French, German or Spanish game client it starts in that language. Item, recipe and zone names are shown the way your game client names them; the English names always work in the search box.
 - **World map overlay**: colored farm areas plus clickable item icons. You can track several items at once, and each gets its own color. Pins also show on the continent map.
 - **Recommended spot** for your level, with dangerous zones flagged.
 - **Learns while you play**: every meat, hide or fish you loot is saved with its exact position and source mob. The map gets more precise over time, and items that aren't in the database are added automatically.
@@ -43,7 +43,7 @@ Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the
 | `/farm pins` | Toggle world map pins |
 | `/farm learn` | Toggle learning from loot |
 | `/farm minimap` | Toggle the minimap button |
-| `/farm lang en` / `/farm lang hu` | Interface language |
+| `/farm lang en` / `hu` / `fr` / `de` / `es` | Interface language |
 | `/farm goals` | Show or hide the farm goals window |
 
 - **Click** a result to see its details. **Right-click** a result to track or untrack it.
