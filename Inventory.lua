@@ -36,6 +36,10 @@ function ns:KeyForLink(link)
     local itemID = tonumber(link:match("item:(%d+)"))
     if not itemID then return end
     local name = link:match("%[(.-)%]")
+    -- a cooked item in your bags teaches FarmAtlas what its recipe makes
+    if name and ns.IsRecipeName and ns.db and not (ns.db.recipeOut and ns.db.recipeOut[name]) and ns:IsRecipeName(name) then
+        ns:SetRecipeItem(name, itemID)
+    end
     if ns.Items[itemID] then return itemID end
     local key = name and ns.ItemsByName[string.lower(name)]
     if key ~= nil then

@@ -51,6 +51,14 @@ local function AddItemLines(tooltip)
     if not tooltip.GetItem then return end
     local _, link = tooltip:GetItem()
     link = ns.Plain(link)
+    -- a cooked item you see teaches FarmAtlas what its recipe makes
+    if link and ns.IsRecipeName then
+        local nm = link:match("%[(.-)%]")
+        local id = tonumber(link:match("item:(%d+)"))
+        if nm and id and ns:IsRecipeName(nm) and not (ns.db.recipeOut and ns.db.recipeOut[nm]) then
+            ns:SetRecipeItem(nm, id)
+        end
+    end
     local key = link and ns:KeyForLink(link)
     if key == nil then return end
     local L = ns.L

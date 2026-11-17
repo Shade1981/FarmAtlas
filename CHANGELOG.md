@@ -8,6 +8,7 @@
 - Auction house prices (optional: Auctionator / TSM / AHSnipe) on item and mob tooltips, last known price as fallback
 - Farm / hour on tooltips (value looted in the last 60 minutes) and the value of what you own (bags, bank, alts)
 - Settings window: gear button in the atlas header or /farm config
+- Recipes tab: unknown recipes get a red veil; hover shows the item's own tooltip (what it does) once the item has been seen
 - Price addons can plug in with FarmAtlas_AddPriceSource()
 - New: "What's new" window after each update (/farm news)
 - Stability hardening against the new client restrictions (minimap, sync, recipe scanning)

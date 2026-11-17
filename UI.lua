@@ -446,6 +446,13 @@ function UI:GetRow(i)
     row.sub:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 10, 1)
     row.sub:SetPoint("RIGHT", -26, 0)
 
+    -- red veil for recipes you don't know yet (like an item you can't use)
+    row.veil = row:CreateTexture(nil, "OVERLAY", nil, 2)
+    row.veil:SetTexture(WHITE)
+    row.veil:SetAllPoints()
+    row.veil:SetVertexColor(0.75, 0.08, 0.08, 0.22)
+    row.veil:Hide()
+
     row.dot = row:CreateTexture(nil, "OVERLAY")
     row.dot:SetSize(8, 8)
     row.dot:SetPoint("RIGHT", -10, 0)
@@ -475,7 +482,15 @@ function UI:GetRow(i)
         if self.guide then UI:GuideTooltip(self.guide) return end
         local rc = self.recipe
         if rc then
-            GameTooltip:AddLine(rc.name, 1, 0.82, 0)
+            -- what it makes: the game's own item tooltip, when FarmAtlas knows the item
+            local made = ns:RecipeItemID(rc.name)
+            if made then
+                GameTooltip:SetHyperlink("item:" .. made)
+                GameTooltip:AddLine(" ")
+            else
+                GameTooltip:AddLine(rc.name, 1, 0.82, 0)
+                GameTooltip:AddLine(L("rc_effect_unknown"), 0.6, 0.6, 0.6, true)
+            end
             GameTooltip:AddLine(rc.known and L("rc_known") or L("rc_unknown"),
                 rc.known and 0.3 or 1, rc.known and 0.9 or 0.4, rc.known and 0.35 or 0.4)
             GameTooltip:AddLine(" ")
@@ -606,6 +621,9 @@ function UI:RefreshList(keepResults)
 
     for i = 1, math.max(visible, #self.rows) do
         local row = self:GetRow(i)
+        row.veil:Hide()
+        row.icon.icon:SetDesaturated(false)
+        row.icon.icon:SetVertexColor(1, 1, 1)
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", 6, -6 - top - (i - 1) * ROW_H)
         row:SetPoint("TOPRIGHT", -9, -6 - top - (i - 1) * ROW_H)
@@ -621,7 +639,7 @@ function UI:RefreshList(keepResults)
             row.recipe = rc
             row.itemID = rc.mainKey
             row.icon.icon:SetTexture(rc.mainKey ~= nil and ns:GetItemIcon(rc.mainKey) or "Interface\\Icons\\INV_Scroll_03")
-            local col = rc.known and "|cff66e070" or "|cff8c96a8"
+            local col = rc.known and "|cff66e070" or "|cffd08080"
             row.name:SetText(col .. rc.name .. "|r")
             local parts = {}
             for _, r in ipairs(rc.reagents) do
@@ -635,7 +653,10 @@ function UI:RefreshList(keepResults)
             elseif rc.craft then lead = "|cffffaa44" .. L("rc_craft0") .. "|r" end
             row.sub:SetText((lead and (lead .. "  ·  ") or "") .. table.concat(parts, ", "))
             if row.itemID ~= nil then self:StyleRow(row) else row:SetBackdropColor(unpack(C.panel)); row.dot:Hide() end
-            row.strip:SetVertexColor(rc.known and 0.3 or 0.55, rc.known and 0.9 or 0.6, rc.known and 0.35 or 0.66, 0.8)
+            row.strip:SetVertexColor(rc.known and 0.3 or 0.85, rc.known and 0.9 or 0.2, rc.known and 0.35 or 0.2, 0.8)
+            row.veil:SetShown(not rc.known)
+            row.icon.icon:SetDesaturated(not rc.known)
+            if rc.known then row.icon.icon:SetVertexColor(1, 1, 1) else row.icon.icon:SetVertexColor(1, 0.45, 0.45) end
             row:Show()
         elseif id then
             row.recipe = nil

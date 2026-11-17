@@ -120,6 +120,9 @@ local function ScanTradeSkillModern(isRetry)
                 end
                 if next(reagents) then ns.db.recipeReagents[info.name] = reagents end
             end
+            -- what the recipe makes (for tooltips of recipes you don't know on other characters)
+            local out = schem and ns.Plain(schem.outputItemID)
+            if type(out) == "number" and out > 0 then ns:SetRecipeItem(info.name, out) end
         end
     end
     c.recipesScanned = time()
@@ -273,6 +276,39 @@ function ns:RecipesForItem(key)
 end
 
 -- Known by this character? and which other characters know it
+-- recipe name -> the item it makes. Learned from your Cooking window and from
+-- any item you see (bags, AH, chat links) whose name is a recipe's name.
+function ns:SetRecipeItem(recipe, itemID)
+    if not (self.db and recipe and itemID) then return end
+    self.db.recipeOut = self.db.recipeOut or {}
+    self.db.recipeOut[recipe] = itemID
+end
+
+local recipeNames
+function ns:IsRecipeName(name)
+    if not recipeNames then
+        recipeNames = {}
+        for n in pairs(self.Recipes or {}) do recipeNames[n] = true end
+        for _, data in pairs(self.Items or {}) do
+            for _, n in ipairs(data.uses or {}) do recipeNames[n] = true end
+        end
+    end
+    if recipeNames[name] then return true end
+    local rr = self.db and self.db.recipeReagents
+    return rr and rr[name] ~= nil or false
+end
+
+function ns:RecipeItemID(recipe)
+    local id = self.db and self.db.recipeOut and self.db.recipeOut[recipe]
+    if id then return id end
+    -- the client may already know the item by name (it was seen this session)
+    local ok, _, link = pcall(ns.GetItemInfo, recipe)
+    link = ok and ns.Plain(link)
+    local found = type(link) == "string" and tonumber(link:match("item:(%d+)"))
+    if found then self:SetRecipeItem(recipe, found) end
+    return found
+end
+
 function ns:RecipeKnown(recipe)
     local me = self:CharKey()
     local mine, alts = false, {}
