@@ -5,6 +5,27 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.2.1", date = "2026-11-17",
+      en = {
+        "The minimap button no longer disappears when two minimap addons are used together (e.g. a button collector bar plus a minimap skin that groups buttons): FarmAtlas makes sure it shows in the collector bar.",
+        "FarmAtlas is also in the game's addon menu next to the minimap: always reachable, even if another addon hides the button.",
+      },
+      hu = {
+        "A minimap gomb nem tűnik el, ha két minimap addon fut együtt (pl. egy gombgyűjtő sáv és egy gombokat csoportosító minimap skin): a FarmAtlas gondoskodik róla, hogy a gyűjtő sávban látszódjon.",
+        "A FarmAtlas a játék minimap melletti addon menüjében is megjelenik: mindig elérhető, akkor is, ha egy másik addon elrejti a gombot.",
+      },
+      fr = {
+        "Le bouton de la minicarte ne disparaît plus quand deux addons de minicarte sont utilisés ensemble (une barre qui regroupe les boutons et un skin de minicarte qui les range) : FarmAtlas s'assure qu'il apparaît dans la barre.",
+        "FarmAtlas est aussi dans le menu des addons du jeu à côté de la minicarte : toujours accessible, même si un autre addon cache le bouton.",
+      },
+      de = {
+        "Der Minikarten-Knopf verschwindet nicht mehr, wenn zwei Minikarten-Addons zusammen laufen (eine Knopf-Sammelleiste und ein Minikarten-Skin, der Knöpfe gruppiert): FarmAtlas sorgt dafür, dass er in der Sammelleiste erscheint.",
+        "FarmAtlas steht auch im Addon-Menü des Spiels neben der Minikarte: immer erreichbar, auch wenn ein anderes Addon den Knopf versteckt.",
+      },
+      es = {
+        "El botón del minimapa ya no desaparece cuando se usan dos addons de minimapa a la vez (una barra que recoge botones y un skin de minimapa que los agrupa): FarmAtlas se asegura de que aparezca en la barra.",
+        "FarmAtlas también está en el menú de addons del juego junto al minimapa: siempre accesible, aunque otro addon oculte el botón.",
+      } },
     { v = "1.2.0", date = "2026-11-17",
       en = {
         "New: French, German and Spanish interface (Language in the settings, or /farm lang fr|de|es). On a French, German or Spanish game client it starts in that language, and item, recipe and zone names are shown the way your game names them (the English names still work in the search).",

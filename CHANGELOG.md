@@ -1,3 +1,8 @@
+# FarmAtlas 1.2.1
+
+- Fixed: the minimap button could disappear when a minimap button collector (e.g. OneForAll) and a minimap skin that groups buttons (e.g. EllesmereUI Minimap) were used together; FarmAtlas now makes sure it shows in the collector bar
+- New: FarmAtlas in the game's addon compartment menu next to the minimap (left-click: open, Shift: goals, right-click: map pins)
+
 # FarmAtlas 1.2.0
 
 - New: French, German and Spanish interface (header language menu, settings, /farm lang fr|de|es); starts in the game client's language. On non-English clients item, recipe and zone names follow the game, and recipes are recognised by the item they make
