@@ -23,7 +23,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - **Click a recipe** to open your profession window on it, or see where to learn it.
 - **French, German and Spanish** interface.
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/guide-list.png" alt="Cooking, Fishing and Skinning leveling guides" /></p>
+![Cooking, Fishing and Skinning leveling guides](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/guide-list.png)
 
 
 
@@ -39,7 +39,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - Materials are listed in **leveling order**, with the level or fishing skill on every row.
 - **On me** filter: only what is in your bags.
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/fish-list.png" alt="Materials in leveling order with level and fishing skill" /></p>
+![Materials in leveling order with level and fishing skill](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/fish-list.png)
 
 
 
@@ -51,7 +51,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - **Minimap**: the area when it is close, an edge icon pointing the way when it is far, and a colored glow when you are standing inside it.
 - Areas take the **real shape** of the spot once enough loot is recorded (yours, your group's and the community's).
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/map-tooltip.jpg" alt="Farm areas and drop chances on the world map" /></p>
+![Farm areas and drop chances on the world map](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/map-tooltip.jpg)
 
 
 
@@ -67,11 +67,11 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - **Craftable now** filter: only the recipes you have every ingredient for.
 - Reads your Cooking window automatically - no buttons.
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/recipe-list.png" alt="All WoW Forever cooking recipes" /></p>
+![All WoW Forever cooking recipes](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/recipe-list.png)
 
 
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/recipe-popup.png" alt="Where to learn a recipe you do not know yet" /></p>
+![Where to learn a recipe you do not know yet](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/recipe-popup.png)
 
 
 
@@ -101,7 +101,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 **Languages**
 - English, Hungarian, French, German and Spanish interface. On a French, German or Spanish game client FarmAtlas starts in that language, and item, recipe and zone names are shown the way your game names them (English names work in the search too).
 
-<p><img src="https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/lang-menu.png" alt="Five interface languages" /></p>
+![Five interface languages](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/lang-menu.png)
 
 
 
