@@ -55,6 +55,8 @@ local function AddItemLines(tooltip)
     tooltip:AddLine(" ")
     tooltip:AddLine("|cff3fc7ebFarm|r|cffffd200Atlas|r")
     tooltip:AddLine(L("tt_have", bags, bank, alts), 1, 1, 1)
+    local ahPrice, ahSource = ns:GetAHPrice(key)
+    if ahPrice then tooltip:AddLine(L("ah_price", ns:Money(ahPrice), ahSource), 1, 0.82, 0) end
     local goal = ns:GetGoal(key)
     if goal then
         local have = ns:GoalHave(key)

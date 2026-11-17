@@ -1,12 +1,5 @@
 # FarmAtlas
 
-![FarmAtlas](media/01-atlas.png)
-
-**Find where to farm every cooking meat, leather, scale and fish - right on your world map and minimap.** Made for **WoW Forever**.
-
-Download: [CurseForge](https://www.curseforge.com/wow/addons/farmatlas)
-
-
 **Find where to farm any cooking meat, leather, scale or fish - right on your world map.**
 
 Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the farm areas light up on your world map with the item's icon, mob names and level ranges.
@@ -31,6 +24,9 @@ Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the
 - **Automatic sharing (no buttons)**: discoveries are shared in the background with party, raid and guild members who also run FarmAtlas, through Blizzard's hidden addon message channel (like GatherMate2). Only absolute counts are sent, so nothing is ever counted twice. `/farm sync` and `/farm guildsync` switch it off.
 - **Community data**: every release ships `Data\Community.lua`, merged from players' SavedVariables with `tools/merge_community.py`.
 - **Mob tooltips**: hovering a mob shows what farmable materials it drops.
+- **Leveling guides** (Guide tab): Cooking, Fishing and Skinning 1-300 for WoW Forever. Your current step is highlighted, steps and trainers are filtered to your faction, and a click shows the trainer, zone or farm spot on the map. Exact trainer spots are recorded the first time you open their window.
+- **Auction house prices** (optional): if Auctionator or TSM is installed, item tooltips and cards show the AH price and the value of 100 kills from real drop rates. Other addons can add a price source with `FarmAtlas_AddPriceSource(name, function(itemID) return copper end)`.
+- **What's new window** after every update (`/farm news` opens it again).
 - Map button, minimap button, slash commands.
 
 ## Usage

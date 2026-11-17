@@ -430,6 +430,7 @@ function UI:GetRow(i)
 
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row:SetScript("OnClick", function(self, button)
+        if self.guide then UI:GuideClick(self.guide) return end
         if not self.itemID then return end
         if IsControlKeyDown() then
             local g = ns:GetGoal(self.itemID)
@@ -444,6 +445,7 @@ function UI:GetRow(i)
     row:SetScript("OnEnter", function(self)
         if UI.selected ~= self.itemID or not self.itemID then self:SetBackdropColor(unpack(C.hover)) end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        if self.guide then UI:GuideTooltip(self.guide) return end
         local rc = self.recipe
         if rc then
             GameTooltip:AddLine(rc.name, 1, 0.82, 0)
@@ -499,6 +501,7 @@ function UI:GetRow(i)
     end)
     row:SetScript("OnLeave", function(self)
         GameTooltip:Hide()
+        if self.guide then UI:FillGuideRow(self, self.guide) return end
         UI:StyleRow(self)
     end)
     self.rows[i] = row
@@ -544,8 +547,15 @@ end
 function UI:RefreshList(keepResults)
     if not self.frame then return end
     local recipeMode = self.cat == "recipes"
+    local guideMode = self.cat == "guide"
     if not keepResults or not self.results then
-        if recipeMode then
+        if guideMode then
+            self.results = ns:GuideRows(self.search:GetText())
+            -- jump to where you are: the first current step, with a little context above
+            for i, r in ipairs(self.results) do
+                if r.first then self.scroll = math.max(0, i - 3); break end
+            end
+        elseif recipeMode then
             self.results = ns:SearchRecipes(self.search:GetText())
         else
             self.results = ns:Search(self.search:GetText(), self.cat)
@@ -560,7 +570,13 @@ function UI:RefreshList(keepResults)
     for i = 1, math.max(visible, #self.rows) do
         local row = self:GetRow(i)
         local id = (i <= visible) and results[i + self.scroll]
-        if id and recipeMode then
+        row.guide = nil
+        if id and guideMode then
+            row.recipe = nil
+            row.itemID = nil
+            self:FillGuideRow(row, id)
+            row:Show()
+        elseif id and recipeMode then
             local rc = id
             row.recipe = rc
             row.itemID = rc.mainKey
@@ -610,13 +626,168 @@ function UI:RefreshList(keepResults)
         thumb:Hide()
     end
 
-    if recipeMode then
+    if guideMode then
+        self.list.empty:SetText(L("g_empty"))
+    elseif recipeMode then
         self.list.empty:SetText(L("rc_empty"))
     else
         self.list.empty:SetText(L("empty"))
     end
     self.list.empty:SetShown(#results == 0)
-    self.count:SetText(#results == 1 and L("result1") or L("results", #results))
+    local n = #results
+    if guideMode then
+        n = 0
+        for _, r in ipairs(results) do if r.kind == "step" then n = n + 1 end end
+    end
+    self.count:SetText(n == 1 and L("result1") or L("results", n))
+end
+
+------------------------------------------------------------------------
+-- Guide rows
+------------------------------------------------------------------------
+local BOOK_ICON = "Interface\\Icons\\INV_Misc_Book_09"
+
+local function GuideTitle(r)
+    local s = r.step
+    local range = s.from and (s.from .. "-" .. s.to) or tostring(s.at or "")
+    if s.kind == "craft" then return range .. "  " .. s.recipe end
+    if s.kind == "area" then
+        local z = s.zones[1] .. ((#s.zones > 1) and (" +" .. (#s.zones - 1)) or "")
+        return range .. "  " .. z
+    end
+    return range .. "  " .. L("g_train", s.rank or "")
+end
+
+local function GuideSub(r)
+    local s = r.step
+    if s.kind == "craft" then
+        local t = s.item .. (s.extra and (" + " .. s.extra) or "")
+        if s.count then t = t .. "  ·  " .. L("g_crafts", s.count) end
+        return t
+    elseif s.kind == "area" then
+        return s.mobs or ns.GuideNote(s) or table.concat(s.zones, ", ")
+    elseif s.kind == "special" then
+        local names = {}
+        local list = ns:GuideTrainers(r.prof, s.npcs)
+        for _, t in ipairs(list) do names[#names + 1] = t.npc .. " (" .. t.zone .. ")" end
+        return table.concat(names, ", ")
+    end
+    return L("g_any_trainer")
+end
+
+function UI:FillGuideRow(row, r)
+    row.guide = r
+    row.dot:Hide()
+    local cc = ns.CAT_COLORS[r.prof] or ns.CAT_COLORS.learned
+    if r.kind == "header" then
+        row:SetBackdropColor(unpack(C.card))
+        row.icon.icon:SetTexture(r.icon)
+        local skill = r.skill and ("|cff8c96a8(" .. L("g_skill", r.skill) .. ")|r") or ("|cff8c96a8(" .. L("g_noprof") .. ")|r")
+        row.name:SetText(("|cff%02x%02x%02x%s|r  %s"):format(math.floor(cc[1] * 255), math.floor(cc[2] * 255), math.floor(cc[3] * 255), string.upper(L("cat_" .. r.prof)), skill))
+        row.sub:SetText("")
+        row.strip:SetVertexColor(cc[1], cc[2], cc[3], 1)
+        return
+    end
+    local s = r.step
+    row:SetBackdropColor(unpack(r.current and { 0.07, 0.16, 0.09, 1 } or C.panel))
+    local icon
+    if s.kind == "craft" then
+        local key = s.item and ns.ItemsByName[s.item:lower()]
+        icon = key ~= nil and ns:GetItemIcon(key) or nil
+    elseif s.kind == "train" or s.kind == "special" then
+        icon = BOOK_ICON
+    end
+    row.icon.icon:SetTexture(icon or (ns.Guides[r.prof] and ns.Guides[r.prof].icon) or BOOK_ICON)
+    local col = r.current and "|cff66e070" or (r.done and "|cff6c7480" or "|cffe8ecf2")
+    row.name:SetText(col .. GuideTitle(r) .. "|r")
+    local sub = GuideSub(r) or ""
+    if r.current then sub = "|cff66e070> " .. L("g_here") .. "|r  ·  " .. sub end
+    if s.faction then sub = sub .. "  |cff8c96a8[" .. (s.faction == "A" and "Alliance" or "Horde") .. "]|r" end
+    row.sub:SetText(sub)
+    row.strip:SetVertexColor(cc[1], cc[2], cc[3], r.current and 1 or 0.35)
+end
+
+function UI:GuideTooltip(r)
+    if r.kind == "header" then
+        GameTooltip:AddLine(L("cat_" .. r.prof), 1, 0.82, 0)
+        GameTooltip:AddLine(r.skill and L("g_skill", r.skill) or L("g_noprof"), 0.8, 0.8, 0.8)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L("g_trainers"), 1, 0.82, 0)
+        local list = ns:GuideTrainers(r.prof)
+        for i = 1, math.min(6, #list) do
+            local t = list[i]
+            local loc = t.zone .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
+            GameTooltip:AddDoubleLine(t.npc, t.learned and L("g_exact") or "", 1, 1, 1, 0.8, 0.55, 1)
+            GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
+        end
+        if #list > 6 then GameTooltip:AddLine(L("more", #list - 6), 0.55, 0.59, 0.66) end
+        GameTooltip:Show()
+        return
+    end
+    local s = r.step
+    GameTooltip:AddLine(GuideTitle(r), 1, 0.82, 0)
+    local note = ns.GuideNote(s)
+    if s.kind == "craft" then
+        GameTooltip:AddLine(L("g_mats"), 1, 0.82, 0)
+        GameTooltip:AddLine("   " .. s.item .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
+        if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
+        local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L("rc_where"), 1, 0.82, 0)
+        if srcType == "faction" then
+            GameTooltip:AddLine(L("src_enemy"), 1, 0.5, 0.25, true)
+        elseif srcType == "trainer" and #sources == 0 then
+            GameTooltip:AddLine(L("g_any_trainer"), 0.8, 0.8, 0.8)
+        elseif #sources == 0 then
+            GameTooltip:AddLine(srcNote or L("src_unknown"), 0.7, 0.7, 0.7, true)
+        end
+        for i = 1, math.min(4, #sources) do
+            local src = sources[i]
+            local loc = (src.zone or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
+            if src.note then loc = loc .. " (" .. src.note .. ")" end
+            if src.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
+            GameTooltip:AddDoubleLine(src.npc or "?", src.price or "", 1, 1, 1, 1, 0.82, 0)
+            GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
+        end
+        if #sources > 4 then GameTooltip:AddLine(L("more", #sources - 4), 0.55, 0.59, 0.66) end
+    elseif s.kind == "area" then
+        GameTooltip:AddLine(L("g_zones"), 1, 0.82, 0)
+        GameTooltip:AddLine("   " .. table.concat(s.zones, ", "), 1, 1, 1, true)
+        if s.mobs then
+            GameTooltip:AddLine(L("g_mobs"), 1, 0.82, 0)
+            GameTooltip:AddLine("   " .. s.mobs, 1, 1, 1, true)
+        end
+    else
+        GameTooltip:AddLine(s.kind == "special" and L("g_npcs") or L("g_trainers"), 1, 0.82, 0)
+        local list = ns:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
+        for i = 1, math.min(6, #list) do
+            local t = list[i]
+            local loc = t.zone .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
+            if t.faction == "N" then loc = loc .. " [" .. L("src_neutral") .. "]" end
+            GameTooltip:AddDoubleLine(t.npc, t.learned and L("g_exact") or "", 1, 1, 1, 0.8, 0.55, 1)
+            GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
+        end
+        if #list > 6 then GameTooltip:AddLine(L("more", #list - 6), 0.55, 0.59, 0.66) end
+    end
+    if note then
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(note, 0.6, 0.85, 1, true)
+    end
+    local action, arg = ns:GuideAction(r)
+    if action then
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(action == "item" and L("g_click_item", r.step.item) or L("g_click_map"), 0.8, 0.8, 0.8)
+    end
+    GameTooltip:Show()
+end
+
+function UI:GuideClick(r)
+    local action, arg = ns:GuideAction(r)
+    if action == "item" then
+        self:Select(arg)
+    elseif action == "point" then
+        ns:ShowPoint(arg)
+    end
 end
 
 function UI:RefreshChips()
@@ -826,6 +997,10 @@ function UI:RefreshDetail()
     if data and data.unverified then
         d.badge:SetText(d.badge:GetText() .. "  |cffff9933" .. L("unverified") .. "|r")
     end
+    local ahPrice, ahSource = ns:GetAHPrice(id)
+    if ahPrice then
+        d.badge:SetText(d.badge:GetText() .. "  |cffffd200" .. L("ah_price", ns:Money(ahPrice), ahSource) .. "|r")
+    end
 
     local tracked = ns:IsTracked(id)
     d.track:SetActive(tracked)
@@ -984,7 +1159,10 @@ function UI:RefreshDetail()
             local m = mobs[i]
             local label = m.name .. (m.lvl and (" (" .. m.lvl .. ")") or "")
             if m.rate then
-                mobNames[#mobNames + 1] = L("drop_rate", label, math.floor(m.rate * 100 + 0.5), m.n, m.kills)
+                local txt = L("drop_rate", label, math.floor(m.rate * 100 + 0.5), m.n, m.kills)
+                local v = ns:ValuePer100(id, m.rate)
+                if v then txt = txt .. " |cffffd200" .. L("per100", ns:Money(v)) .. "|r" end
+                mobNames[#mobNames + 1] = txt
             else
                 mobNames[#mobNames + 1] = L("drop_count", label, m.n)
             end

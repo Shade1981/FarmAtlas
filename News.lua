@@ -5,12 +5,20 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
-    { v = "1.1.2", date = "2026-11-16",
+    { v = "1.2.0", date = "2026-11-17",
       en = {
+        "New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever. It shows where you are now, what to make or where to go next, and the trainers of your faction.",
+        "Trainers: click a step to see it on the map. The first time you open a trainer's window FarmAtlas records the exact spot.",
+        "New: auction house prices from Auctionator or TSM (optional) on item tooltips and cards, plus the value of 100 kills from real drop rates.",
+        "Other price addons can plug in with FarmAtlas_AddPriceSource().",
         "New: this \"What's new\" window - after every update you see the changes once.",
         "Stability: tooltips, minimap pins, loot learning, kill counting, recipe scanning and sync are protected against the new client restrictions (no more Lua error popups in combat or instances).",
       },
       hu = {
+        "Új: Útmutató fül - Főzés, Horgászat és Nyúzás 1-300 WoW Foreverre. Megmutatja, hol tartasz, mit készíts vagy hova menj, és a frakciód trénereit.",
+        "Trénerek: egy lépésre kattintva a térképen látod. Amikor először megnyitod egy tréner ablakát, a FarmAtlas felírja a pontos helyét.",
+        "Új: aukciósházi árak az Auctionatorból vagy a TSM-ből (nem kötelező) a tárgy-tooltipeken és kártyákon, plusz 100 ölés értéke a valódi drop-arányból.",
+        "Más ár-addonok is bekapcsolódhatnak a FarmAtlas_AddPriceSource() függvénnyel.",
         "Új: ez a frissítési ablak - minden frissítés után egyszer megmutatja az újdonságokat.",
         "Stabilitás: a tooltip, a minimap-jelölők, a loot-tanulás, a kill-számlálás, a recept-figyelés és a szinkron védett az új kliens korlátozásaival szemben (nincs több Lua-hibaablak harcban vagy instance-ban).",
       } },

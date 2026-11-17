@@ -1,0 +1,141 @@
+-- FarmAtlas - leveling guide logic (data in Data/Guides.lua)
+local _, ns = ...
+local L = ns.L
+
+local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning" }
+
+local function MyFaction()
+    local f = UnitFactionGroup and UnitFactionGroup("player")
+    if f == "Alliance" then return "A" elseif f == "Horde" then return "H" end
+end
+
+local function FactionOK(fac, mine)
+    return not fac or fac == "N" or not mine or fac == mine
+end
+
+-- Current skill in a profession, nil if not learned (or unknown).
+function ns:ProfSkill(prof)
+    local want = PROF_NAMES[prof]
+    if not want then return nil end
+    local ok, a, b, c, d, e, f = pcall(function() if GetProfessions then return GetProfessions() end end)
+    if ok and GetProfessionInfo then
+        for _, idx in ipairs({ a, b, c, d, e, f }) do
+            if idx then
+                local ok2, name, _, rank = pcall(GetProfessionInfo, idx)
+                if ok2 and name == want and type(rank) == "number" then return rank end
+            end
+        end
+    end
+    -- older skill-line API
+    if GetNumSkillLines and GetSkillLineInfo then
+        for i = 1, GetNumSkillLines() do
+            local ok3, name, header, _, rank = pcall(GetSkillLineInfo, i)
+            if ok3 and not header and name == want and type(rank) == "number" then return rank end
+        end
+    end
+    return nil
+end
+
+-- Remember where a trainer stands the first time their window is opened.
+function ns:RecordTrainerPos(npc, mapID, x, y)
+    if not (npc and mapID and x and y and self.db) then return end
+    self.db.trainerPos = self.db.trainerPos or {}
+    self.db.trainerPos[npc] = { mapID = mapID, x = x, y = y }
+end
+
+-- Trainers for a profession, filtered to your faction (neutral = both),
+-- with coordinates where known. Your current zone first.
+function ns:GuideTrainers(prof, list)
+    local g = self.Guides[prof]
+    if not g then return {} end
+    local mine = MyFaction()
+    local src = list or (g.trainers == "cooking" and self.Trainers or g.trainers) or {}
+    local cur
+    if C_Map and C_Map.GetBestMapForUnit then
+        local m = C_Map.GetBestMapForUnit("player")
+        local mi = m and C_Map.GetMapInfo(m)
+        cur = mi and mi.name
+    end
+    local out = {}
+    for pass = 1, 2 do
+        for _, t in ipairs(src) do
+            local here = (t.zone == cur)
+            if FactionOK(t.faction, mine) and ((pass == 1) == here) then
+                local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction }
+                local learned = self.db and self.db.trainerPos and self.db.trainerPos[t.npc]
+                if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
+                out[#out + 1] = e
+            end
+        end
+    end
+    return out
+end
+
+local function Note(step)
+    local n = step.note
+    if type(n) == "table" then return n[ns:Lang()] or n.en end
+    return n
+end
+ns.GuideNote = Note
+
+-- Rows for the guide tab: a header per profession, then its steps.
+-- query filters by profession / recipe / material / zone / mob text.
+function ns:GuideRows(query)
+    query = query and query:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
+    local mine = MyFaction()
+    local rows = {}
+    for _, prof in ipairs(self.GUIDE_ORDER) do
+        local g = self.Guides[prof]
+        local skill = self:ProfSkill(prof)
+        local profName = L("cat_" .. prof)
+        local steps = {}
+        local currentMarked = false
+        for _, s in ipairs(g.steps) do
+            if FactionOK(s.faction, mine) then
+                local hay = table.concat({ prof, profName, s.recipe or "", s.item or "", s.extra or "", s.mobs or "",
+                    s.rank or "", table.concat(s.zones or {}, " "), Note(s) or "" }, " "):lower()
+                if query == "" or hay:find(query, 1, true) then
+                    local r = { kind = "step", prof = prof, step = s, skill = skill }
+                    local lo = s.from or s.at or 0
+                    local hi = s.to or s.at or 0
+                    if skill then
+                        if s.kind == "train" or s.kind == "special" then
+                            r.done = skill > (s.at or 0) + 25
+                            r.current = not r.done and skill >= (s.at or 0) - 0 and skill < (s.at or 0) + 25
+                        else
+                            r.done = skill >= hi
+                            r.current = skill >= lo and skill < hi
+                        end
+                    end
+                    if r.current and s.kind ~= "train" and s.kind ~= "special" then
+                        r.first = not currentMarked
+                        currentMarked = true
+                    end
+                    steps[#steps + 1] = r
+                end
+            end
+        end
+        if #steps > 0 then
+            rows[#rows + 1] = { kind = "header", prof = prof, skill = skill, icon = g.icon }
+            for _, r in ipairs(steps) do rows[#rows + 1] = r end
+        end
+    end
+    return rows
+end
+
+-- Where clicking a step should take you.
+function ns:GuideAction(r)
+    local s = r.step
+    if not s then return end
+    if s.kind == "craft" then
+        local key = s.item and self.ItemsByName[s.item:lower()]
+        if key ~= nil then return "item", key end
+        return nil
+    elseif s.kind == "area" then
+        return "point", { zone = s.zones and s.zones[1], label = L("cat_" .. r.prof) .. " " .. (s.from or "") .. "-" .. (s.to or "") }
+    else
+        local list = self:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
+        local t = list[1]
+        if t then return "point", { zone = t.zone, mapID = t.mapID, x = t.x, y = t.y, label = t.npc, sub = t.note } end
+    end
+end

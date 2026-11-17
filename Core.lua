@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.1.2"
+ns.version = "1.2.0"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -15,6 +15,7 @@ ns.CATEGORIES = {
     { key = "skinning", icon = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01" },
     { key = "fishing",  icon = "Interface\\Icons\\Trade_Fishing" },
     { key = "recipes",  icon = "Interface\\Icons\\INV_Scroll_03" },
+    { key = "guide",    icon = "Interface\\Icons\\INV_Misc_Book_09" },
     { key = "tracked",  icon = "Interface\\Icons\\Ability_Hunter_Pathfinding" },
 }
 
@@ -195,7 +196,11 @@ function ns:ResolveZoneName(name)
         if z.name == name then return self:ResolveZone(key) end
     end
     if not nameToMapID then BuildNameIndex() end
-    return nameToMapID[name]
+    if nameToMapID[name] then return nameToMapID[name] end
+    -- capitals: classic uiMapIDs as a fallback when the map index misses them
+    local CAPITALS = { ["Stormwind City"] = 1453, ["Orgrimmar"] = 1454, ["Ironforge"] = 1455,
+        ["Thunder Bluff"] = 1456, ["Darnassus"] = 1457, ["Undercity"] = 1458 }
+    return CAPITALS[name]
 end
 
 -- Show a single point (vendor, trainer...) on the world map

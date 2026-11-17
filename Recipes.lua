@@ -169,6 +169,7 @@ local function ScanTrainer()
     if IsTradeskillTrainer and not IsTradeskillTrainer() then return end
     local npc = ns.Plain(UnitName("npc"))
     local mapID, x, y = PlayerPos()
+    if ns.RecordTrainerPos then ns:RecordTrainerPos(npc, mapID, x, y) end
     for i = 1, GetNumTrainerServices() do
         local name, _, category = GetTrainerServiceInfo(i)
         if name and category ~= "header" then

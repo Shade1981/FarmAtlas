@@ -1,7 +1,11 @@
-# FarmAtlas 1.1.2
+# FarmAtlas 1.2.0
 
-- Hardening for the new client restrictions: minimap pins, addon sync and recipe scanning can no longer show Lua error popups in instances or combat
-- Minimap facing value is checked before use
+- New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever, faction-aware, with your current step highlighted
+- Trainers on the map; exact trainer spots are recorded the first time you open their window
+- Auction house prices (optional: Auctionator / TSM) on item tooltips and cards, value of 100 kills from real drop rates
+- Price addons can plug in with FarmAtlas_AddPriceSource()
+- New: "What's new" window after each update (/farm news)
+- Stability hardening against the new client restrictions (minimap, sync, recipe scanning)
 
 # FarmAtlas 1.1.1
 
