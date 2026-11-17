@@ -5,7 +5,7 @@ local L = ns.L
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local ROW_H = 46
-local WIDTH = 300
+local WIDTH = 330
 
 local Goals = {}
 ns.Goals = Goals
@@ -155,7 +155,7 @@ function Goals:GetRow(i)
 
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 8, 1)
-    row.name:SetPoint("RIGHT", -84, 0)
+    row.name:SetPoint("RIGHT", -74, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
 
@@ -163,7 +163,7 @@ function Goals:GetRow(i)
     row.bar:SetStatusBarTexture(WHITE)
     row.bar:SetHeight(8)
     row.bar:SetPoint("TOPLEFT", row.name, "BOTTOMLEFT", 0, -4)
-    row.bar:SetPoint("RIGHT", -84, 0)
+    row.bar:SetPoint("RIGHT", -140, 0)
     row.bar:SetMinMaxValues(0, 1)
     row.bar.bg = row.bar:CreateTexture(nil, "BACKGROUND")
     row.bar.bg:SetTexture(WHITE)
@@ -172,17 +172,20 @@ function Goals:GetRow(i)
 
     row.sub = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     row.sub:SetPoint("TOPLEFT", row.bar, "BOTTOMLEFT", 0, -3)
-    row.sub:SetPoint("RIGHT", -84, 0)
+    row.sub:SetPoint("RIGHT", -74, 0)
     row.sub:SetJustifyH("LEFT")
     row.sub:SetWordWrap(false)
 
-    row.count = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    row.count:SetPoint("RIGHT", -52, 0)
+    -- "have / need" between the bar and the goal box (room for 4 + 4 digits)
+    row.count = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    row.count:SetPoint("LEFT", row.bar, "RIGHT", 6, 0)
+    row.count:SetPoint("RIGHT", row.bar, "RIGHT", 66, 0)
     row.count:SetJustifyH("RIGHT")
+    row.count:SetWordWrap(false)
 
     row.edit = CreateFrame("EditBox", nil, row, "BackdropTemplate")
-    row.edit:SetSize(34, 20)
-    row.edit:SetPoint("RIGHT", -22, 0)
+    row.edit:SetSize(42, 20)
+    row.edit:SetPoint("RIGHT", -24, 0)
     SetBG(row.edit, 0.078, 0.088, 0.108, 1)
     row.edit:SetFontObject(GameFontHighlightSmall)
     row.edit:SetJustifyH("CENTER")
@@ -275,7 +278,9 @@ function Goals:Refresh()
     for i = #list + 1, #self.rows do self.rows[i]:Hide(); self.rows[i].key = nil end
 
     f.hint:SetText(L("goals_hint"))
-    f:SetHeight(32 + #list * ROW_H + 30)
+    -- room for the hint however many lines it takes in this language
+    local hintH = math.max(14, math.floor((f.hint:GetStringHeight() or 14) + 0.5))
+    f:SetHeight(32 + #list * ROW_H + hintH + 16)
     f:Show()
 end
 
