@@ -14,7 +14,9 @@ local HISTORY = {
         "Town alert: when you arrive at a town, village or camp with a trainer of a profession you switched on, a banner names them and they are marked on the map and minimap. Move / resize the banner with /farm banner. Right after login you only get the marks.",
         "Every trainer of a profession on the world map: right-click the profession header in the Guide tab, or /farm trainers. Exact WoW Forever coordinates.",
         "Farm areas follow the real shape of the spots: once enough loot is recorded in a zone (yours, your group's, the community's), the circle is replaced by the area where the mobs and fish really are - on the world map and the minimap.",
-        "New: auction house prices from Auctionator or TSM (optional) on item tooltips and cards, plus the value of 100 kills from real drop rates.",
+        "New: auction house prices from Auctionator, TSM or AHSnipe (optional) on item and mob tooltips - the last known price when none of them is open.",
+        "Farm / hour on tooltips: what you really looted in the last 60 minutes and its value (N/A until the first loot), plus the value of what you own (bags, bank, alts).",
+        "New: Settings window - the gear button in the atlas header or /farm config. Every switch, grouped by topic.",
         "Other price addons can plug in with FarmAtlas_AddPriceSource().",
         "New: this \"What's new\" window - after every update you see the changes once.",
         "Stability: tooltips, minimap pins, loot learning, kill counting, recipe scanning and sync are protected against the new client restrictions (no more Lua error popups in combat or instances).",
@@ -27,7 +29,9 @@ local HISTORY = {
         "Település-jelzés: ha olyan városba, faluba vagy campbe érsz, ahol egy általad bekapcsolt szakma trénere van, egy felirat kiírja a nevüket, és megjelöli őket a térképen és a minimapen. A feliratot a /farm banner paranccsal mozgathatod és méretezheted. Belépés után csak a jelölés látszik.",
         "Egy szakma összes trénere a világtérképen: jobb klikk a szakma fejlécén az Útmutató fülön, vagy /farm trainers. Pontos WoW Forever koordináták.",
         "A farmterületek a valódi alakot követik: ha egy zónában elég loot gyűlt össze (a tiéd, a csapatodé, a közösségé), a kör helyett az a terület látszik, ahol a mobok és halak tényleg vannak - a világtérképen és a minimapen is.",
-        "Új: aukciósházi árak az Auctionatorból vagy a TSM-ből (nem kötelező) a tárgy-tooltipeken és kártyákon, plusz 100 ölés értéke a valódi drop-arányból.",
+        "Új: aukciósházi árak az Auctionatorból, TSM-ből vagy AHSnipe-ból (nem kötelező) a tárgyak és mobok tooltipjén - ha egyik sincs nyitva, az utolsó ismert ár.",
+        "Farm / óra a tooltipeken: amit az elmúlt 60 percben ténylegesen lootoltál, és mennyit ér (az első lootig N/A), plusz a birtokolt mennyiség értéke (táska, bank, altok).",
+        "Új: Beállítások ablak - fogaskerék gomb az atlasz fejlécében vagy /farm config. Minden kapcsoló, témák szerint csoportosítva.",
         "Más ár-addonok is bekapcsolódhatnak a FarmAtlas_AddPriceSource() függvénnyel.",
         "Új: ez a frissítési ablak - minden frissítés után egyszer megmutatja az újdonságokat.",
         "Stabilitás: a tooltip, a minimap-jelölők, a loot-tanulás, a kill-számlálás, a recept-figyelés és a szinkron védett az új kliens korlátozásaival szemben (nincs több Lua-hibaablak harcban vagy instance-ban).",
@@ -165,6 +169,7 @@ end
 -- once per new version, a few seconds after entering the world, never in combat
 local function MaybeShow()
     if not ns.db or ns.db.newsSeen == ns.version then return end
+    if ns.db.settings.newsPopup == false then ns.db.newsSeen = ns.version; return end
     if InCombatLockdown and InCombatLockdown() then
         local w = CreateFrame("Frame")
         w:RegisterEvent("PLAYER_REGEN_ENABLED")

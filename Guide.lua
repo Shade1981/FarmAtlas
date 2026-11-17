@@ -125,6 +125,7 @@ function ns:GuideCurrentTrainers()
     local now = GetTime and GetTime() or 0
     if curCache and now - curAt < 3 then return curCache end
     local out = {}
+    if self.db and self.db.settings.guideTrainers == false then curCache, curAt = out, now; return out end
     for _, prof in ipairs(self.GUIDE_ORDER) do
         local skill = self:ProfSkill(prof)
         if skill then
@@ -293,6 +294,7 @@ end
 function ns:GuideAreas()
     local out = {}
     if self.guideFocus then out[1] = self.guideFocus end
+    if self.db and self.db.settings.guideAreas == false then return out end
     for _, prof in ipairs(self.GUIDE_ORDER) do
         if self:ProfSkill(prof) then
             for _, r in ipairs(self:GuideRows("", prof)) do

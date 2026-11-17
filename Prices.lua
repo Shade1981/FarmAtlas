@@ -25,15 +25,107 @@ function FarmAtlas_AddPriceSource(name, fn)
     end
 end
 
--- copper, sourceName  (nil when no price addon knows the item)
+-- copper, sourceName, savedAt
+-- A live price from a price addon is remembered; when none of them knows the
+-- item right now, the last known price is used (with the time it was seen).
 function ns:GetAHPrice(key)
     local itemID = self:RealID(key)
     if not itemID then return nil end
     for _, p in ipairs(providers) do
         local ok, v = pcall(p.get, itemID)
         v = ok and ns.Plain(v) or nil
-        if type(v) == "number" and v > 0 then return math.floor(v), p.name end
+        if type(v) == "number" and v > 0 then
+            v = math.floor(v)
+            if self.db then
+                self.db.priceCache = self.db.priceCache or {}
+                local now = time and time() or 0
+                local c = self.db.priceCache[itemID]
+                if not c or c.c ~= v or now - (c.t or 0) > 3600 then
+                    self.db.priceCache[itemID] = { c = v, t = now, src = p.name }
+                end
+            end
+            return v, p.name
+        end
     end
+    local c = self.db and self.db.priceCache and self.db.priceCache[itemID]
+    if c and c.c then return c.c, c.src, c.t end
+end
+
+------------------------------------------------------------------------
+-- farm / hour: what you really looted in the last 60 minutes
+------------------------------------------------------------------------
+local HOUR = 3600
+
+local function Log()
+    ns.db.farmLog = ns.db.farmLog or {}
+    return ns.db.farmLog
+end
+
+local function Prune(list, now)
+    local i = 1
+    while list[i] and now - list[i][1] > HOUR do i = i + 1 end
+    if i > 1 then
+        for _ = 1, i - 1 do table.remove(list, 1) end
+    end
+end
+
+ns:On("LOOT_RECORDED", function(key, mapID, cellKey, npcID, count)
+    if not (ns.db and ns.db.settings.farmHour) or key == nil then return end
+    local log = Log()
+    local k = tostring(key)
+    log[k] = log[k] or {}
+    local now = time and time() or 0
+    table.insert(log[k], { now, count or 1 })
+    Prune(log[k], now)
+end)
+
+-- count looted in the last 60 minutes (nil = nothing yet: N/A)
+function ns:FarmHourCount(key)
+    local list = self.db and self.db.farmLog and self.db.farmLog[tostring(key)]
+    if not list then return nil end
+    local now = time and time() or 0
+    Prune(list, now)
+    if #list == 0 then return nil end
+    local n = 0
+    for _, e in ipairs(list) do n = n + (e[2] or 1) end
+    return n
+end
+
+-- the three lines for tooltips: price, farm / hour, owned value
+-- returns a list of { left, right } pairs (strings)
+function ns:PriceLines(key)
+    local s = self.db and self.db.settings
+    if not s then return {} end
+    local L = self.L
+    local out = {}
+    local price, src, at = self:GetAHPrice(key)
+    if s.tooltipPrices then
+        if price then
+            local tag = src or "?"
+            if at then tag = tag .. ", " .. (date and date("%m.%d %H:%M", at) or "") end
+            out[#out + 1] = { L("pr_price"), self:Money(price) .. " |cff8c96a8(" .. tag .. ")|r" }
+        else
+            out[#out + 1] = { L("pr_price"), "|cff8c96a8" .. L("pr_noprice") .. "|r" }
+        end
+    end
+    if s.farmHour then
+        local n = self:FarmHourCount(key)
+        if not n then
+            out[#out + 1] = { L("pr_hour"), "|cff8c96a8N/A|r" }
+        elseif price then
+            out[#out + 1] = { L("pr_hour"), L("pr_count", n) .. " = " .. self:Money(price * n) }
+        else
+            out[#out + 1] = { L("pr_hour"), L("pr_count", n) }
+        end
+    end
+    if s.ownedValue and self.GetCounts then
+        local bags, bank, alts = self:GetCounts(key)
+        local total = (bags or 0) + (bank or 0) + (alts or 0)
+        if total > 0 then
+            out[#out + 1] = { L("pr_owned"), L("pr_count", total) .. (price and (" = " .. self:Money(price * total)) or "") }
+        end
+    end
+    return out
 end
 
 function ns:Money(copper)

@@ -252,8 +252,18 @@ function UI:Build()
         self.langButtons[#self.langButtons + 1] = lb
         prevLang = lb
     end
+    local gear = FlatButton(header, "", 26, 22)
+    gear:SetPoint("RIGHT", prevLang, "LEFT", -10, 0)
+    gear.icon = gear:CreateTexture(nil, "ARTWORK")
+    gear.icon:SetSize(16, 16)
+    gear.icon:SetPoint("CENTER")
+    gear.icon:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
+    gear.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    gear:SetScript("OnClick", function() if ns.Options then ns.Options:Toggle() end end)
+    gear.tooltip = L("op_title") .. "  (/farm config)"
+    self.gearButton = gear
     self.goalsButton = FlatButton(header, "", 70, 22)
-    self.goalsButton:SetPoint("RIGHT", prevLang, "LEFT", -10, 0)
+    self.goalsButton:SetPoint("RIGHT", gear, "LEFT", -6, 0)
     self.goalsButton:SetScript("OnClick", function() if ns.Goals then ns.Goals:Toggle() end end)
 
     -- Search ---------------------------------------------------------

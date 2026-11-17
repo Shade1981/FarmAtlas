@@ -55,6 +55,12 @@ local DEFAULTS = {
         hideMinimapButton = false,
         sync = true,        -- share discoveries with party / raid / guild in the background
         syncGuild = true,
+        tooltipPrices = true,   -- AH price per item on tooltips
+        farmHour = true,        -- value looted in the last 60 minutes
+        ownedValue = true,      -- value of everything you own (bags, bank, alts)
+        newsPopup = true,       -- "What's new" window after an update
+        guideAreas = true,      -- guide step areas on the world map
+        guideTrainers = true,   -- current guide step trainers on map / minimap
     },
 }
 
@@ -567,6 +573,8 @@ SlashCmdList.FARMATLAS = function(msg)
         for _, p in ipairs(ns.GUIDE_ORDER or {}) do if ns:TrainerPinsOn(p) then any = true end end
         for _, p in ipairs(ns.GUIDE_ORDER or {}) do ns:SetTrainerPins(p, not any) end
         ns:Print(L("g_pins") .. ": " .. (any and L("off") or L("on")))
+    elseif cmd == "config" or cmd == "options" or cmd == "settings" then
+        if ns.Options then ns.Options:Toggle() end
     elseif cmd == "banner" then
         if rest == "off" or rest == "on" then
             ns:SetBannerOn(rest == "on")

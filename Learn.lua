@@ -175,13 +175,13 @@ local function OnEvent(_, event)
                 local unit = guid and UnitForGUID(guid)
                 local key = ns:KeyForLoot(itemID, lootName)
                 local cellKey = Record(key, link, quantity, mapID, x, y, npcID, unit, isFishing)
-                changed[#changed + 1] = { key = key, mapID = mapID, cell = cellKey, npcID = npcID }
+                changed[#changed + 1] = { key = key, mapID = mapID, cell = cellKey, npcID = npcID, count = quantity or 1 }
             end
         end
     end
 
     for _, npcID in ipairs(kills) do ns:Fire("KILL_RECORDED", npcID) end
-    for _, c in ipairs(changed) do ns:Fire("LOOT_RECORDED", c.key, c.mapID, c.cell, c.npcID) end
+    for _, c in ipairs(changed) do ns:Fire("LOOT_RECORDED", c.key, c.mapID, c.cell, c.npcID, c.count) end
     if #changed > 0 then ns:Fire("LEARNED_CHANGED") end
 end
 -- never let a restricted (secret) value break the game UI

@@ -27,6 +27,8 @@ Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the
 - **Mob tooltips**: hovering a mob shows what farmable materials it drops.
 - **Leveling guides** (Guide tab): Cooking, Fishing and Skinning 1-300 for WoW Forever. Your current step is highlighted, steps and trainers are filtered to your faction, and a click shows the trainer, zone or farm spot on the map. The trainers of your current step are marked on the world map and minimap. Every trainer of a profession can also be shown on the world map (right-click the profession header in the Guide tab, or `/farm trainers`), with WoW Forever coordinates.
 - **Town alert**: when you arrive at a town, village or camp with a trainer of a profession you switched on (left-click its header in the Guide tab), a banner names them and they are marked on the map and minimap. Right after login you get the marks only. `/farm banner` lets you drag and resize the banner, `/farm banner off` switches it off.
+- **Farm / hour**: mob and item tooltips show what you really looted in the last 60 minutes and its value (N/A until the first loot), plus the value of everything you own (bags, bank, alts).
+- **Settings window**: the gear button in the atlas header (or `/farm config`) holds every switch, grouped by topic.
 - **Auction house prices** (optional): if Auctionator or TSM is installed, item tooltips and cards show the AH price and the value of 100 kills from real drop rates. Other addons can add a price source with `FarmAtlas_AddPriceSource(name, function(itemID) return copper end)`.
 - **What's new window** after every update (`/farm news` opens it again).
 - Map button, minimap button, slash commands.

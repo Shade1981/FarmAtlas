@@ -38,6 +38,9 @@ local function AddLines(tooltip)
         local icon = ns:GetItemIcon(id)
         local mark = ns:IsTracked(id) and ("  |cff3fc7eb" .. ns.L("tracked_tag") .. "|r") or ""
         tooltip:AddLine(("|T%s:14:14:0:0:64:64:5:59:5:59|t %s%s"):format(icon, ns:GetItemColoredName(id), mark))
+        for _, pl in ipairs(ns:PriceLines(id)) do
+            tooltip:AddDoubleLine("    " .. pl[1], pl[2], 0.8, 0.7, 0.3, 1, 1, 1)
+        end
     end
     tooltip:Show()
 end
@@ -55,8 +58,9 @@ local function AddItemLines(tooltip)
     tooltip:AddLine(" ")
     tooltip:AddLine("|cff3fc7ebFarm|r|cffffd200Atlas|r")
     tooltip:AddLine(L("tt_have", bags, bank, alts), 1, 1, 1)
-    local ahPrice, ahSource = ns:GetAHPrice(key)
-    if ahPrice then tooltip:AddLine(L("ah_price", ns:Money(ahPrice), ahSource), 1, 0.82, 0) end
+    for _, pl in ipairs(ns:PriceLines(key)) do
+        tooltip:AddDoubleLine(pl[1], pl[2], 1, 0.82, 0, 1, 1, 1)
+    end
     local goal = ns:GetGoal(key)
     if goal then
         local have = ns:GoalHave(key)

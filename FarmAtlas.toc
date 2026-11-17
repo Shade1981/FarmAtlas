@@ -29,6 +29,7 @@ Goals.lua
 MapPins.lua
 MapPins.xml
 UI.lua
+Options.lua
 Tooltip.lua
 Minimap.lua
 MinimapPins.lua
