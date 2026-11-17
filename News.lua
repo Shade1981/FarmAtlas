@@ -9,6 +9,7 @@ local HISTORY = {
       en = {
         "New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever, each on its own sub-tab. It shows where you are now, what to make or where to go next, and the trainers of your faction.",
         "Fishing / skinning steps: the places to do them are highlighted in gold on the world map - for the step you are on automatically, and for any step you click.",
+        "Cooking steps: a click tracks the material and opens the map where to farm it.",
         "The trainers of your current guide step are marked on the world map and the minimap automatically.",
         "Town alert: when you arrive at a town, village or camp with a trainer of a profession you switched on, a banner names them and they are marked on the map and minimap. Move / resize the banner with /farm banner. Right after login you only get the marks.",
         "Every trainer of a profession on the world map: right-click the profession header in the Guide tab, or /farm trainers. Exact WoW Forever coordinates.",
@@ -21,6 +22,7 @@ local HISTORY = {
       hu = {
         "Új: Útmutató fül - Főzés, Horgászat és Nyúzás 1-300 WoW Foreverre, mindegyik külön alfülön. Megmutatja, hol tartasz, mit készíts vagy hova menj, és a frakciód trénereit.",
         "Horgász- és nyúzólépések: a helyek arannyal kiemelve a világtérképen - az aktuális lépésnél magától, bármelyik lépésnél kattintásra.",
+        "Főzőlépések: kattintásra követi az alapanyagot, és megnyitja a térképet ott, ahol farmolható.",
         "Az útmutató aktuális lépésének trénerei automatikusan megjelennek a világtérképen és a minimapen.",
         "Település-jelzés: ha olyan városba, faluba vagy campbe érsz, ahol egy általad bekapcsolt szakma trénere van, egy felirat kiírja a nevüket, és megjelöli őket a térképen és a minimapen. A feliratot a /farm banner paranccsal mozgathatod és méretezheted. Belépés után csak a jelölés látszik.",
         "Egy szakma összes trénere a világtérképen: jobb klikk a szakma fejlécén az Útmutató fülön, vagy /farm trainers. Pontos WoW Forever koordináták.",

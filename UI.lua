@@ -828,7 +828,9 @@ function UI:GuideClick(r, button)
         end
         self:RefreshList(true)
     elseif action == "item" then
+        -- cooking step: the material is tracked and the map opens where to farm it
         self:Select(arg)
+        self:OpenBest(arg)
     elseif action == "point" then
         ns:ShowPoint(arg)
     end
@@ -893,19 +895,7 @@ function UI:BuildDetail(d)
     end)
     d.open = FlatButton(d, "", 120, 24)
     d.open:SetPoint("LEFT", d.track, "RIGHT", 8, 0)
-    d.open:SetScript("OnClick", function()
-        local id = UI.selected
-        local data = id and ns.Items[id]
-        if data and data.spots[1] then
-            ns:ShowOnMap(UI:BestSpot(data).z, id)
-        elseif id then
-            local lz = ns:GetLearnedZones(id)[1]
-            if lz then
-                ns:SetTracked(id, true)
-                ns:OpenMapID(lz.mapID)
-            end
-        end
-    end)
+    d.open:SetScript("OnClick", function() UI:OpenBest(UI.selected) end)
     d.link = FlatButton(d, "", 56, 24)
     d.link:SetPoint("LEFT", d.open, "RIGHT", 8, 0)
     d.link:SetScript("OnClick", function()
@@ -944,6 +934,21 @@ function UI:BuildDetail(d)
     d.welcome:SetWordWrap(true)
     d.welcome:SetSpacing(4)
     d.welcome:SetText(L("welcome"))
+end
+
+-- track the item and open the map on the best farm zone for your level
+function UI:OpenBest(id)
+    if id == nil then return end
+    local data = ns.Items[id]
+    if data and data.spots and data.spots[1] then
+        ns:ShowOnMap(self:BestSpot(data).z, id)
+    else
+        local lz = ns:GetLearnedZones(id)[1]
+        if lz then
+            ns:SetTracked(id, true)
+            ns:OpenMapID(lz.mapID)
+        end
+    end
 end
 
 function UI:BestSpot(data)
