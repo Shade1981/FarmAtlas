@@ -482,46 +482,9 @@ function UI:GetRow(i)
         if self.guide then UI:GuideTooltip(self.guide) return end
         local rc = self.recipe
         if rc then
-            -- what it makes: the game's own item tooltip, when FarmAtlas knows the item
-            local made = ns:RecipeItemID(rc.name)
-            if made then
-                GameTooltip:SetHyperlink("item:" .. made)
-                GameTooltip:AddLine(" ")
-            else
-                GameTooltip:AddLine(rc.name, 1, 0.82, 0)
-                GameTooltip:AddLine(L("rc_effect_unknown"), 0.6, 0.6, 0.6, true)
-            end
-            GameTooltip:AddLine(rc.known and L("rc_known") or L("rc_unknown"),
-                rc.known and 0.3 or 1, rc.known and 0.9 or 0.4, rc.known and 0.35 or 0.4)
-            GameTooltip:AddLine(" ")
-            for _, r in ipairs(rc.reagents) do
-                local enough = r.need > 0 and r.have >= r.need
-                local right = r.need > 0 and (r.have .. " / " .. r.need) or tostring(r.have)
-                GameTooltip:AddDoubleLine(r.name, right, 1, 1, 1,
-                    enough and 0.3 or 1, enough and 0.9 or 0.5, enough and 0.35 or 0.4)
-            end
+            ns:AddRecipeTooltip(GameTooltip, rc.name)
             if #rc.alts > 0 then
-                GameTooltip:AddLine(" ")
                 GameTooltip:AddLine(L("known_by", table.concat(rc.alts, ", ")), 0.6, 0.6, 0.6, true)
-            end
-            if not rc.known then
-                local srcType, sources, note = ns:RecipeSources(rc.name)
-                GameTooltip:AddLine(" ")
-                GameTooltip:AddLine(L("rc_where"), 1, 0.82, 0)
-                if srcType == "faction" then
-                    GameTooltip:AddLine(L("src_enemy"), 1, 0.5, 0.25, true)
-                elseif #sources == 0 then
-                    GameTooltip:AddLine(note or L("src_unknown"), 0.7, 0.7, 0.7, true)
-                end
-                for i = 1, math.min(4, #sources) do
-                    local s = sources[i]
-                    local loc = (s.zone or "?") .. ((s.x and s.y) and (" %.1f, %.1f"):format(s.x, s.y) or "")
-                    if s.note then loc = loc .. " (" .. s.note .. ")" end
-                    if s.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
-                    GameTooltip:AddDoubleLine(s.npc or "?", s.price or "", 1, 1, 1, 1, 0.82, 0)
-                    GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
-                end
-                if #sources > 4 then GameTooltip:AddLine(L("more", #sources - 4), 0.55, 0.59, 0.66) end
             end
             if self.itemID then
                 GameTooltip:AddLine(" ")
@@ -1042,13 +1005,7 @@ local function GetCard(d, i)
         if self.recipe then
             -- what the recipe makes: the game's own item tooltip when known
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            local made = ns:RecipeItemID(self.recipe)
-            if made then
-                GameTooltip:SetHyperlink("item:" .. made)
-            else
-                GameTooltip:AddLine(self.recipe, 1, 0.82, 0)
-                GameTooltip:AddLine(L("rc_effect_unknown"), 0.6, 0.6, 0.6, true)
-            end
+            ns:AddRecipeTooltip(GameTooltip, self.recipe)
             GameTooltip:Show()
         end
     end)

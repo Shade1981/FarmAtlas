@@ -309,6 +309,82 @@ function ns:RecipeItemID(recipe)
     return found
 end
 
+-- The full recipe on a tooltip, learned or not: what it makes (the game's own
+-- item tooltip once the item is known, else the Well Fed buff from the data),
+-- skill colors, reagents with what you have, fire / oven, how to learn it.
+function ns:AddRecipeTooltip(tip, recipe, opts)
+    local L = self.L
+    opts = opts or {}
+    local info = self.RecipeInfo and self.RecipeInfo[recipe]
+    local made = self:RecipeItemID(recipe)
+    if made then
+        tip:SetHyperlink("item:" .. made)
+        tip:AddLine(" ")
+    else
+        tip:AddLine(recipe, 1, 0.82, 0)
+    end
+    local known = self:RecipeKnown(recipe)
+    tip:AddLine(known and L("rc_known") or L("rc_unknown"), known and 0.3 or 1, known and 0.9 or 0.4, known and 0.35 or 0.4)
+    if info then
+        if not made then
+            if info.buff ~= nil then
+                tip:AddLine(L("ri_wellfed") .. (info.buff ~= "" and (": " .. info.buff) or ""), 0.3, 0.9, 0.35, true)
+            end
+            if info.kind then tip:AddLine(info.kind, 0.6, 0.6, 0.6) end
+        end
+        if info.makes then tip:AddLine(L("ri_makes", info.makes), 1, 1, 1) end
+        local s = info.skill or {}
+        local parts = {}
+        if #s >= 4 then
+            parts[#parts + 1] = "|cffff8040" .. s[1] .. "|r"
+            parts[#parts + 1] = "|cffffff00" .. s[2] .. "|r"
+            parts[#parts + 1] = "|cff40c040" .. s[3] .. "|r"
+            parts[#parts + 1] = "|cff808080" .. s[4] .. "|r"
+        elseif #s == 3 then
+            parts[#parts + 1] = "|cffffff00" .. s[1] .. "|r"
+            parts[#parts + 1] = "|cff40c040" .. s[2] .. "|r"
+            parts[#parts + 1] = "|cff808080" .. s[3] .. "|r"
+        end
+        if #parts > 0 then tip:AddDoubleLine(L("ri_skill"), table.concat(parts, "  "), 1, 0.82, 0, 1, 1, 1) end
+        tip:AddLine(" ")
+        tip:AddLine(L("g_mats"), 1, 0.82, 0)
+        for _, m in ipairs(info.mats or {}) do
+            local have = 0
+            local key = self.ItemsByName[m[1]:lower()]
+            if key ~= nil and self.GetCounts then
+                local b, k = self:GetCounts(key)
+                have = (b or 0) + (k or 0)
+            end
+            local enough = have >= m[2]
+            tip:AddDoubleLine("   " .. m[2] .. "x " .. m[1], have .. " / " .. m[2], 1, 1, 1,
+                enough and 0.3 or 1, enough and 0.9 or 0.5, enough and 0.35 or 0.4)
+        end
+        tip:AddLine(info.oven and L("ri_oven") or L("ri_fire"), 0.6, 0.6, 0.6)
+    end
+    if not known and not opts.noSources then
+        local srcType, sources, note = self:RecipeSources(recipe)
+        tip:AddLine(" ")
+        tip:AddLine(L("rc_where"), 1, 0.82, 0)
+        if info and info.learn == "auto" then
+            tip:AddLine(L("ri_auto"), 0.8, 0.8, 0.8, true)
+        elseif srcType == "faction" then
+            tip:AddLine(L("src_enemy"), 1, 0.5, 0.25, true)
+        elseif #sources == 0 then
+            tip:AddLine(note or ((info and info.learn == "trainer") and L("g_any_trainer")) or L("src_unknown"), 0.7, 0.7, 0.7, true)
+        end
+        for i = 1, math.min(4, #sources) do
+            local src = sources[i]
+            local loc = (src.zone or "?") .. ((src.x and src.y) and (" %.1f, %.1f"):format(src.x, src.y) or "")
+            if src.note then loc = loc .. " (" .. src.note .. ")" end
+            if src.neutral then loc = loc .. " [" .. L("src_neutral") .. "]" end
+            tip:AddDoubleLine(src.npc or "?", src.price or "", 1, 1, 1, 1, 0.82, 0)
+            tip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
+        end
+        if #sources > 4 then tip:AddLine(L("more", #sources - 4), 0.55, 0.59, 0.66) end
+    end
+    if not made then tip:AddLine(L("rc_effect_unknown"), 0.5, 0.5, 0.5, true) end
+end
+
 function ns:RecipeKnown(recipe)
     local me = self:CharKey()
     local mine, alts = false, {}
@@ -433,6 +509,12 @@ end
 local function ReagentsFor(recipe)
     local scanned = ns.db.recipeReagents[recipe]
     if scanned and next(scanned) then return scanned, true end
+    local info = ns.RecipeInfo and ns.RecipeInfo[recipe]
+    if info and info.mats then
+        local t = {}
+        for _, m in ipairs(info.mats) do t[m[1]] = m[2] end
+        return t, true
+    end
     local out = {}
     for _, data in pairs(ns.Items) do
         if data.uses then
@@ -453,6 +535,7 @@ function ns:SearchRecipes(query)
     end
     -- every cooking recipe FarmAtlas knows about, so the unknown ones show (veiled)
     for r in pairs(self.Recipes or {}) do add(r) end
+    for r in pairs(self.RecipeInfo or {}) do add(r) end
     if query ~= "" then
         for r in pairs(self.db.recipeReagents) do add(r) end
         for _, data in pairs(self.Items) do
