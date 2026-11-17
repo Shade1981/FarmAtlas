@@ -115,9 +115,10 @@ function ns:PriceLines(key)
             if at then tag = tag .. ", " .. (date and date("%m.%d %H:%M", at) or "") end
             out[#out + 1] = { L("pr_price"), self:Money(price) .. " |cff8c96a8(" .. tag .. ")|r" }
         elseif vendor then
-            out[#out + 1] = { L("pr_price"), "|cff8c96a8" .. L("pr_noah") .. "|r" }
+            -- no AH price: a short value, so the line never runs over its label
+            out[#out + 1] = { L("pr_price"), "|cff8c96a8-|r" }
         else
-            out[#out + 1] = { L("pr_price"), "|cff8c96a8" .. L("pr_noprice") .. "|r" }
+            out[#out + 1] = { L("pr_price"), "|cff8c96a8-|r" }
         end
         if vendor and vendor > 0 then
             out[#out + 1] = { L("pr_vendor"), self:Money(vendor) }

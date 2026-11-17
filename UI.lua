@@ -365,9 +365,10 @@ function UI:Build()
     self.count:SetText("")
 
     -- "On me": only items in your bags (recipes: only what you can cook now)
-    local own = FlatButton(f, "", 80, 18)
+    -- sits in the gap between the category chips and the list, touching neither
+    local own = FlatButton(f, "", 80, 15)
     self.ownedButton = own
-    own:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", 0, 3)
+    own:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", 0, 2)
     own.text:ClearAllPoints()
     own.text:SetPoint("CENTER", 8, 0)
     own.icon = own:CreateTexture(nil, "ARTWORK")
