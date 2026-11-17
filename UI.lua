@@ -344,6 +344,23 @@ function UI:Build()
     self.count:SetPoint("BOTTOMLEFT", list, "TOPLEFT", 2, 4)
     self.count:SetText("")
 
+    -- "On me": only items in your bags (recipes: only what you can cook now)
+    local own = FlatButton(f, "", 80, 18)
+    self.ownedButton = own
+    own:SetPoint("BOTTOMRIGHT", list, "TOPRIGHT", 0, 3)
+    own.text:ClearAllPoints()
+    own.text:SetPoint("CENTER", 8, 0)
+    own.icon = own:CreateTexture(nil, "ARTWORK")
+    own.icon:SetSize(12, 12)
+    own.icon:SetPoint("RIGHT", own.text, "LEFT", -5, 0)
+    own.icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
+    own.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    own:SetScript("OnClick", function()
+        ns.db.settings.ownedOnly = not ns.db.settings.ownedOnly
+        UI.scroll = 0
+        UI:RefreshList()
+    end)
+
     self.rows = {}
     list:EnableMouseWheel(true)
     list:SetScript("OnMouseWheel", function(_, delta)
@@ -465,6 +482,10 @@ function UI:GetRow(i)
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row:SetScript("OnClick", function(self, button)
         if self.guide then UI:GuideClick(self.guide, button) return end
+        if self.recipe and button == "LeftButton" and not IsControlKeyDown() and not IsShiftKeyDown() then
+            UI:RecipeClick(self.recipe.name, self.itemID)
+            return
+        end
         if not self.itemID then return end
         if IsControlKeyDown() then
             local g = ns:GetGoal(self.itemID)
@@ -486,10 +507,9 @@ function UI:GetRow(i)
             if #rc.alts > 0 then
                 GameTooltip:AddLine(L("known_by", table.concat(rc.alts, ", ")), 0.6, 0.6, 0.6, true)
             end
-            if self.itemID then
-                GameTooltip:AddLine(" ")
-                GameTooltip:AddLine(L("row_hint"), 0.8, 0.8, 0.8)
-            end
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine(rc.known and L("rc_click_known") or L("rc_click_unknown"), 0.8, 0.8, 0.8)
+            if self.itemID then GameTooltip:AddLine(L("rc_click_track"), 0.8, 0.8, 0.8) end
             GameTooltip:Show()
             return
         end
@@ -571,9 +591,32 @@ function UI:RefreshList(keepResults)
             end
         elseif recipeMode then
             self.results = ns:SearchRecipes(self.search:GetText())
+            if ns.db.settings.ownedOnly then
+                -- "on me": only what you can cook right now
+                local keep = {}
+                for _, rc in ipairs(self.results) do
+                    if rc.known and rc.craft and rc.craft > 0 then keep[#keep + 1] = rc end
+                end
+                self.results = keep
+            end
         else
             self.results = ns:Search(self.search:GetText(), self.cat)
+            if ns.db.settings.ownedOnly then
+                -- "on me": only what is in your bags
+                local keep = {}
+                for _, id in ipairs(self.results) do
+                    if (ns:GetCounts(id) or 0) > 0 then keep[#keep + 1] = id end
+                end
+                self.results = keep
+            end
         end
+    end
+    if self.ownedButton then
+        self.ownedButton:SetShown(not guideMode)
+        self.ownedButton:SetActive(ns.db.settings.ownedOnly and true or false)
+        self.ownedButton.text:SetText(L(recipeMode and "own_btn_rc" or "own_btn"))
+        self.ownedButton:SetWidth(self.ownedButton.text:GetStringWidth() + 34)
+        self.ownedButton.tooltip = L(recipeMode and "own_tip_rc" or "own_tip")
     end
     local results = self.results
     local listH = self.list:GetHeight()
@@ -661,6 +704,8 @@ function UI:RefreshList(keepResults)
 
     if guideMode then
         self.list.empty:SetText(L("g_empty"))
+    elseif ns.db.settings.ownedOnly then
+        self.list.empty:SetText(L(recipeMode and "own_empty_rc" or "own_empty"))
     elseif recipeMode then
         self.list.empty:SetText(L("rc_empty"))
     else
@@ -1010,11 +1055,13 @@ local function GetCard(d, i)
     card:SetScript("OnEnter", function(self)
         self:SetBackdropColor(unpack(C.hover))
         self:SetBackdropBorderColor(C.accent[1], C.accent[2], C.accent[3], 0.6)
-        if self.zoneKey or self.mapID or self.point then self.go:Show() end
+        if (self.zoneKey or self.mapID or self.point) and not self.recipe then self.go:Show() end
         if self.recipe then
             -- what the recipe makes: the game's own item tooltip when known
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             ns:AddRecipeTooltip(GameTooltip, self.recipe)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine(self.unknown and L("rc_click_unknown") or L("rc_click_known"), 0.8, 0.8, 0.8)
             GameTooltip:Show()
         end
     end)
@@ -1025,7 +1072,9 @@ local function GetCard(d, i)
         GameTooltip:Hide()
     end)
     card:SetScript("OnClick", function(self)
-        if self.point then
+        if self.recipe then
+            UI:RecipeClick(self.recipe)
+        elseif self.point then
             ns:ShowPoint(self.point)
         elseif self.mapID then
             ns:SetTracked(UI.selected, true)
@@ -1115,7 +1164,8 @@ function UI:RefreshDetail()
         card.strip:SetVertexColor(strip[1], strip[2], strip[3], 1)
         card.zoneKey, card.mapID, card.point = zoneKey, mapID, point
         card.recipe = recipe
-        card.veil:SetShown(unknown and true or false)
+        card.unknown = unknown and true or false
+        card.veil:SetShown(card.unknown)
         local hgt = 30 + (l2 and l2 ~= "" and 14 or 0) + (l3 and l3 ~= "" and 14 or 0)
         card:SetHeight(math.max(hgt, 40))
         card:Show()
@@ -1255,6 +1305,131 @@ end
 ------------------------------------------------------------------------
 -- Public
 ------------------------------------------------------------------------
+------------------------------------------------------------------------
+-- Recipe click: known -> open the profession window on it,
+-- unknown -> a small box: you can't make it yet, and where to learn it
+------------------------------------------------------------------------
+function UI:RecipeClick(recipe, itemID)
+    if not recipe then return end
+    if itemID ~= nil and itemID ~= self.selected then self:Select(itemID) end
+    local mine = ns:RecipeKnown(recipe)
+    if mine then
+        if self.recipeBox then self.recipeBox:Hide() end
+        ns:OpenCraft(recipe)
+    else
+        self:ShowRecipeBox(recipe)
+    end
+end
+
+local function SourceText(s)
+    local loc = s.zone or "?"
+    if s.x and s.y then loc = loc .. (" %.1f, %.1f"):format(s.x, s.y) end
+    local txt = "|cffffffff" .. (s.npc or "?") .. "|r  -  " .. loc
+    if s.price then txt = txt .. "   |cffffd200" .. s.price .. "|r" end
+    if s.note then txt = txt .. "  (" .. s.note .. ")" end
+    if s.neutral then txt = txt .. "  |cff8c96a8[" .. L("src_neutral") .. "]|r" end
+    if s.learned then txt = txt .. "  |cffcc8cff" .. L("seen") .. "|r"
+    elseif s.shared then txt = txt .. "  |cffcc8cff" .. L("src_shared") .. "|r" end
+    return txt
+end
+
+function UI:ShowRecipeBox(recipe)
+    local b = self.recipeBox
+    if not b then
+        b = CreateFrame("Frame", "FarmAtlasRecipeBox", UIParent, "BackdropTemplate")
+        self.recipeBox = b
+        b:SetSize(360, 120)
+        b:SetFrameStrata("DIALOG")
+        b:SetToplevel(true)
+        b:SetClampedToScreen(true)
+        b:EnableMouse(true)
+        SetBG(b, C.bg, { 0.75, 0.2, 0.2, 1 })
+        tinsert(UISpecialFrames, "FarmAtlasRecipeBox")
+        b.strip = b:CreateTexture(nil, "ARTWORK")
+        b.strip:SetTexture(WHITE)
+        b.strip:SetPoint("TOPLEFT", 1, -1)
+        b.strip:SetPoint("TOPRIGHT", -1, -1)
+        b.strip:SetHeight(3)
+        b.strip:SetVertexColor(0.85, 0.2, 0.2, 1)
+        b.head = Font(b, "GameFontNormal", 13, 1, 0.4, 0.4)
+        b.head:SetPoint("TOPLEFT", 14, -12)
+        b.head:SetPoint("RIGHT", -34, 0)
+        b.name = Font(b, "GameFontHighlight", 13, unpack(C.text))
+        b.name:SetPoint("TOPLEFT", b.head, "BOTTOMLEFT", 0, -4)
+        b.name:SetPoint("RIGHT", -14, 0)
+        b.body = Font(b, "GameFontHighlightSmall", nil, unpack(C.muted))
+        b.body:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -10)
+        b.body:SetPoint("RIGHT", -14, 0)
+        b.body:SetWordWrap(true)
+        b.body:SetJustifyV("TOP")
+        b.body:SetSpacing(3)
+        local x = CreateFrame("Button", nil, b)
+        x:SetSize(22, 22)
+        x:SetPoint("TOPRIGHT", -6, -6)
+        x.t = Font(x, "GameFontNormal", 14, unpack(C.muted))
+        x.t:SetPoint("CENTER")
+        x.t:SetText("x")
+        x:SetScript("OnClick", function() b:Hide() end)
+        x:SetScript("OnEnter", function(s) s.t:SetTextColor(1, 1, 1) end)
+        x:SetScript("OnLeave", function(s) s.t:SetTextColor(unpack(C.muted)) end)
+        b.map = FlatButton(b, "", 150, 22)
+        b.map:SetPoint("BOTTOMLEFT", 14, 12)
+        b.map:SetScript("OnClick", function(s)
+            if s.point then ns:ShowPoint(s.point) end
+        end)
+        b.ok = FlatButton(b, "OK", 70, 22)
+        b.ok:SetPoint("BOTTOMRIGHT", -14, 12)
+        b.ok:SetScript("OnClick", function() b:Hide() end)
+    end
+    b:ClearAllPoints()
+    if self.frame and self.frame:IsShown() and self.detail then
+        b:SetPoint("TOP", self.detail, "TOP", 0, -40)
+    else
+        b:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
+    end
+
+    b.head:SetText(L("rc_cant"))
+    b.name:SetText(recipe)
+    local lines = {}
+    local srcType, sources, note = ns:RecipeSources(recipe)
+    local srcLabel = { trainer = L("src_trainer"), vendor = L("src_vendor"), quest = L("src_quest"),
+        drop = L("src_drop"), faction = L("src_faction") }
+    local label = srcLabel[srcType]
+    local point
+    if sources and #sources > 0 then
+        lines[#lines + 1] = "|cffffd200" .. L("rc_where") .. (label and ("  (" .. label .. ")") or "") .. "|r"
+        for i = 1, math.min(5, #sources) do
+            lines[#lines + 1] = SourceText(sources[i])
+        end
+        if #sources > 5 then lines[#lines + 1] = L("more", #sources - 5) end
+        for _, s in ipairs(sources) do
+            if s.zone or s.mapID then
+                point = { zone = s.zone, mapID = s.mapID, x = s.x, y = s.y, label = recipe,
+                    sub = (s.npc or "?") .. (s.price and ("  " .. s.price) or "") }
+                break
+            end
+        end
+    elseif srcType == "faction" then
+        lines[#lines + 1] = "|cffff8040" .. L("src_enemy") .. "|r"
+    elseif label then
+        lines[#lines + 1] = "|cffffd200" .. label .. "|r" .. (note and (" - " .. note) or "")
+    else
+        lines[#lines + 1] = L("src_unknown")
+    end
+    local _, alts = ns:RecipeKnown(recipe)
+    if alts and #alts > 0 then
+        lines[#lines + 1] = " "
+        lines[#lines + 1] = "|cffcc8cff" .. L("known_by", table.concat(alts, ", ")) .. "|r"
+    end
+    b.body:SetText(table.concat(lines, "\n"))
+    b.map.point = point
+    b.map.text:SetText(L("show_on_map"))
+    b.map:SetShown(point ~= nil)
+    local h = 12 + 16 + 4 + 16 + 10 + (b.body:GetStringHeight() or 40) + 46
+    b:SetHeight(math.max(120, math.floor(h)))
+    b:Show()
+end
+
 function UI:Select(itemID)
     self.selected = itemID
     self.detail.scroll:SetVerticalScroll(0)

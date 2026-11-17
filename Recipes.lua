@@ -98,6 +98,14 @@ local function ScanTradeSkillModern(isRetry)
         line = info and info.professionName or line
     end
     if line == "?" and GetTradeSkillLine then line = GetTradeSkillLine() or line end
+    local profID
+    if T.GetBaseProfessionInfo then
+        local ok, info = pcall(T.GetBaseProfessionInfo)
+        profID = ok and info and ns.Plain(info.professionID) or nil
+        if type(profID) ~= "number" then profID = nil end
+    end
+    ns.db.recipeIDs = ns.db.recipeIDs or {}
+    ns.db.recipeLine = ns.db.recipeLine or {}
     local changed, missing, count = false, false, 0
     for _, recipeID in ipairs(ids) do
         local info = T.GetRecipeInfo(recipeID)
@@ -105,6 +113,9 @@ local function ScanTradeSkillModern(isRetry)
             count = count + 1
             if not c.recipes[info.name] then changed = true end
             c.recipes[info.name] = line
+            -- remembered so a click in FarmAtlas can open the window on this recipe
+            if type(ns.Plain(recipeID)) == "number" then ns.db.recipeIDs[info.name] = recipeID end
+            if profID then ns.db.recipeLine[info.name] = profID end
             local schem = T.GetRecipeSchematic and T.GetRecipeSchematic(recipeID, false)
             if schem and schem.reagentSlotSchematics then
                 local reagents = {}
@@ -585,4 +596,76 @@ function ns:SearchRecipes(query)
         return a.name < b.name
     end)
     return out
+end
+
+------------------------------------------------------------------------
+-- Open the profession window on a recipe you know (click in FarmAtlas)
+-- Only the game's own C_TradeSkillUI calls are used - no Blizzard frame
+-- is touched, so nothing gets tainted.
+------------------------------------------------------------------------
+local SKILL_LINE = { cooking = 185, fishing = 356, skinning = 393, firstaid = 129,
+    leatherworking = 165, tailoring = 197, alchemy = 171, blacksmithing = 164,
+    engineering = 202, enchanting = 333, mining = 186, herbalism = 182 }
+ns.SKILL_LINE = SKILL_LINE
+
+local function CraftWindowShown()
+    for _, name in ipairs({ "ProfessionsFrame", "TradeSkillFrame" }) do
+        local fr = _G[name]
+        if fr and fr.IsShown then
+            local ok, shown = pcall(fr.IsShown, fr)
+            if ok and shown then return true end
+        end
+    end
+    return false
+end
+
+function ns:RecipeSkillLine(recipe)
+    local line = self.db.recipeLine and self.db.recipeLine[recipe]
+    if line then return line end
+    if (self.RecipeInfo and self.RecipeInfo[recipe]) or (self.Recipes and self.Recipes[recipe]) then
+        return SKILL_LINE.cooking
+    end
+end
+
+-- returns true when the game was asked to open the window
+function ns:OpenCraft(recipe)
+    local L = self.L
+    if InCombatLockdown and InCombatLockdown() then
+        self:Print(L("craft_combat"))
+        return false
+    end
+    local T = C_TradeSkillUI
+    local id = self.db.recipeIDs and self.db.recipeIDs[recipe]
+    local line = self:RecipeSkillLine(recipe)
+    local asked = false
+    if T and id and T.OpenRecipe then
+        asked = pcall(T.OpenRecipe, id)
+    end
+    local triedLine = false
+    local function ByLine()
+        if triedLine then return false end
+        triedLine = true
+        if T and line and T.OpenTradeSkill then
+            local ok, res = pcall(T.OpenTradeSkill, line)
+            return ok and res ~= false
+        end
+        return false
+    end
+    if not asked then asked = ByLine() end
+    if not asked then
+        self:Print(L("craft_manual", recipe))
+        return false
+    end
+    -- the window should be up a moment later; if not, try the other way, then say so
+    C_Timer.After(0.6, function()
+        if CraftWindowShown() then return end
+        if ByLine() then
+            C_Timer.After(0.6, function()
+                if not CraftWindowShown() then ns:Print(L("craft_manual", recipe)) end
+            end)
+        else
+            ns:Print(L("craft_manual", recipe))
+        end
+    end)
+    return true
 end

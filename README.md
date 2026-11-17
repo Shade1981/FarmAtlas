@@ -14,7 +14,7 @@ Search "boar", "raptor", "thick leather" or "eel", hit **Track on map**, and the
   - Fishing (24): every fish used in cooking, including the new Forever fish
 - **Farm goals window**: set how many you need (for example 20x Raptor Flesh). A progress bar counts your bags and bank, and you get a raid-warning message and a sound when you reach the goal. Ctrl-click a result to add it quickly.
 - **Bags, bank and alts**: every character's bags and bank are remembered. The atlas, the goals window and item tooltips show what you have and what your alts have.
-- **Recipes**: for any ingredient, see every recipe that uses it, whether you or your alts know it, and where to learn it (trainer, vendor with location and price, quest or drop). Click a recipe to put a marker on the map.
+- **Recipes**: for any ingredient, see every recipe that uses it, whether you or your alts know it, and where to learn it (trainer, vendor with location and price, quest or drop). Click a recipe you know to open the profession window on it, ready to craft; click one you don't know to see where to buy or learn it, with a marker on the map. The **On me** button shows only what is in your bags (on the Recipes tab: **Craftable now**).
 - **Self-learning**: FarmAtlas learns from your Cooking window (known recipes and exact reagents), from trainers, from every vendor that sells recipes, and from recipe drops.
 - **English / Hungarian interface** (EN | HU buttons, or `/farm lang hu`). Item, recipe, mob and zone names always stay in English, exactly as they appear in the in-game recipe book.
 - **World map overlay**: colored farm areas plus clickable item icons. You can track several items at once, and each gets its own color. Pins also show on the continent map.

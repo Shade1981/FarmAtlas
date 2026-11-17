@@ -10,6 +10,8 @@
 - Settings window: gear button in the atlas header or /farm config
 - Recipes tab: all 123 WoW Forever cooking recipes; unknown ones get a red veil but the full recipe is readable on hover: the game's own item tooltip (exact Use: text), skill colors, reagents, fire / oven, where to learn
 - Materials listed in leveling order with the level / fishing skill on each row
+- Click a known recipe to open the profession window on it; click an unknown one to see where to buy / learn it (with a map marker)
+- "On me" list filter: only items in your bags; on the Recipes tab "Craftable now"
 - Price addons can plug in with FarmAtlas_AddPriceSource()
 - New: "What's new" window after each update (/farm news)
 - Stability hardening against the new client restrictions (minimap, sync, recipe scanning)

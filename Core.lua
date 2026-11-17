@@ -41,6 +41,8 @@ local DEFAULTS = {
     chars = {},             -- per character: bags, bank, known recipes, goals
     recipeSources = {},     -- learned: [recipe] = { list of vendors/trainers/drops }
     recipeReagents = {},
+    recipeIDs = {},         -- [recipe] = recipeID (to open the profession window on it)
+    recipeLine = {},        -- [recipe] = profession skill line ID
     kills = {},             -- [npcID] = corpses you killed / looted (real drop rates)
     shared = {},            -- data received from party / raid / guild (Sync.lua)    -- learned from the Cooking window: [recipe] = { [reagent] = n }
     settings = {
@@ -61,6 +63,7 @@ local DEFAULTS = {
         newsPopup = true,       -- "What's new" window after an update
         guideAreas = true,      -- guide step areas on the world map
         guideTrainers = true,   -- current guide step trainers on map / minimap
+        ownedOnly = false,      -- list filter: only what is in your bags / craftable now
     },
 }
 
