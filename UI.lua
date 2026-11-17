@@ -345,6 +345,23 @@ function UI:Build()
     list.thumb:SetVertexColor(C.accent[1], C.accent[2], C.accent[3], 0.55)
     list.thumb:SetWidth(3)
 
+    -- guide sub-tabs: one profession at a time
+    list.guideTabs = {}
+    local prevTab
+    for _, prof in ipairs(ns.GUIDE_ORDER or {}) do
+        local b = FlatButton(list, "", 92, 24)
+        if prevTab then b:SetPoint("LEFT", prevTab, "RIGHT", 4, 0) else b:SetPoint("TOPLEFT", 6, -6) end
+        b.prof = prof
+        b:SetScript("OnClick", function()
+            ns.db.settings.guideProf = prof
+            UI.scroll = 0
+            UI:RefreshList()
+        end)
+        b:Hide()
+        list.guideTabs[#list.guideTabs + 1] = b
+        prevTab = b
+    end
+
     list.empty = Font(list, "GameFontHighlight", nil, unpack(C.muted))
     list.empty:SetPoint("TOPLEFT", 16, -20)
     list.empty:SetPoint("TOPRIGHT", -16, -20)
@@ -550,7 +567,7 @@ function UI:RefreshList(keepResults)
     local guideMode = self.cat == "guide"
     if not keepResults or not self.results then
         if guideMode then
-            self.results = ns:GuideRows(self.search:GetText())
+            self.results = ns:GuideRows(self.search:GetText(), ns:GuideProf())
             -- jump to where you are: the first current step, with a little context above
             for i, r in ipairs(self.results) do
                 if r.first then self.scroll = math.max(0, i - 3); break end
@@ -563,12 +580,25 @@ function UI:RefreshList(keepResults)
     end
     local results = self.results
     local listH = self.list:GetHeight()
-    local visible = math.max(1, math.floor((listH - 8) / ROW_H))
+    -- guide mode: sub-tabs on top of the list
+    local top = guideMode and 32 or 0
+    local current = guideMode and ns:GuideProf()
+    for _, b in ipairs(self.list.guideTabs or {}) do
+        b:SetShown(guideMode)
+        if guideMode then
+            b.text:SetText(L("cat_" .. b.prof))
+            b:SetActive(b.prof == current)
+        end
+    end
+    local visible = math.max(1, math.floor((listH - 8 - top) / ROW_H))
     self.maxScroll = math.max(0, #results - visible)
     self.scroll = math.max(0, math.min(self.scroll or 0, self.maxScroll))
 
     for i = 1, math.max(visible, #self.rows) do
         local row = self:GetRow(i)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", 6, -6 - top - (i - 1) * ROW_H)
+        row:SetPoint("TOPRIGHT", -9, -6 - top - (i - 1) * ROW_H)
         local id = (i <= visible) and results[i + self.scroll]
         row.guide = nil
         if id and guideMode then
@@ -615,11 +645,11 @@ function UI:RefreshList(keepResults)
     -- thumb
     local thumb = self.list.thumb
     if self.maxScroll > 0 then
-        local trackH = listH - 12
+        local trackH = listH - 12 - top
         local th = math.max(20, trackH * visible / #results)
         local pos = (self.scroll / self.maxScroll) * (trackH - th)
         thumb:ClearAllPoints()
-        thumb:SetPoint("TOPRIGHT", self.list, "TOPRIGHT", -3, -6 - pos)
+        thumb:SetPoint("TOPRIGHT", self.list, "TOPRIGHT", -3, -6 - top - pos)
         thumb:SetHeight(th)
         thumb:Show()
     else
@@ -787,7 +817,10 @@ end
 
 function UI:GuideClick(r, button)
     local action, arg = ns:GuideAction(r)
-    if action == "pins" then
+    if action == "area" then
+        ns:SetGuideFocus(arg.prof, arg.step)
+        if arg.zone then ns:ShowPoint({ zone = arg.zone }) end
+    elseif action == "pins" then
         if button == "RightButton" then
             ns:SetTrainerPins(arg, not ns:TrainerPinsOn(arg))
         else

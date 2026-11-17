@@ -128,9 +128,9 @@ function ns:GuideCurrentTrainers()
     for _, prof in ipairs(self.GUIDE_ORDER) do
         local skill = self:ProfSkill(prof)
         if skill then
-            for _, r in ipairs(self:GuideRows(prof)) do
+            for _, r in ipairs(self:GuideRows("", prof)) do
                 local s = r.step
-                if r.prof == prof and r.current and s and (s.kind == "train" or s.kind == "special") then
+                if r.current and s and (s.kind == "train" or s.kind == "special") then
                     for _, t in ipairs(self:GuideTrainers(prof, s.kind == "special" and s.npcs or nil)) do
                         if t.mapID and t.x and t.y then
                             out[#out + 1] = { prof = prof, npc = t.npc, mapID = t.mapID, x = t.x, y = t.y,
@@ -214,11 +214,12 @@ ns.GuideNote = Note
 
 -- Rows for the guide tab: a header per profession, then its steps.
 -- query filters by profession / recipe / material / zone / mob text.
-function ns:GuideRows(query)
+function ns:GuideRows(query, onlyProf)
     query = query and query:lower():gsub("^%s+", ""):gsub("%s+$", "") or ""
     local mine = MyFaction()
     local rows = {}
     for _, prof in ipairs(self.GUIDE_ORDER) do
+      if not onlyProf or onlyProf == prof then
         local g = self.Guides[prof]
         local skill = self:ProfSkill(prof)
         local profName = L("cat_" .. prof)
@@ -249,12 +250,83 @@ function ns:GuideRows(query)
                 end
             end
         end
-        if #steps > 0 then
+        if #steps > 0 or onlyProf then
             rows[#rows + 1] = { kind = "header", prof = prof, skill = skill, icon = g.icon }
             for _, r in ipairs(steps) do rows[#rows + 1] = r end
         end
+      end
     end
     return rows
+end
+
+-- which guide sub-tab to show: the saved one, else the first profession you have
+function ns:GuideProf()
+    local s = self.db and self.db.settings
+    if s and s.guideProf and self.Guides[s.guideProf] then return s.guideProf end
+    for _, p in ipairs(self.GUIDE_ORDER) do if self:ProfSkill(p) then return p end end
+    return self.GUIDE_ORDER[1]
+end
+
+------------------------------------------------------------------------
+-- Guide areas on the map: where to fish / skin for a step
+------------------------------------------------------------------------
+local function StepLabel(prof, s)
+    return L("cat_" .. prof) .. " " .. (s.from or "") .. "-" .. (s.to or "")
+end
+
+local function AreaFor(prof, s, flag)
+    local maps = {}
+    for _, z in ipairs(s.zones or {}) do
+        local id = ns:ResolveZoneName(z)
+        if id then maps[id] = true end
+    end
+    return { prof = prof, step = s, maps = maps, label = StepLabel(prof, s), note = Note(s), [flag] = true }
+end
+
+-- the area step you clicked in the guide (stays until you click another or right-click its pin)
+function ns:SetGuideFocus(prof, s)
+    self.guideFocus = s and AreaFor(prof, s, "focus") or nil
+    self:Fire("TRACKING_CHANGED")
+end
+
+-- clicked step + the area steps you are on now
+function ns:GuideAreas()
+    local out = {}
+    if self.guideFocus then out[1] = self.guideFocus end
+    for _, prof in ipairs(self.GUIDE_ORDER) do
+        if self:ProfSkill(prof) then
+            for _, r in ipairs(self:GuideRows("", prof)) do
+                local s = r.step
+                if r.current and s and s.kind == "area" and not (self.guideFocus and self.guideFocus.step == s) then
+                    out[#out + 1] = AreaFor(prof, s, "current")
+                end
+            end
+        end
+    end
+    return out
+end
+
+-- farm spots of the step's profession inside one zone (mob level matched to the skill for skinning)
+function ns:GuideAreaSpots(area, mapID)
+    local s = area.step
+    local lo, hi
+    if area.prof == "skinning" and s.from then lo, hi = math.floor(s.from / 5) - 2, math.ceil(s.to / 5) + 3 end
+    local out = {}
+    for id, data in pairs(self.Items) do
+        if data.cat == area.prof then
+            for _, sp in ipairs(data.spots or {}) do
+                if self:ResolveZone(sp.z) == mapID then
+                    local ok = true
+                    if lo then
+                        local a, b = self:ParseLevels(sp.lvl)
+                        if a and (b < lo or a > hi) then ok = false end
+                    end
+                    if ok then out[#out + 1] = { itemID = id, spot = sp } end
+                end
+            end
+        end
+    end
+    return out
 end
 
 -- Where clicking a step should take you.
@@ -267,7 +339,7 @@ function ns:GuideAction(r)
         if key ~= nil then return "item", key end
         return nil
     elseif s.kind == "area" then
-        return "point", { zone = s.zones and s.zones[1], label = L("cat_" .. r.prof) .. " " .. (s.from or "") .. "-" .. (s.to or "") }
+        return "area", { prof = r.prof, step = s, zone = s.zones and s.zones[1] }
     else
         local list = self:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
         local t = list[1]

@@ -255,6 +255,17 @@ function FarmAtlasIconPinMixin:OnMouseEnter()
     self.Highlight:Show()
     local tip = GameTooltip
     tip:SetOwner(self, "ANCHOR_RIGHT")
+    if info.guideArea then
+        local a = info.guideArea
+        tip:AddLine(L("g_area_title"), 1, 0.82, 0)
+        tip:AddLine(a.label, 1, 1, 1)
+        if a.step.mobs then tip:AddLine(L("g_mobs") .. " " .. a.step.mobs, 0.8, 0.8, 0.8, true) end
+        if a.note then tip:AddLine(a.note, 0.6, 0.85, 1, true) end
+        tip:AddLine(" ")
+        tip:AddLine(a.focus and L("g_area_hint") or L("g_pin_guide"), 0.8, 0.8, 0.8, true)
+        tip:Show()
+        return
+    end
     if info.trainer then
         tip:AddLine(info.label or "?", 1, 0.82, 0)
         tip:AddLine(L("cat_" .. info.prof) .. (info.rank and (" - " .. info.rank) or (" - " .. L("g_trainer"))), 1, 1, 1)
@@ -309,6 +320,10 @@ end
 
 function FarmAtlasIconPinMixin:OnMouseUp(button)
     if not self.info then return end
+    if self.info.guideArea then
+        if button == "RightButton" and self.info.guideArea.focus then ns:SetGuideFocus(nil) end
+        return
+    end
     if self.info.trainer then
         if button == "RightButton" and not (self.info.guide or self.info.town) then ns:SetTrainerPins(self.info.prof, false) end
         return
@@ -401,6 +416,30 @@ function Provider:RefreshAllData()
             end
         end
     end
+    -- guide: where to fish / skin for the clicked step and the step you are on
+    if ns.GuideAreas then
+        for _, area in ipairs(ns:GuideAreas()) do
+            if area.maps[mapID] then
+                local spots = ns:GuideAreaSpots(area, mapID)
+                local sx, sy, n = 0, 0, 0
+                for _, e in ipairs(spots) do
+                    local s = e.spot
+                    local info = { itemID = e.itemID, zoneKey = s.z, spot = s, x = s.x / 100, y = s.y / 100,
+                        r = (s.r or 6) / 100, cr = 1, cg = 0.82, cb = 0 }
+                    map:AcquirePin(AREA_TEMPLATE, info)
+                    map:AcquirePin(ICON_TEMPLATE, info)
+                    sx, sy, n = sx + s.x, sy + s.y, n + 1
+                end
+                -- one guide marker: what this area is for (right-click clears a clicked step)
+                local gx, gy = 0.5, 0.5
+                if n > 0 then gx, gy = sx / n / 100, sy / n / 100 - 0.06 end
+                map:AcquirePin(ICON_TEMPLATE, { guideArea = area, icon = ns.Guides[area.prof].icon,
+                    x = math.max(0.03, math.min(0.97, gx)), y = math.max(0.03, math.min(0.97, gy)),
+                    cr = 1, cg = 0.82, cb = 0 })
+            end
+        end
+    end
+
     if not ns.db.settings.showOnMap then return end
 
     for itemID in pairs(ns.db.tracked) do
