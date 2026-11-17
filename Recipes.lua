@@ -451,6 +451,8 @@ function ns:SearchRecipes(query)
     for charKey, c in pairs(self.db.chars) do
         for r in pairs(c.recipes or {}) do add(r) end
     end
+    -- every cooking recipe FarmAtlas knows about, so the unknown ones show (veiled)
+    for r in pairs(self.Recipes or {}) do add(r) end
     if query ~= "" then
         for r in pairs(self.db.recipeReagents) do add(r) end
         for _, data in pairs(self.Items) do

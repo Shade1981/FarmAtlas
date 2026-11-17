@@ -1028,15 +1028,35 @@ local function GetCard(d, i)
     card.go:SetJustifyH("RIGHT")
     card.go:SetText(L("show_on_map"))
     card.go:Hide()
+    -- red veil: a recipe you don't know yet
+    card.veil = card:CreateTexture(nil, "OVERLAY", nil, 2)
+    card.veil:SetTexture(WHITE)
+    card.veil:SetPoint("TOPLEFT", 1, -1)
+    card.veil:SetPoint("BOTTOMRIGHT", -1, 1)
+    card.veil:SetVertexColor(0.75, 0.08, 0.08, 0.22)
+    card.veil:Hide()
     card:SetScript("OnEnter", function(self)
         self:SetBackdropColor(unpack(C.hover))
         self:SetBackdropBorderColor(C.accent[1], C.accent[2], C.accent[3], 0.6)
         if self.zoneKey or self.mapID or self.point then self.go:Show() end
+        if self.recipe then
+            -- what the recipe makes: the game's own item tooltip when known
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            local made = ns:RecipeItemID(self.recipe)
+            if made then
+                GameTooltip:SetHyperlink("item:" .. made)
+            else
+                GameTooltip:AddLine(self.recipe, 1, 0.82, 0)
+                GameTooltip:AddLine(L("rc_effect_unknown"), 0.6, 0.6, 0.6, true)
+            end
+            GameTooltip:Show()
+        end
     end)
     card:SetScript("OnLeave", function(self)
         self:SetBackdropColor(unpack(C.card))
         self:SetBackdropBorderColor(unpack(C.border))
         self.go:Hide()
+        GameTooltip:Hide()
     end)
     card:SetScript("OnClick", function(self)
         if self.point then
@@ -1115,7 +1135,7 @@ function UI:RefreshDetail()
         y = y + 20
     end
 
-    local function Card(title, lvlText, lr, lg, lb, l2, l3, strip, zoneKey, mapID, point)
+    local function Card(title, lvlText, lr, lg, lb, l2, l3, strip, zoneKey, mapID, point, recipe, unknown)
         ci = ci + 1
         local card = GetCard(d, ci)
         card:ClearAllPoints()
@@ -1128,6 +1148,8 @@ function UI:RefreshDetail()
         card.line3:SetText(l3 or "")
         card.strip:SetVertexColor(strip[1], strip[2], strip[3], 1)
         card.zoneKey, card.mapID, card.point = zoneKey, mapID, point
+        card.recipe = recipe
+        card.veil:SetShown(unknown and true or false)
         local hgt = 30 + (l2 and l2 ~= "" and 14 or 0) + (l3 and l3 ~= "" and 14 or 0)
         card:SetHeight(math.max(hgt, 40))
         card:Show()
@@ -1149,7 +1171,7 @@ function UI:RefreshDetail()
             if mine then
                 status, sr, sg, sb, strip = L("known"), 0.3, 0.9, 0.35, { 0.3, 0.9, 0.35 }
             else
-                status, sr, sg, sb, strip = L("not_known"), 1, 0.4, 0.4, { 0.55, 0.6, 0.66 }
+                status, sr, sg, sb, strip = L("not_known"), 1, 0.4, 0.4, { 0.85, 0.2, 0.2 }
             end
             local l2, l3, point
             if not mine then
@@ -1189,7 +1211,7 @@ function UI:RefreshDetail()
                 local t = L("known_by", table.concat(altsKnow, ", "))
                 l3 = l3 and (l3 .. "   " .. t) or t
             end
-            Card(recipe, status, sr, sg, sb, l2, l3, strip, nil, nil, point)
+            Card(recipe, status, sr, sg, sb, l2, l3, strip, nil, nil, point, recipe, not mine)
         end
         y = y + 6
     end
