@@ -17,6 +17,7 @@
 - Price addons can plug in with FarmAtlas_AddPriceSource()
 - New: "What's new" window after each update (/farm news)
 - Stability hardening against the new client restrictions (minimap, sync, recipe scanning)
+- Fixed: farm goals window layout with large goals (count no longer overlaps the goal box)
 
 # FarmAtlas 1.1.1
 
