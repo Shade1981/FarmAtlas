@@ -6,7 +6,7 @@
 - Every trainer of a profession on the world map on demand (right-click the Guide header or /farm trainers), exact WoW Forever coordinates, faction-filtered
 - Farm areas follow the real shape of the spots (from recorded loot, yours + shared + community) on the world map and minimap, instead of circles
 - Auction house prices (optional: Auctionator / TSM / AHSnipe) on item and mob tooltips, last known price as fallback
-- Farm / hour on tooltips (value looted in the last 60 minutes) and the value of what you own (bags, bank, alts)
+- Farm / hour on tooltips in gold (value looted in the last 60 minutes; vendor price when no AH price is known) and the value of what you own (bags, bank, alts)
 - Settings window: gear button in the atlas header or /farm config
 - Recipes tab: all 123 WoW Forever cooking recipes; unknown ones get a red veil but the full recipe is readable on hover: the game's own item tooltip (exact Use: text), skill colors, reagents, fire / oven, where to learn
 - Materials listed in leveling order with the level / fishing skill on each row

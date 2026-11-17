@@ -99,21 +99,37 @@ function ns:PriceLines(key)
     local L = self.L
     local out = {}
     local price, src, at = self:GetAHPrice(key)
+    -- no AH price anywhere: the vendor price is always known, so Farm / hour
+    -- can still be shown in gold (marked "vendor")
+    local vendor = self:VendorPrice(key)
+    local value, valueTag = price, nil
+    if not value and vendor then value, valueTag = vendor, L("pr_vendor_tag") end
+    local function Gold(n)
+        local t = self:Money(value * n)
+        if valueTag then t = t .. " |cff8c96a8(" .. valueTag .. ")|r" end
+        return t
+    end
     if s.tooltipPrices then
         if price then
             local tag = src or "?"
             if at then tag = tag .. ", " .. (date and date("%m.%d %H:%M", at) or "") end
             out[#out + 1] = { L("pr_price"), self:Money(price) .. " |cff8c96a8(" .. tag .. ")|r" }
+        elseif vendor then
+            out[#out + 1] = { L("pr_price"), "|cff8c96a8" .. L("pr_noah") .. "|r" }
         else
             out[#out + 1] = { L("pr_price"), "|cff8c96a8" .. L("pr_noprice") .. "|r" }
+        end
+        if vendor and vendor > 0 then
+            out[#out + 1] = { L("pr_vendor"), self:Money(vendor) }
         end
     end
     if s.farmHour then
         local n = self:FarmHourCount(key)
         if not n then
             out[#out + 1] = { L("pr_hour"), "|cff8c96a8N/A|r" }
-        elseif price then
-            out[#out + 1] = { L("pr_hour"), L("pr_count", n) .. " = " .. self:Money(price * n) }
+        elseif value then
+            -- gold first: what the last 60 minutes of looting is worth
+            out[#out + 1] = { L("pr_hour"), Gold(n) .. "  |cff8c96a8" .. L("pr_count", n) .. "|r" }
         else
             out[#out + 1] = { L("pr_hour"), L("pr_count", n) }
         end
@@ -122,10 +138,23 @@ function ns:PriceLines(key)
         local bags, bank, alts = self:GetCounts(key)
         local total = (bags or 0) + (bank or 0) + (alts or 0)
         if total > 0 then
-            out[#out + 1] = { L("pr_owned"), L("pr_count", total) .. (price and (" = " .. self:Money(price * total)) or "") }
+            out[#out + 1] = { L("pr_owned"), value and (Gold(total) .. "  |cff8c96a8" .. L("pr_count", total) .. "|r")
+                or L("pr_count", total) }
         end
     end
     return out
+end
+
+-- what a merchant pays for one (from the game's item data; nil when unknown)
+function ns:VendorPrice(key)
+    local id = self.RealID and self:RealID(key) or key
+    if type(id) ~= "number" then return nil end
+    local fn = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if not fn then return nil end
+    local ok, v = pcall(function() return select(11, fn(id)) end)
+    v = ok and self.Plain(v) or nil
+    if type(v) == "number" and v > 0 then return v end
+    return nil
 end
 
 function ns:Money(copper)
