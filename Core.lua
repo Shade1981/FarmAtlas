@@ -364,12 +364,39 @@ function ns:Search(query, cat)
             results[#results + 1] = id
         end
     end
+    -- in leveling order: lowest farm level first (fishing skill counts as skill / 5)
+    local keys = {}
+    for _, id in ipairs(results) do keys[id] = self:ItemLevelKey(id) end
     table.sort(results, function(a, b)
-        local ta, tb = self:IsTracked(a) and 0 or 1, self:IsTracked(b) and 0 or 1
-        if ta ~= tb then return ta < tb end
+        if keys[a] ~= keys[b] then return keys[a] < keys[b] end
         return (self:GetItemName(a)) < (self:GetItemName(b))
     end)
     return results
+end
+
+-- lowest mob level (or fishing skill) of an item's farm spots
+-- returns lo, hi, isSkill  (nil when unknown)
+function ns:ItemLevelRange(id)
+    local data = self.Items[id]
+    if not data or not data.spots then return nil end
+    local lo, hi, skill
+    for _, s in ipairs(data.spots) do
+        local txt = tostring(s.lvl or "")
+        local a, b = self:ParseLevels(txt)
+        if a then
+            if txt:find("skill") then skill = true end
+            if not lo or a < lo then lo = a end
+            if not hi or (b or a) > hi then hi = b or a end
+        end
+    end
+    return lo, hi, skill
+end
+
+function ns:ItemLevelKey(id)
+    local lo, _, skill = self:ItemLevelRange(id)
+    if not lo then return 999 end
+    if skill then return lo / 5 end
+    return lo
 end
 
 ------------------------------------------------------------------------

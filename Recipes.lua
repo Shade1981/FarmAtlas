@@ -278,6 +278,14 @@ end
 -- Known by this character? and which other characters know it
 -- recipe name -> the item it makes. Learned from your Cooking window and from
 -- any item you see (bags, AH, chat links) whose name is a recipe's name.
+-- ask the client for the cooked items once, so their tooltips are ready
+ns:On("LOGIN", function()
+    if not (C_Item and C_Item.RequestLoadItemDataByID and ns.RecipeInfo) then return end
+    for _, info in pairs(ns.RecipeInfo) do
+        if info.item then pcall(C_Item.RequestLoadItemDataByID, info.item) end
+    end
+end)
+
 function ns:SetRecipeItem(recipe, itemID)
     if not (self.db and recipe and itemID) then return end
     self.db.recipeOut = self.db.recipeOut or {}
@@ -299,6 +307,8 @@ function ns:IsRecipeName(name)
 end
 
 function ns:RecipeItemID(recipe)
+    local info = self.RecipeInfo and self.RecipeInfo[recipe]
+    if info and info.item then return info.item end
     local id = self.db and self.db.recipeOut and self.db.recipeOut[recipe]
     if id then return id end
     -- the client may already know the item by name (it was seen this session)
@@ -328,7 +338,7 @@ function ns:AddRecipeTooltip(tip, recipe, opts)
     if info then
         if not made then
             if info.buff ~= nil then
-                tip:AddLine(L("ri_wellfed") .. (info.buff ~= "" and (": " .. info.buff) or ""), 0.3, 0.9, 0.35, true)
+                tip:AddLine(L("ri_wellfed") .. (info.buff ~= "" and (": " .. info.buff) or "") .. ", " .. L("ri_xp"), 0.3, 0.9, 0.35, true)
             end
             if info.kind then tip:AddLine(info.kind, 0.6, 0.6, 0.6) end
         end

@@ -537,6 +537,15 @@ local function SubLine(id)
     local data = ns.Items[id]
     local cat = ns:GetCategory(id)
     local parts = { L("cat_" .. cat) }
+    local lo, hi, skill = ns:ItemLevelRange(id)
+    if lo then
+        if skill then parts[#parts + 1] = "|cffffd200" .. L("lvl_skill", lo) .. "|r"
+        else
+            local r, g, b = ns:LevelColor(lo .. "-" .. (hi or lo))
+            parts[#parts + 1] = ("|cff%02x%02x%02x%s|r"):format(math.floor(r * 255), math.floor(g * 255), math.floor(b * 255),
+                L("lvl_range", lo .. (hi and hi ~= lo and ("-" .. hi) or "")))
+        end
+    end
     if data then
         local zones = {}
         for _, s in ipairs(data.spots) do zones[s.z] = true end
