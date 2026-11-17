@@ -169,7 +169,7 @@ end
 -- the minimap shows the town trainers and the current guide step
 function ns:MinimapTrainerList()
     local out, seen = {}, {}
-    for _, list in ipairs({ self.TownTrainers and self:TownTrainers() or {}, self:GuideCurrentTrainers() }) do
+    for _, list in ipairs({ self:GuideCurrentTrainers(), self.TownTrainers and self:TownTrainers() or {} }) do
         for _, t in ipairs(list) do
             if not seen[t.npc] then seen[t.npc] = true; out[#out + 1] = t end
         end

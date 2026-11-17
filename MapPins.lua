@@ -302,9 +302,11 @@ function Provider:RefreshAllData()
             elseif zoneLevel then x, y = Translate(t.mapID, t.x / 100, t.y / 100, 0, mapID) end
             if x and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
                 local cc = ns.CAT_COLORS[t.prof] or ns.CAT_COLORS.learned
-                local hot = t.guide or t.town
+                -- ring: gold = current guide step, blue = the place you are in, else the profession color
+                local r, g, b = cc[1], cc[2], cc[3]
+                if t.guide then r, g, b = 1, 0.82, 0 elseif t.town then r, g, b = 0.247, 0.780, 0.922 end
                 map:AcquirePin(ICON_TEMPLATE, { trainer = true, icon = ns.Guides[t.prof].icon, x = x, y = y,
-                    cr = hot and 1 or cc[1], cg = hot and 0.82 or cc[2], cb = hot and 0 or cc[3],
+                    cr = r, cg = g, cb = b,
                     label = t.npc, prof = t.prof, sub = t.note, rank = t.rank, guide = t.guide, town = t.town })
             end
         end

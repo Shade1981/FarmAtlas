@@ -315,7 +315,8 @@ local function UpdateTrainers()
                 p.t, p.dist = t, math.sqrt(north * north + west * west)
                 p.tex:SetTexture(ns.Guides[t.prof].icon)
                 local cc = ns.CAT_COLORS[t.prof] or ns.CAT_COLORS.learned
-                p.ring:SetVertexColor(cc[1], cc[2], cc[3], 1)
+                if t.guide then p.ring:SetVertexColor(1, 0.82, 0, 1)
+                else p.ring:SetVertexColor(0.247, 0.780, 0.922, 1) end
                 p:ClearAllPoints()
                 p:SetPoint("CENTER", Minimap, "CENTER", sx, sy)
                 p:Show()
