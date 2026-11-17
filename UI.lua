@@ -684,7 +684,8 @@ function UI:FillGuideRow(row, r)
         row.icon.icon:SetTexture(r.icon)
         local skill = r.skill and ("|cff8c96a8(" .. L("g_skill", r.skill) .. ")|r") or ("|cff8c96a8(" .. L("g_noprof") .. ")|r")
         row.name:SetText(("|cff%02x%02x%02x%s|r  %s"):format(math.floor(cc[1] * 255), math.floor(cc[2] * 255), math.floor(cc[3] * 255), string.upper(L("cat_" .. r.prof)), skill))
-        row.sub:SetText("")
+        local on = ns:TrainerPinsOn(r.prof)
+        row.sub:SetText(L("g_pins") .. ": " .. (on and ("|cff66e070" .. L("on") .. "|r") or ("|cffff6666" .. L("off") .. "|r")) .. "  |cff8c96a8(" .. L("g_pins_click") .. ")|r")
         row.strip:SetVertexColor(cc[1], cc[2], cc[3], 1)
         return
     end
@@ -721,6 +722,8 @@ function UI:GuideTooltip(r)
             GameTooltip:AddLine("   " .. loc, 0.7, 0.7, 0.7, true)
         end
         if #list > 6 then GameTooltip:AddLine(L("more", #list - 6), 0.55, 0.59, 0.66) end
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L("g_pins_click"), 0.8, 0.8, 0.8)
         GameTooltip:Show()
         return
     end
@@ -783,7 +786,10 @@ end
 
 function UI:GuideClick(r)
     local action, arg = ns:GuideAction(r)
-    if action == "item" then
+    if action == "pins" then
+        ns:SetTrainerPins(arg, not ns:TrainerPinsOn(arg))
+        self:RefreshList(true)
+    elseif action == "item" then
         self:Select(arg)
     elseif action == "point" then
         ns:ShowPoint(arg)

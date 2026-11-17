@@ -1,8 +1,9 @@
 -- FarmAtlas - profession leveling guides (1-300) for WoW Forever
 -- Source: wow-professions.com WoW Forever Cooking / Fishing / Skinning guides
--- (Nov 2026, based on the Forever beta). The guides give no coordinates for
--- fishing / skinning trainers: FarmAtlas records the exact spot the first
--- time you open a trainer's window (db.trainerPos) and shows it from then on.
+-- (Nov 2026, based on the Forever beta). Trainer coordinates (WoW Forever):
+-- fishing from method.gg, skinning from timesaver.gg / method.gg (Nov 2026).
+-- Where a source has none, FarmAtlas records the exact spot the first time you
+-- open that NPC's window (db.trainerPos) and shows it from then on.
 --
 -- step kinds:
 --   craft : { from, to, recipe, item = raw material, extra = other material, count }
@@ -12,7 +13,9 @@
 -- faction: "A" / "H" = only that faction; nil = both
 local _, ns = ...
 
-local function T(npc, zone, faction, note) return { npc = npc, zone = zone, faction = faction, note = note } end
+local function T(npc, zone, faction, note, mapID, x, y)
+    return { npc = npc, zone = zone, faction = faction, note = note, mapID = mapID, x = x, y = y }
+end
 
 ns.Guides = {
     ------------------------------------------------------------------
@@ -39,7 +42,7 @@ ns.Guides = {
             { kind = "craft", from = 100, to = 150, recipe = "Bristle Whisker Catfish", item = "Raw Bristle Whisker Catfish", count = 55 },
             { kind = "craft", from = 100, to = 130, recipe = "Cooked Crab Claw", item = "Crawler Claw", extra = "Mild Spices", count = 33, faction = "A" },
             { kind = "special", at = 125, rank = "Expert",
-              npcs = { T("Wulan", "Desolace", "H", "Shadowprey Village"), T("Shandrina", "Ashenvale", "A", "Mystral Lake") },
+              npcs = { T("Wulan", "Desolace", "H", "Shadowprey Village", 1443, 26.2, 69.8), T("Shandrina", "Ashenvale", "A", "Mystral Lake") },
               note = { en = "Buy the Expert Cookbook (needs Cooking 125)", hu = "Vedd meg az Expert Cookbookot (Főzés 125 kell)" } },
             { kind = "craft", from = 130, to = 175, recipe = "Curiously Tasty Omelet", item = "Raptor Egg", extra = "Hot Spices", count = 50 },
             { kind = "craft", from = 130, to = 175, recipe = "Goblin Deviled Clams", item = "Tangy Clam Meat", extra = "Hot Spices", count = 50 },
@@ -49,8 +52,8 @@ ns.Guides = {
             { kind = "craft", from = 175, to = 225, recipe = "Soothing Turtle Bisque", item = "Turtle Meat", extra = "Soothing Spices", count = 55,
               note = { en = "Recipe from a quest: Christoph Jeffcoat (Horde, Hillsbrad) / Chef Jessen (Alliance)", hu = "Recept küldetésből: Christoph Jeffcoat (Horda, Hillsbrad) / Chef Jessen (Szövetség)" } },
             { kind = "special", at = 225, rank = "Artisan",
-              npcs = { T("Zamja", "Orgrimmar", "H", "quest: To Gadgetzan You Go!"), T("Daryl Riknussun", "Ironforge", "A", "quest: I Know A Guy..."),
-                       T("Dirge Quikcleave", "Tanaris", "N", "Gadgetzan - Clamlette Surprise") },
+              npcs = { T("Zamja", "Orgrimmar", "H", "quest: To Gadgetzan You Go!", 1454, 57.4, 53.8), T("Daryl Riknussun", "Ironforge", "A", "quest: I Know A Guy...", 1455, 60.4, 38.1),
+                       T("Dirge Quikcleave", "Tanaris", "N", "Gadgetzan inn - Clamlette Surprise", 1446, 52.6, 28.1) },
               note = { en = "Level 35. Bring 12 Giant Egg, 10 Zesty Clam Meat, 20 Alterac Swiss to Dirge Quikcleave",
                        hu = "35-ös szint. Vigyél 12 Giant Egg-et, 10 Zesty Clam Meat-et, 20 Alterac Swiss-t Dirge Quikcleave-nek" } },
             { kind = "craft", from = 225, to = 300, recipe = "Spotted Yellowtail", item = "Raw Spotted Yellowtail", count = 140 },
@@ -62,13 +65,31 @@ ns.Guides = {
     fishing = {
         icon = "Interface\\Icons\\Trade_Fishing",
         trainers = {
-            T("Lumak", "Orgrimmar", "H"), T("Armand Cromwell", "Undercity", "H"), T("Kah Mistrunner", "Thunder Bluff", "H"),
-            T("Lau'Tiki", "Durotar", "H", "Sen'jin Village coast"), T("Uthan Stillwater", "Mulgore", "H", "Stonebull Lake"),
-            T("Clyde Kellen", "Tirisfal Glades", "H", "Brightwater Lake"),
-            T("Arnold Leland", "Stormwind City", "A"), T("Grimnur Stonebrand", "Ironforge", "A"), T("Astaia", "Darnassus", "A"),
-            T("Lee Brown", "Elwynn Forest", "A", "Crystal Lake"), T("Paxton Ganter", "Dun Morogh", "A", "Iceflow Lake"),
-            T("Androl Oakhand", "Teldrassil", "A", "Rut'theran Village dock"),
-            T("Baelann Swiftcurrent", "Zephras Isle", nil, "Valanaar"), T("Fenn Fairweather", "Zephras Isle", nil, "Shen'dar Village"),
+            T("Lumak", "Orgrimmar", "H", "Valley of Honor", 1454, 69.8, 29.6),
+            T("Armand Cromwell", "Undercity", "H", "Magic Quarter", 1458, 80.8, 31.2),
+            T("Kah Mistrunner", "Thunder Bluff", "H", "Middle Tier", 1456, 56.0, 46.8),
+            T("Lau'Tiki", "Durotar", "H", "south of Sen'jin Village", 1411, 53.2, 81.6),
+            T("Uthan Stillwater", "Mulgore", "H", "Stonebull Lake, Bloodhoof Village", 1412, 44.6, 60.6),
+            T("Clyde Kellen", "Tirisfal Glades", "H", "Brightwater Lake", 1420, 67.2, 51.0),
+            T("Kil'Hiwana", "Ashenvale", "H", "south of Blackfathom Deeps", 1440, 10.8, 33.6),
+            T("Lui'Mala", "Desolace", "H", "Shadowprey Village", 1443, 22.6, 72.6),
+            T("Katoom the Angler", "The Hinterlands", "H", "Revantusk Village", 1425, 80.2, 81.4),
+            T("Arnold Leland", "Stormwind City", "A", "Trade District", 1453, 55.0, 69.6),
+            T("Grimnur Stonebrand", "Ironforge", "A", "Forlorn Cavern", 1455, 48.4, 6.4),
+            T("Astaia", "Darnassus", "A", "Temple Gardens", 1457, 47.6, 56.6),
+            T("Lee Brown", "Elwynn Forest", "A", "Crystal Lake, Goldshire", 1429, 47.6, 62.2),
+            T("Paxton Ganter", "Dun Morogh", "A", "Iceflow Lake, Brewnall Village", 1426, 35.6, 40.4),
+            T("Androl Oakhand", "Teldrassil", "A", "Rut'theran Village dock", 1438, 55.8, 93.6),
+            T("Warg Deepwater", "Loch Modan", "A", "Thelsamar", 1432, 40.6, 39.6),
+            T("Matthew Hooper", "Redridge Mountains", "A", "Lakeshire", 1433, 26.8, 50.4),
+            T("Harold Riggs", "Wetlands", "A", "Menethil Harbor", 1437, 8.2, 58.6),
+            T("Donald Rabonne", "Hillsbrad Foothills", "A", "Southshore", 1424, 50.6, 61.0),
+            T("Hunter Moore", "Hillsbrad Foothills", "A", nil, 1424, 54.0, 80.2),
+            T("Brannock", "Feralas", "A", "Feathermoon Stronghold", 1444, 32.2, 41.6),
+            T("Baelann Swiftcurrent", "Zephras Isle", "N", "Valanaar", 2521, 63.2, 75.8),
+            T("Fenn Fairweather", "Zephras Isle", "N", "Shen'dar Village", 2521, 45.0, 48.4),
+            T("Myizz Luckycatch", "Stranglethorn Vale", "N", "Booty Bay", 1434, 27.6, 77.0),
+            T("Krix", "Riverglades", "N", "Powderfuse Port", 2548, 79.2, 54.8),
         },
         steps = {
             { kind = "train", at = 1, rank = "Apprentice",
@@ -99,15 +120,29 @@ ns.Guides = {
     skinning = {
         icon = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01",
         trainers = {
-            T("Thuwd", "Orgrimmar", "H"), T("Killian Hagey", "Undercity", "H"), T("Mooranta", "Thunder Bluff", "H"),
-            T("Kagil", "Durotar", "H", "Valley of Trials - up to 75"), T("Nawka Wildsong", "Mulgore", "H", "Camp Narache - up to 75"),
-            T("Yonn Deepcut", "Mulgore", "H", "Bloodhoof Village"), T("Margaret Weaver", "Tirisfal Glades", "H", "Deathknell - up to 75"),
-            T("Rand Rhobart", "Tirisfal Glades", "H"),
-            T("Maris Granger", "Stormwind City", "A"), T("Balthus Stoneflayer", "Ironforge", "A"), T("Eladriel", "Darnassus", "A"),
-            T("Riley Peltskinner", "Elwynn Forest", "A", "Northshire - up to 75"), T("Helene Peltskinner", "Elwynn Forest", "A", "Goldshire"),
-            T("Brighid Stormflayer", "Dun Morogh", "A", "up to 75"), T("Terunne Bearshaper", "Teldrassil", "A", "Shadowglen - up to 75"),
-            T("Radnaal Maneweaver", "Teldrassil", "A"),
-            T("Ishlee Breezewhisper", "Zephras Isle", nil, "Valanaar"), T("Mendalass Tattermend", "Zephras Isle", nil, "Shen'dar Village"),
+            T("Thuwd", "Orgrimmar", "H", "The Drag", 1454, 63.2, 45.4),
+            T("Killian Hagey", "Undercity", "H", nil, 1458, 70.2, 59.1),
+            T("Mooranta", "Thunder Bluff", "H", nil, 1456, 44.5, 43.0),
+            T("Kagil", "Durotar", "H", "Valley of Trials - up to 75", 1411, 40.8, 67.9),
+            T("Nawka Wildsong", "Mulgore", "H", "Camp Narache - up to 75", 1412, 44.4, 76.8),
+            T("Yonn Deepcut", "Mulgore", "H", "Bloodhoof Village", 1412, 45.0, 61.4),
+            T("Margaret Weaver", "Tirisfal Glades", "H", "Deathknell - up to 75", 1420, 32.6, 65.8),
+            T("Rand Rhobart", "Tirisfal Glades", "H", nil, 1420, 65.5, 60.0),
+            T("Dranh", "The Barrens", "H", "Camp Taurajo", 1413, 45.1, 59.1),
+            T("Malux", "Desolace", "H", "Shadowprey Village", 1443, 23.3, 69.7),
+            T("Kulleg Stonehorn", "Feralas", "H", "Camp Mojache", 1444, 74.5, 43.0),
+            T("Maris Granger", "Stormwind City", "A", "Old Town", 1453, 72.2, 62.5),
+            T("Balthus Stoneflayer", "Ironforge", "A", "The Great Forge", 1455, 39.7, 32.3),
+            T("Eladriel", "Darnassus", "A", "Craftsmen's Terrace", 1457, 64.2, 22.1),
+            T("Riley Peltskinner", "Elwynn Forest", "A", "Northshire - up to 75", 1429, 47.0, 40.0),
+            T("Helene Peltskinner", "Elwynn Forest", "A", "Goldshire", 1429, 46.3, 62.3),
+            T("Brighid Stormflayer", "Dun Morogh", "A", "up to 75", 1426, 29.2, 67.6),
+            T("Terunne Bearshaper", "Teldrassil", "A", "Shadowglen - up to 75", 1438, 59.4, 38.7),
+            T("Radnaal Maneweaver", "Teldrassil", "A", nil, 1438, 42.0, 50.0),
+            T("Wilma Ranthal", "Redridge Mountains", "A", nil, 1433, 83.6, 71.2),
+            T("Jayla", "Ashenvale", "A", "Silverwind Refuge", 1440, 49.9, 67.2),
+            T("Ishlee Breezewhisper", "Zephras Isle", "N", "Valanaar", 2521, 59.6, 76.0),
+            T("Mendalass Tattermend", "Zephras Isle", "N", "Shen'dar Village", 2521, 43.3, 43.4),
         },
         steps = {
             { kind = "train", at = 1, rank = "Apprentice",

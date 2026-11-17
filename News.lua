@@ -8,7 +8,7 @@ local HISTORY = {
     { v = "1.2.0", date = "2026-11-17",
       en = {
         "New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever. It shows where you are now, what to make or where to go next, and the trainers of your faction.",
-        "Trainers: click a step to see it on the map. The first time you open a trainer's window FarmAtlas records the exact spot.",
+        "Trainers on the world map: every Cooking, Fishing and Skinning trainer of your faction (plus neutral ones) with exact WoW Forever coordinates. Switch them per profession by clicking its header in the Guide tab, or with /farm trainers.",
         "New: auction house prices from Auctionator or TSM (optional) on item tooltips and cards, plus the value of 100 kills from real drop rates.",
         "Other price addons can plug in with FarmAtlas_AddPriceSource().",
         "New: this \"What's new\" window - after every update you see the changes once.",
@@ -16,7 +16,7 @@ local HISTORY = {
       },
       hu = {
         "Új: Útmutató fül - Főzés, Horgászat és Nyúzás 1-300 WoW Foreverre. Megmutatja, hol tartasz, mit készíts vagy hova menj, és a frakciód trénereit.",
-        "Trénerek: egy lépésre kattintva a térképen látod. Amikor először megnyitod egy tréner ablakát, a FarmAtlas felírja a pontos helyét.",
+        "Trénerek a világtérképen: a frakciód (és a semleges) főző-, horgász- és nyúzótrénerei pontos WoW Forever koordinátákkal. Szakmánként ki-be kapcsolhatod az Útmutató fülön a szakma fejlécére kattintva, vagy a /farm trainers paranccsal.",
         "Új: aukciósházi árak az Auctionatorból vagy a TSM-ből (nem kötelező) a tárgy-tooltipeken és kártyákon, plusz 100 ölés értéke a valódi drop-arányból.",
         "Más ár-addonok is bekapcsolódhatnak a FarmAtlas_AddPriceSource() függvénnyel.",
         "Új: ez a frissítési ablak - minden frissítés után egyszer megmutatja az újdonságokat.",

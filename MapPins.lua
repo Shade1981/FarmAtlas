@@ -166,6 +166,15 @@ function FarmAtlasIconPinMixin:OnMouseEnter()
     self.Highlight:Show()
     local tip = GameTooltip
     tip:SetOwner(self, "ANCHOR_RIGHT")
+    if info.trainer then
+        tip:AddLine(info.label or "?", 1, 0.82, 0)
+        tip:AddLine(L("cat_" .. info.prof) .. (info.rank and (" - " .. info.rank) or (" - " .. L("g_trainer"))), 1, 1, 1)
+        if info.sub then tip:AddLine(info.sub, 0.7, 0.7, 0.7, true) end
+        tip:AddLine(" ")
+        tip:AddLine(L("g_pin_hint"), 0.8, 0.8, 0.8, true)
+        tip:Show()
+        return
+    end
     if info.waypoint then
         tip:AddLine(info.label or "?", 1, 0.82, 0)
         if info.sub then tip:AddLine(info.sub, 1, 1, 1, true) end
@@ -207,6 +216,10 @@ end
 
 function FarmAtlasIconPinMixin:OnMouseUp(button)
     if not self.info then return end
+    if self.info.trainer then
+        if button == "RightButton" then ns:SetTrainerPins(self.info.prof, false) end
+        return
+    end
     if self.info.waypoint then
         if button == "RightButton" then ns.waypoint = nil; ns:Fire("TRACKING_CHANGED") end
         return
@@ -273,6 +286,21 @@ function Provider:RefreshAllData()
         if x then
             map:AcquirePin(ICON_TEMPLATE, { waypoint = true, icon = "Interface\\Icons\\INV_Scroll_03",
                 x = x, y = y, cr = 1, cg = 0.82, cb = 0, label = wp.label, sub = wp.sub })
+        end
+    end
+    -- profession trainers (Guide tab: click a profession header to switch them)
+    if ns.TrainerPins then
+        local mi = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
+        local zoneLevel = mi and mi.mapType and mi.mapType >= 3
+        for _, t in ipairs(ns:TrainerPins()) do
+            local x, y
+            if t.mapID == mapID then x, y = t.x / 100, t.y / 100
+            elseif zoneLevel then x, y = Translate(t.mapID, t.x / 100, t.y / 100, 0, mapID) end
+            if x and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
+                local cc = ns.CAT_COLORS[t.prof] or ns.CAT_COLORS.learned
+                map:AcquirePin(ICON_TEMPLATE, { trainer = true, icon = ns.Guides[t.prof].icon, x = x, y = y,
+                    cr = cc[1], cg = cc[2], cb = cc[3], label = t.npc, prof = t.prof, sub = t.note, rank = t.rank })
+            end
         end
     end
     if not ns.db.settings.showOnMap then return end

@@ -36,6 +36,19 @@ function ns:ProfSkill(prof)
     return nil
 end
 
+-- is this NPC named anywhere in the guides? (only those get their spot recorded at a vendor)
+function ns:IsGuideNPC(npc)
+    if not self.guideNPCs then
+        local t = {}
+        for _, g in pairs(self.Guides) do
+            if type(g.trainers) == "table" then for _, x in ipairs(g.trainers) do t[x.npc] = true end end
+            for _, s in ipairs(g.steps) do for _, x in ipairs(s.npcs or {}) do t[x.npc] = true end end
+        end
+        self.guideNPCs = t
+    end
+    return self.guideNPCs[npc] or false
+end
+
 -- Remember where a trainer stands the first time their window is opened.
 function ns:RecordTrainerPos(npc, mapID, x, y)
     if not (npc and mapID and x and y and self.db) then return end
@@ -61,10 +74,73 @@ function ns:GuideTrainers(prof, list)
         for _, t in ipairs(src) do
             local here = (t.zone == cur)
             if FactionOK(t.faction, mine) and ((pass == 1) == here) then
-                local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction }
+                local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID }
                 local learned = self.db and self.db.trainerPos and self.db.trainerPos[t.npc]
                 if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
+                if not e.x then
+                    -- the same NPC may have coordinates in the recipe data
+                    local w = self:NPCSpot(t.npc)
+                    if w then e.x, e.y = w.x, w.y; e.zone = e.zone or w.zone end
+                end
+                if not e.mapID and e.zone then e.mapID = self:ResolveZoneName(e.zone) end
                 out[#out + 1] = e
+            end
+        end
+    end
+    return out
+end
+
+-- coordinates of an NPC from the recipe vendor data, if any
+function ns:NPCSpot(npc)
+    if not self.npcSpots then
+        local t = {}
+        for _, info in pairs(self.Recipes or {}) do
+            for _, w in ipairs(info.where or {}) do
+                if w.npc and w.x and w.y and not t[w.npc] then t[w.npc] = w end
+            end
+        end
+        self.npcSpots = t
+    end
+    return self.npcSpots[npc]
+end
+
+-- Trainer map pins: which professions are switched on (default: all)
+function ns:TrainerPinsOn(prof)
+    local s = self.db and self.db.settings
+    if not s then return false end
+    s.trainerPins = s.trainerPins or {}
+    if s.trainerPins[prof] == nil then return true end
+    return s.trainerPins[prof]
+end
+
+function ns:SetTrainerPins(prof, on)
+    self.db.settings.trainerPins = self.db.settings.trainerPins or {}
+    self.db.settings.trainerPins[prof] = on and true or false
+    self:Fire("TRACKING_CHANGED")
+end
+
+-- every trainer / guide NPC with coordinates for the switched-on professions
+-- (your faction + neutral): { prof, npc, mapID, x, y, note, rank }
+function ns:TrainerPins()
+    local out = {}
+    for _, prof in ipairs(self.GUIDE_ORDER) do
+        if self:TrainerPinsOn(prof) then
+            local seen = {}
+            for _, t in ipairs(self:GuideTrainers(prof)) do
+                if t.mapID and t.x and t.y and not seen[t.npc] then
+                    seen[t.npc] = true
+                    out[#out + 1] = { prof = prof, npc = t.npc, mapID = t.mapID, x = t.x, y = t.y, note = t.note, learned = t.learned }
+                end
+            end
+            for _, s in ipairs(self.Guides[prof].steps) do
+                if s.kind == "special" and s.npcs then
+                    for _, t in ipairs(self:GuideTrainers(prof, s.npcs)) do
+                        if t.mapID and t.x and t.y and not seen[t.npc] then
+                            seen[t.npc] = true
+                            out[#out + 1] = { prof = prof, npc = t.npc, mapID = t.mapID, x = t.x, y = t.y, note = t.note, rank = s.rank, learned = t.learned }
+                        end
+                    end
+                end
             end
         end
     end
@@ -125,6 +201,7 @@ end
 
 -- Where clicking a step should take you.
 function ns:GuideAction(r)
+    if r.kind == "header" then return "pins", r.prof end
     local s = r.step
     if not s then return end
     if s.kind == "craft" then

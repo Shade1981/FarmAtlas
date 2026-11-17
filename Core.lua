@@ -199,7 +199,8 @@ function ns:ResolveZoneName(name)
     if nameToMapID[name] then return nameToMapID[name] end
     -- capitals: classic uiMapIDs as a fallback when the map index misses them
     local CAPITALS = { ["Stormwind City"] = 1453, ["Orgrimmar"] = 1454, ["Ironforge"] = 1455,
-        ["Thunder Bluff"] = 1456, ["Darnassus"] = 1457, ["Undercity"] = 1458 }
+        ["Thunder Bluff"] = 1456, ["Darnassus"] = 1457, ["Undercity"] = 1458,
+        ["Zephras Isle"] = 2521, ["Riverglades"] = 2548 }
     return CAPITALS[name]
 end
 
@@ -561,6 +562,11 @@ SlashCmdList.FARMATLAS = function(msg)
         local list = ns.db.blocked or {}
         if #list == 0 then ns:Print("no blocked actions recorded") end
         for _, line in ipairs(list) do ns:Print(line) end
+    elseif cmd == "trainers" then
+        local any = false
+        for _, p in ipairs(ns.GUIDE_ORDER or {}) do if ns:TrainerPinsOn(p) then any = true end end
+        for _, p in ipairs(ns.GUIDE_ORDER or {}) do ns:SetTrainerPins(p, not any) end
+        ns:Print(L("g_pins") .. ": " .. (any and L("off") or L("on")))
     elseif cmd == "news" then
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then

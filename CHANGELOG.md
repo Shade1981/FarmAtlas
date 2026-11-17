@@ -1,7 +1,7 @@
 # FarmAtlas 1.2.0
 
 - New: Guide tab - Cooking, Fishing and Skinning 1-300 for WoW Forever, faction-aware, with your current step highlighted
-- Trainers on the map; exact trainer spots are recorded the first time you open their window
+- Trainers on the world map with exact WoW Forever coordinates (Cooking, Fishing, Skinning), faction-filtered, switchable per profession (Guide tab header or /farm trainers)
 - Auction house prices (optional: Auctionator / TSM) on item tooltips and cards, value of 100 kills from real drop rates
 - Price addons can plug in with FarmAtlas_AddPriceSource()
 - New: "What's new" window after each update (/farm news)

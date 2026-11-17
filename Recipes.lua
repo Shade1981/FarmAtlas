@@ -187,6 +187,7 @@ local function ScanMerchant()
     if not (GetMerchantNumItems and GetMerchantItemInfo) then return end
     local npc = ns.Plain(UnitName("npc"))
     local mapID, x, y = PlayerPos()
+    if ns.RecordTrainerPos and npc and ns.IsGuideNPC and ns:IsGuideNPC(npc) then ns:RecordTrainerPos(npc, mapID, x, y) end
     local found = false
     for i = 1, GetMerchantNumItems() do
         local link = GetMerchantItemLink(i)
