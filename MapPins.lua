@@ -244,6 +244,9 @@ end
 
 function FarmAtlasIconPinMixin:OnAcquired(info)
     self.info = info
+    local sz = info.small or 22
+    if self.SetSize then self:SetSize(sz, sz) end
+    if self.SetAlpha then self:SetAlpha(info.nodePin == "known" and 0.85 or 1) end
     self.Icon:SetTexture(info.icon or ns:GetItemIcon(info.itemID))
     self.Ring:SetVertexColor(info.cr, info.cg, info.cb, 1)
     self:SetPosition(info.x, info.y)
@@ -255,6 +258,22 @@ function FarmAtlasIconPinMixin:OnMouseEnter()
     self.Highlight:Show()
     local tip = GameTooltip
     tip:SetOwner(self, "ANCHOR_RIGHT")
+    if info.nodePin then
+        tip:AddLine(ns:GetItemName(info.itemID) or "?", 1, 1, 1)
+        if info.nodePin == "site" and info.site then
+            tip:ClearLines()
+            ns:FishSiteTooltip(tip, info.site)
+        elseif info.nodePin == "water" then
+            tip:AddLine(L("np_water"), 0.55, 0.8, 1, true)
+            if info.spot and info.spot.lvl then tip:AddLine(info.spot.lvl, 0.8, 0.8, 0.8) end
+        elseif info.nodePin == "learned" then
+            tip:AddLine(L("np_learned", info.n or 1), 0.6, 1, 0.6)
+        else
+            tip:AddLine(L("np_known"), 0.8, 0.8, 0.8)
+        end
+        tip:Show()
+        return
+    end
     if info.guideArea then
         local a = info.guideArea
         tip:AddLine(L("g_area_title"), 1, 0.82, 0)
@@ -421,27 +440,56 @@ function Provider:RefreshAllData()
         for _, area in ipairs(ns:GuideAreas()) do
             if area.maps[mapID] then
                 local spots = ns:GuideAreaSpots(area, mapID)
-                local sx, sy, n = 0, 0, 0
+                -- the marker goes on a real spot (the one nearest to you), never on
+                -- the average of several spots: that can fall on dry land
+                local px, py
+                if C_Map and C_Map.GetPlayerMapPosition then
+                    local p = C_Map.GetPlayerMapPosition(mapID, "player")
+                    if p then px, py = p:GetXY(); if px then px, py = px * 100, py * 100 end end
+                end
+                local best, bestD
+                local wantFish = {}
                 for _, e in ipairs(spots) do
                     local s = e.spot
-                    local info = { itemID = e.itemID, zoneKey = s.z, spot = s, x = s.x / 100, y = s.y / 100,
-                        r = (s.r or 6) / 100, cr = 1, cg = 0.82, cb = 0 }
-                    map:AcquirePin(AREA_TEMPLATE, info)
-                    map:AcquirePin(ICON_TEMPLATE, info)
-                    sx, sy, n = sx + s.x, sy + s.y, n + 1
+                    if area.prof == "fishing" and ns.FISH_SITES then
+                        wantFish[e.itemID] = true
+                    else
+                        local info = { itemID = e.itemID, zoneKey = s.z, spot = s, x = s.x / 100, y = s.y / 100,
+                            r = (s.r or 6) / 100, cr = 1, cg = 0.82, cb = 0 }
+                        map:AcquirePin(AREA_TEMPLATE, info)
+                        map:AcquirePin(ICON_TEMPLATE, info)
+                        local d = px and ((s.x - px) ^ 2 + (s.y - py) ^ 2) or (best and math.huge or 0)
+                        if not bestD or d < bestD then best, bestD = s, d end
+                    end
                 end
-                -- one guide marker: what this area is for (right-click clears a clicked step)
-                local gx, gy = 0.5, 0.5
-                if n > 0 then gx, gy = sx / n / 100, sy / n / 100 - 0.06 end
-                map:AcquirePin(ICON_TEMPLATE, { guideArea = area, icon = ns.Guides[area.prof].icon,
-                    x = math.max(0.03, math.min(0.97, gx)), y = math.max(0.03, math.min(0.97, gy)),
-                    cr = 1, cg = 0.82, cb = 0 })
+                -- fishing step: the fishing places of this map that offer the step's fish
+                if area.prof == "fishing" and ns.FISH_SITES then
+                    for _, site in ipairs(ns.FISH_SITES[mapID] or {}) do
+                        local any
+                        for id in pairs(wantFish) do if site.fish[id] then any = id end end
+                        if any then
+                            map:AcquirePin(ICON_TEMPLATE, { itemID = any, x = site.x / 100, y = site.y / 100, small = 18,
+                                nodePin = "site", site = site, cr = 1, cg = 0.82, cb = 0 })
+                            local d = px and ((site.x - px) ^ 2 + (site.y - py) ^ 2) or (best and math.huge or 0)
+                            if not bestD or d < bestD then best, bestD = { x = site.x, y = site.y, r = 3 }, d end
+                        end
+                    end
+                end
+                -- one guide marker on the edge of that spot (right-click clears a clicked step);
+                -- no spot on this map = no marker, instead of a pin in the middle of nowhere
+                if best then
+                    local gx, gy = best.x / 100, (best.y - (best.r or 6) * 0.7) / 100
+                    map:AcquirePin(ICON_TEMPLATE, { guideArea = area, icon = ns.Guides[area.prof].icon,
+                        x = math.max(0.03, math.min(0.97, gx)), y = math.max(0.03, math.min(0.97, gy)),
+                        cr = 1, cg = 0.82, cb = 0 })
+                end
             end
         end
     end
 
     if not ns.db.settings.showOnMap then return end
 
+    local drawnSites = {}
     for itemID in pairs(ns.db.tracked) do
         local cr, cg, cb = ns:GetTrackColor(itemID)
         local data = ns.Items[itemID]
@@ -449,7 +497,15 @@ function Provider:RefreshAllData()
         for _, lz in ipairs(ns:GetLearnedZones(itemID)) do learnedZones[lz.mapID] = lz end
         -- real-shape areas on the zone's own map (enough loot recorded there)
         local shaped = {}
-        if ns.LearnedRegions and learnedZones[mapID] then
+        -- herbs / ore are single nodes: an area shape would only draw blobs
+        -- around each gathered node, so these keep their exact dots instead
+        local cat = (data and data.cat) or (ns.db.learned[itemID] and ns.db.learned[itemID].cat)
+        local isNode = cat == "herbalism" or cat == "mining"
+        -- exact node positions from an installed node addon (Questie / GatherMate2)
+        local ext = ns.ExternalNodes and ns:ExternalNodes(itemID) or nil
+        -- area shapes from learned loot are retired: with a few loots they only
+        -- drew confusing blobs. Exact spots are shown as small item icons instead.
+        if false and ns.LearnedRegions and learnedZones[mapID] and not isNode then
             local regions = ns:LearnedRegions(itemID, mapID)
             if #regions > 0 then
                 shaped[mapID] = true
@@ -477,11 +533,40 @@ function Provider:RefreshAllData()
                             x = x, y = y, r = r, cr = cr, cg = cg, cb = cb,
                             learnedCount = lz and lz.n or 0,
                         }
-                        -- the real shape replaces the circle; the icon stays
-                        if not shaped[zMap] then map:AcquirePin(AREA_TEMPLATE, info) end
-                        map:AcquirePin(ICON_TEMPLATE, info)
+                        -- the real shape replaces the circle; the icon stays.
+                        -- exact nodes known for this zone: no circle and no icon at all
+                        if cat == "fishing" and ns.FISH_SITES then
+                            -- fish: drawn below as one marker per water, never a circle over land
+                        elseif not (isNode and ext and ext[zMap] and #ext[zMap] > 0) then
+                            if not shaped[zMap] then map:AcquirePin(AREA_TEMPLATE, info) end
+                            map:AcquirePin(ICON_TEMPLATE, info)
+                        end
                     end
                 end
+            end
+        end
+
+        -- fishing places: one marker per water (a new one where the catch changes)
+        if cat == "fishing" and ns.FishSitesFor then
+            for _, e in ipairs(ns:FishSitesFor(itemID)) do
+                if not drawnSites[e.site] then
+                    local wx, wy = Translate(e.mapID, e.site.x / 100, e.site.y / 100, 0, mapID)
+                    if wx then
+                        drawnSites[e.site] = true
+                        map:AcquirePin(ICON_TEMPLATE, { itemID = itemID, x = wx, y = wy, small = 18,
+                            nodePin = "site", site = e.site, cr = cr, cg = cg, cb = cb })
+                    end
+                end
+            end
+        end
+
+        -- exact nodes of this zone (only on the zone's own map: hundreds of them)
+        if ext and ext[mapID] then
+            for _, pt in ipairs(ext[mapID]) do
+                map:AcquirePin(ICON_TEMPLATE, {
+                    itemID = itemID, x = pt[1] / 100, y = pt[2] / 100, small = 11, nodePin = "known", node = true,
+                    cr = cr, cg = cg, cb = cb,
+                })
             end
         end
 
@@ -489,10 +574,10 @@ function Provider:RefreshAllData()
         for zMap, lz in pairs(learnedZones) do
             if shaped[zMap] then lz = { cells = {} } end
             for _, c in ipairs(lz.cells) do
-                local x, y, r = Translate(zMap, c.x / 100, c.y / 100, 0.006, mapID)
-                if x then
-                    map:AcquirePin(AREA_TEMPLATE, {
-                        itemID = itemID, x = x, y = y, r = r, learned = true,
+                -- only on the zone's own map (on a continent they are just noise)
+                if zMap == mapID then
+                    map:AcquirePin(ICON_TEMPLATE, {
+                        itemID = itemID, x = c.x / 100, y = c.y / 100, small = 13, nodePin = "learned", n = c.n,
                         cr = cr, cg = cg, cb = cb,
                     })
                 end

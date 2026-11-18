@@ -9,7 +9,7 @@ local L = ns.L
 
 local CIRCLE = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 local UPDATE_EVERY = 0.15
-local MAX_PINS = 24
+local MAX_PINS = 80
 
 -- minimap diameter in yards per zoom level (same values HereBeDragons uses)
 local OUTDOOR = { [0] = 466 + 2 / 3, 400, 333 + 1 / 3, 266 + 2 / 3, 200, 133 + 1 / 3 }
@@ -43,6 +43,7 @@ local function Rebuild()
     wipe(spots)
     dirty = false
     if not (ns.db and ns.db.settings.showOnMinimap) then return end
+    local seenSites = {}
     for itemID in pairs(ns.db.tracked) do
         local data = ns.Items[itemID]
         local cr, cg, cb = ns:GetTrackColor(itemID)
@@ -59,7 +60,8 @@ local function Rebuild()
         end
         -- real-shape regions (enough loot recorded in that zone)
         local shaped = {}
-        if ns.LearnedRegions then
+        local cat = (data and data.cat) or (ns.db.learned[itemID] and ns.db.learned[itemID].cat)
+        if false and ns.LearnedRegions and cat ~= "herbalism" and cat ~= "mining" then
             for _, lz in ipairs(ns:GetLearnedZones(itemID)) do
                 local regions = ns:LearnedRegions(itemID, lz.mapID)
                 local cell = ns.SHAPE_CELL or 2
@@ -85,10 +87,51 @@ local function Rebuild()
                 end
             end
         end
+        local ext = ns.ExternalNodes and ns:ExternalNodes(itemID) or nil
         if data then
             for _, s in ipairs(data.spots or {}) do
                 local mapID = ns:ResolveZone(s.z)
-                if mapID and not shaped[mapID] then add(mapID, s.x / 100, s.y / 100, (s.r or 6) / 100) end
+                -- herbs / ore: exact nodes replace the area; fish keep their water area
+                local exact = cat ~= "fishing" and ext and ext[mapID] and #ext[mapID] > 0
+                if cat == "fishing" and ns.FISH_SITES then
+                    -- fish: the fishing places below, never a circle over land
+                elseif mapID and not shaped[mapID] and not exact then add(mapID, s.x / 100, s.y / 100, (s.r or 6) / 100) end
+            end
+        end
+        -- fishing places: one icon per water (shared by every tracked fish there)
+        if cat == "fishing" and ns.FishSitesFor then
+            for _, e in ipairs(ns:FishSitesFor(itemID)) do
+                if not seenSites[e.site] then
+                    seenSites[e.site] = true
+                    local cont, wx, wy = WorldPos(e.mapID, e.site.x / 100, e.site.y / 100)
+                    if cont then
+                        spots[#spots + 1] = { itemID = itemID, mapID = e.mapID, cont = cont, wx = wx, wy = wy,
+                            wr = 6, dot = true, site = e.site, cr = cr, cg = cg, cb = cb }
+                    end
+                end
+            end
+        end
+        -- exact nodes from an installed node addon: small icons like the gathered ones
+        if ext then
+            for mapID, list in pairs(ext) do
+                for _, pt in ipairs(list) do
+                    local cont, wx, wy = WorldPos(mapID, pt[1] / 100, pt[2] / 100)
+                    if cont then
+                        spots[#spots + 1] = { itemID = itemID, mapID = mapID, cont = cont, wx = wx, wy = wy,
+                            wr = 6, dot = true, ext = true, cr = cr, cg = cg, cb = cb }
+                    end
+                end
+            end
+        end
+        -- every place a node / item was actually gathered: a small exact dot,
+        -- right from the first gather (no waiting for the area shape)
+        for _, lz in ipairs(ns:GetLearnedZones(itemID)) do
+            for _, c in ipairs(lz.cells) do
+                local cont, wx, wy = WorldPos(lz.mapID, c.x / 100, c.y / 100)
+                if cont then
+                    spots[#spots + 1] = { itemID = itemID, mapID = lz.mapID, cont = cont, wx = wx, wy = wy,
+                        wr = 6, dot = true, cr = cr, cg = cg, cb = cb }
+                end
             end
         end
         -- your learned spots (the strongest cell per zone)
@@ -135,7 +178,11 @@ local function NewPin()
         local s = p.spot
         if not s then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(ns:GetItemColoredName(s.itemID))
+        if s.site then
+            ns:FishSiteTooltip(GameTooltip, s.site)
+        else
+            GameTooltip:AddLine(ns:GetItemColoredName(s.itemID))
+        end
         GameTooltip:AddLine(ns:ZoneName(ns:ZoneKeyForMap(s.mapID) or s.mapID), 0.7, 0.7, 0.7)
         if p.dist then
             GameTooltip:AddLine(L("mm_dist", math.floor(p.dist + 0.5)), 1, 1, 1)
@@ -238,13 +285,36 @@ local function Update()
             else
                 isInside = dist <= s.wr
             end
-            if isInside then inside = inside or s end
+            if isInside and not s.dot then inside = inside or s end
             local sx, sy = -west * scale, north * scale
             if facing then
                 sx, sy = sx * cosF - sy * sinF, sx * sinF + sy * cosF
             end
             local pd = math.sqrt(sx * sx + sy * sy)
             local rpx = s.wr * scale
+            local hideIn = ns.db.settings.nodeHideRange or 15
+            if s.dot and (pd > mapRadius - 6 or (hideIn > 0 and dist <= hideIn)) then
+                -- exact gathered spot off the minimap, or you are standing right
+                -- at it: hidden, so the game's own herb / ore blip shows underneath
+            elseif s.dot then
+                used = used + 1
+                local p = pins[used] or NewPin()
+                pins[used] = p
+                p.spot, p.dist = s, dist
+                p.tex:SetTexture(ns:GetItemIcon(s.itemID))
+                p:ClearAllPoints()
+                if p.cellFrame then p.cellFrame:Hide() end
+                p.icon:ClearAllPoints()
+                p.icon:SetPoint("CENTER")
+                p.icon:SetAlpha(s.ext and 0.8 or 1)
+                p.ring:SetVertexColor(s.cr, s.cg, s.cb, 1)
+                p.area:Hide()
+                p:SetPoint("CENTER", Minimap, "CENTER", sx, sy)
+                local sz = ns.db.settings.nodeIconSize or 14
+                p:SetSize(sz, sz)
+                p.icon:SetSize(sz, sz)
+                p:Show()
+            else
             used = used + 1
             local p = pins[used] or NewPin()
             pins[used] = p
@@ -256,6 +326,7 @@ local function Update()
             if p.cellFrame then p.cellFrame:Hide() end
             p.icon:ClearAllPoints()
             p.icon:SetPoint("CENTER")
+            p.icon:SetSize(16, 16)
             if s.region and (pd - rpx <= mapRadius or isInside) then
                 -- real shape: the cells as squares, rotated with the minimap
                 p:SetPoint("CENTER", Minimap, "CENTER", 0, 0)
@@ -316,7 +387,13 @@ local function Update()
                 used = used - 1
                 p = nil
             end
-            if p then p:Show() end
+            if p then
+                -- standing next to the icon's spot: hide the icon (not the area),
+                -- so the game's own herb / ore blip underneath can be seen
+                if hideIn > 0 and dist <= hideIn then p.icon:SetAlpha(0) end
+                p:Show()
+            end
+            end
         end
     end
     for i = used + 1, #pins do pins[i]:Hide() end

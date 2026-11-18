@@ -124,14 +124,25 @@ local function Record(itemID, link, count, mapID, x, y, npcID, unit, isFishing)
 end
 
 local frame = CreateFrame("Frame")
+-- LOOT_READY comes first: with auto loot the slots can already be empty by
+-- LOOT_OPENED (that is why herbs / ore were missed). Both are handled, the
+-- per-node key keeps one gather from being counted twice.
+ns:SafeRegister(frame, "LOOT_READY")
 ns:SafeRegister(frame, "LOOT_OPENED")
+ns:SafeRegister(frame, "LOOT_CLOSED")
+-- fallback: gathering that never opens a loot window (items go straight to
+-- the bags) still prints your own loot line in chat
+ns:SafeRegister(frame, "CHAT_MSG_LOOT")
+local lootSession = 0
+local recentLoot = {} -- [itemID] = GetTime() of the last loot-window record
+local recentQty = {}  -- [itemID] = amount counted from that loot window
 -- NOTE: COMBAT_LOG_EVENT_UNFILTERED is forbidden for addons in the WoW Forever
 -- client (registering it triggers "blocked from an action"). Kills are counted
 -- from your dead target (if you tagged it) and from every corpse you loot.
 if frame.RegisterUnitEvent then
     pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target")
 end
-local function OnEvent(_, event)
+local function OnEvent(_, event, ...)
     if not (ns.db and ns.db.settings.learn) then return end
 
     if event == "UNIT_HEALTH" then
@@ -149,6 +160,8 @@ local function OnEvent(_, event)
         return
     end
 
+    if event == "LOOT_CLOSED" then lootSession = lootSession + 1; return end
+
     if not (C_Map and C_Map.GetBestMapForUnit) then return end
     local mapID = C_Map.GetBestMapForUnit("player")
     if not mapID then return end
@@ -156,6 +169,34 @@ local function OnEvent(_, event)
     if not pos then return end
     local x, y = pos:GetXY()
     if not x or (x == 0 and y == 0) then return end
+
+    if event == "CHAT_MSG_LOOT" then
+        local text, _, _, _, _, _, _, _, _, _, _, guid = ...
+        text, guid = ns.Plain(text), ns.Plain(guid)
+        if type(text) ~= "string" or not guid or guid ~= ns.Plain(UnitGUID("player")) then return end
+        local link = text:match("|c%x+|Hitem:.-|h.-|h|r") or text:match("|Hitem:.-|h.-|h")
+        local itemID = link and tonumber(link:match("item:(%d+)"))
+        if not itemID then return end
+        local lootName = link:match("%[(.-)%]")
+        local key = ns:KeyForLoot(itemID, lootName)
+        local cat = GuessCategory(key, false)
+        if cat ~= "herbalism" and cat ~= "mining" then return end
+        if recentLoot[itemID] and GetTime() - recentLoot[itemID] < 5 then
+            -- already recorded from the loot window; the chat line has the real stack size
+            local count = tonumber(text:match("x(%d+)")) or 1
+            local e = ns.db.learned[ns:KeyForLoot(itemID, lootName)]
+            local got = recentQty[itemID] or count
+            if e and count > got then e.total = (e.total or 0) + (count - got) end
+            recentLoot[itemID], recentQty[itemID] = nil, nil
+            return
+        end
+        if not ShouldRecord(itemID, false, lootName) then return end
+        local count = tonumber(text:match("x(%d+)")) or 1
+        local cellKey = Record(key, link, count, mapID, x, y, nil, nil, false)
+        ns:Fire("LOOT_RECORDED", key, mapID, cellKey, nil, count)
+        ns:Fire("LEARNED_CHANGED")
+        return
+    end
 
     local isFishing = IsFishingLoot and IsFishingLoot() or false
     local changed = {}
@@ -172,7 +213,10 @@ local function OnEvent(_, event)
         local lootName = link and link:match("%[(.-)%]")
         if itemID and ShouldRecord(itemID, isFishing, lootName) then
             local _, _, quantity = GetLootSlotInfo(slot)
-            local sessionKey = (guid or ("fish" .. GetTime())) .. ":" .. itemID
+            local sessionKey = (guid or ("loot" .. lootSession)) .. ":" .. itemID .. ":" .. slot
+            if guid then sessionKey = guid .. ":" .. itemID end
+            recentLoot[itemID] = GetTime()
+            recentQty[itemID] = (type(quantity) == "number" and quantity > 0) and quantity or 1
             if not seenThisSession[sessionKey] then
                 seenThisSession[sessionKey] = true
                 local unit = guid and UnitForGUID(guid)
@@ -188,7 +232,28 @@ local function OnEvent(_, event)
     if #changed > 0 then ns:Fire("LEARNED_CHANGED") end
 end
 -- never let a restricted (secret) value break the game UI
-frame:SetScript("OnEvent", function(...) pcall(OnEvent, ...) end)
+frame:SetScript("OnEvent", function(self, event, ...)
+    local ok, err = pcall(OnEvent, self, event, ...)
+    if ns.learnDebug and event ~= "UNIT_HEALTH" then
+        local n = GetNumLootItems and GetNumLootItems() or "?"
+        local info = ""
+        if event ~= "CHAT_MSG_LOOT" and type(n) == "number" then
+            for slot = 1, n do
+                local okL, link = pcall(GetLootSlotLink, slot)
+                local okS, src = pcall(GetLootSourceInfo, slot)
+                info = info .. " [" .. slot .. "] " .. tostring(okL and (issecretvalue and issecretvalue(link) and "SECRET" or link) or "ERR")
+                    .. " src=" .. tostring(okS and (issecretvalue and issecretvalue(src) and "SECRET" or src) or "ERR")
+            end
+        else
+            local text = ...
+            info = " text=" .. tostring(issecretvalue and issecretvalue(text) and "SECRET" or text)
+                .. " guid=" .. tostring(select(12, ...))
+        end
+        local m = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+        ns:Print(("%s ok=%s err=%s learn=%s map=%s items=%s%s"):format(event, tostring(ok), tostring(err),
+            tostring(ns.db and ns.db.settings.learn), tostring(m), tostring(n), info))
+    end
+end)
 
 -- data recorded by older versions belongs to you
 ns:On("DB_READY", function()

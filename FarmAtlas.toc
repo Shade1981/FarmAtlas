@@ -24,11 +24,14 @@ Data\Fishing.lua
 Data\Extra.lua
 Data\Mining.lua
 Data\Herbalism.lua
+Data\NodeIDs.lua
+Data\FishWater.lua
 Data\Recipes.lua
 Data\RecipeInfo.lua
 Data\Guides.lua
 Data\Community.lua
 Learn.lua
+NodeSources.lua
 Shapes.lua
 Sync.lua
 Inventory.lua

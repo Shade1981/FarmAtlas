@@ -1,12 +1,37 @@
 # FarmAtlas
 
-**Find where to farm every cooking meat, leather, scale and fish - right on your world map and minimap.**
+**Find where to farm every cooking meat, leather, scale, fish, ore and herb - right on your world map and minimap.**
 
 Made for **WoW Forever**. Search *boar*, *raptor*, *stag* or *Giant Egg* and FarmAtlas shows you the best farm areas with mob names, levels and drop chances, marks them on your map, tells you which recipes use the ingredient, and counts what you already have in your bags, bank and on your alts.
 
-GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *kill* for.
+FarmAtlas is your farming and profession companion: where to farm it, what it is worth, what you can make from it and how to level your profession. For exact herb and ore nodes it works together with **Questie**, **GatherMate2** and **Gatherer** - no duplicate maps.
 
 ---
+
+## New in 1.3.0
+
+- **Fixed: learning works with auto loot.** Before, gathered and looted items were often not recorded. Your finds are learned and shared with your guild again.
+- **Mining and Herbalism:** every ore and herb with its zones and the skill it needs.
+
+![Mining: ores and stones with skill and zones](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v130-mining.png)
+
+- **Exact herb and ore nodes:** with Questie, GatherMate2 or Gatherer installed, every known vein and herb is shown at its exact place on the map and minimap. The positions are read on your own computer - nothing is copied into FarmAtlas or sent to anyone.
+
+![Every known Peacebloom node on the map](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v130-herb-nodes.png)
+
+- **Fishing places on the water:** one marker per lake, river or coast - never a circle over dry land. Hover it to see every fish you can catch there and the skill you need.
+
+![Fishing place tooltip: what you can catch here](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v130-fish-site.png)
+
+- **Leatherworking 1-300 guide** with every trainer and pattern vendor at their exact position.
+
+![Leatherworking guide with trainers](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v130-lw-guide.png)
+
+- **Gathered spots as small icons** on the map and minimap, with two new settings: icon size, and hide the icon when you are close so you can see the herb or ore under it.
+
+![New map and minimap settings](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v130-node-settings.png)
+
+- **New layout:** a menu on the left side of the window - Atlas, Recipes, Guides, Tracked.
 
 ## New in 1.2.1 - Giga Database Update
 
@@ -18,7 +43,6 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 
 - **Leveling guides**: Cooking, Fishing and Skinning 1-300 for WoW Forever, faction-aware, with your current step highlighted and the places marked on the map.
 - **Trainers** of your current step on the map and minimap, exact WoW Forever coordinates, plus a **town banner** when you arrive somewhere with a trainer you care about.
-- **Real farm shapes**: areas follow where the mobs and fish really are, learned from loot.
 - **Farm / hour in gold** and auction house prices (Auctionator / TSM / AHSnipe, vendor price as fallback) on tooltips.
 - **Click a recipe** to open your profession window on it, or see where to learn it.
 - **French, German and Spanish** interface.
@@ -32,7 +56,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 ## Features
 
 **Farm atlas**
-- 100+ farmable materials built in: cooking meats & ingredients, leather, hides & scales, fish.
+- 150+ farmable materials built in: cooking meats & ingredients, leather, hides & scales, fish, ores and herbs.
 - Every material lists its farm areas with mob names, level range and drop chance.
 - A **recommended** zone for your level, and dangerous zones are flagged.
 - Search by item, mob, zone or keyword (`boar`, `wolf`, `rugged`, `squid`...).
@@ -49,14 +73,16 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - Translucent, quest-style farm areas with a dashed outline on the world map.
 - Track several items at once, each in its own color.
 - **Minimap**: the area when it is close, an edge icon pointing the way when it is far, and a colored glow when you are standing inside it.
-- Areas take the **real shape** of the spot once enough loot is recorded (yours, your group's and the community's).
+- **Fishing places** sit on the water itself, one per lake / river / coast, with what you can catch there.
+- **Herbs and ore** at their exact nodes when Questie, GatherMate2 or Gatherer is installed.
+- Small icons where you (or your guild) actually gathered; adjustable size, auto-hide when you are close.
 
 ![Farm areas and drop chances on the world map](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/map-tooltip.jpg)
 
 
 
 **Leveling guides**
-- **Cooking, Fishing and Skinning 1-300**, each on its own tab: what to make, where to go, which rank to train next.
+- **Cooking, Fishing, Skinning and Leatherworking 1-300**, each on its own tab: what to make, where to go, which rank to train next.
 - Click a step: the place is marked in gold on the world map; cooking steps show where to farm the material.
 - The trainers of your current step appear on the map and minimap automatically.
 - **Town alert**: a movable, resizable banner when you arrive at a town, village or camp with a trainer of a profession you switched on.
@@ -89,7 +115,7 @@ GatherMate covers herbs and ore. FarmAtlas covers everything else you have to *k
 - Gear button in the atlas (or `/farm config`): every switch, grouped by topic. A short "What's new" window after each update.
 
 **Learns while you play**
-- Every meat, hide or fish you loot is saved with its exact spot and source mob.
+- Every meat, hide, fish, ore or herb you loot or gather is saved with its exact spot and source (auto loot included).
 - **Real WoW Forever drop rates** from your own kills (e.g. `Mottled Boar: 42% (21/50)`).
 
 **Automatic sharing (no buttons)**
@@ -140,12 +166,14 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 
 # FarmAtlas (magyar)
 
-**Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt és halat - a világtérképen és a minimapon.**
+**Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
+
+**Újdonságok az 1.3.0-ban:** javítva a tanulás auto-loottal; Bányászat és Gyógynövény; pontos ér- és növény-node-ok a Questie / GatherMate2 / Gatherer adataiból (a gépeden olvassa, semmit nem másol); horgászhelyek magán a vízen, ráállva: mi fogható és milyen skill kell; Bőrművesség 1-300 útmutató; új bal oldali menü; állítható ikonméret és elrejtés közelről.
+
 
 - Keress rá bármire (pl. *boar*, *raptor*), és látod a farmterületeket mobokkal, szintekkel, esési eséllyel.
 - Áttetsző zónák a térképen, irányjelzés és keret a minimapon.
-- **Útmutató**: Főzés, Horgászat és Nyúzás 1-300, trénerekkel a térképen és település-jelzéssel.
-- A farmterületek a valódi alakot követik, ahogy gyűlik a loot.
+- **Útmutató**: Főzés, Horgászat, Nyúzás és Bőrművesség 1-300, trénerekkel a térképen és település-jelzéssel.
 - **Receptek** fül: mind a 123 főzőrecept, kattintásra megnyílik a szakma ablak, vagy megmutatja, hol tanulható.
 - **Farm / óra aranyban** és AH-árak a tooltipen (Auctionator / TSM / AHSnipe, vagy vendor ár).
 - Farm célok, táska / bank / alt számláló, valódi esési arányok a saját öléseidből.

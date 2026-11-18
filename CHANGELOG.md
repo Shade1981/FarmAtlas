@@ -1,10 +1,15 @@
 # FarmAtlas 1.3.0
 
-- New: Mining and Herbalism - every ore and herb with its zones, node clusters and required skill (compiled from public WoW Classic node data)
-- New: FarmAtlas learns the veins and herbs you gather and shares them with your guild
-- New: Leatherworking 1-300 leveling guide with all trainers and pattern vendors
-- New: left-side menu (Atlas, Recipes, Guides, Tracked) for a tidier window
-- All of it in English, Hungarian, French, German and Spanish
+- Fixed: learning works with auto loot (gathered and looted items were often not recorded before)
+- New: Mining and Herbalism - every ore and herb with its zones and required skill
+- New: exact herb / ore positions read at run time from Questie or GatherMate2 when installed (local only, nothing copied or sent)
+- New: fishing places on the water itself, one per lake / river / coast; tooltip lists what you can catch there and the skill needed
+- New: small icons where you gathered (map + minimap); options for icon size and auto-hide when you are close
+- Removed: the area blobs drawn from a few loots (they were more confusing than helpful)
+- New: Leatherworking 1-300 guide with all trainers and pattern vendors at exact positions
+- New: left-side menu (Atlas, Recipes, Guides, Tracked)
+- Fixed: two fishing trainer positions; guide markers no longer land on dry land
+- Everything in English, Hungarian, French, German and Spanish
 
 # FarmAtlas 1.2.1
 

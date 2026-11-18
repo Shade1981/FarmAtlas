@@ -74,6 +74,8 @@ local DEFAULTS = {
         learn = true,
         tooltip = true,
         areaAlpha = 0.12,
+        nodeIconSize = 14,
+        nodeHideRange = 15,
         minimapAngle = 220,
         hideMinimapButton = false,
         sync = true,        -- share discoveries with party / raid / guild in the background
@@ -708,6 +710,27 @@ SlashCmdList.FARMATLAS = function(msg)
     elseif cmd == "guildsync" then
         ns.db.settings.syncGuild = not ns.db.settings.syncGuild
         ns:Print(ns.db.settings.syncGuild and L("c_gsync_on") or L("c_gsync_off"))
+    elseif cmd == "nodes" then
+        local src = ns.ExternalNodeSources and ns:ExternalNodeSources() or {}
+        ns:Print("node sources: " .. (#src > 0 and table.concat(src, ", ") or "none"))
+        if type(_G.ObjectDB) == "table" then
+            local ok, sp = pcall(_G.ObjectDB.Get, 1618, "spawns")
+            local zones = 0
+            if ok and type(sp) == "table" then for _ in pairs(sp) do zones = zones + 1 end end
+            ns:Print("Questie Peacebloom node 1618: ok=" .. tostring(ok) .. " type=" .. type(sp) .. " zones=" .. zones)
+        end
+        local m = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+        for itemID in pairs(ns.db.tracked) do
+            local e = ns.ExternalNodes and ns:ExternalNodes(itemID)
+            if e then
+                local here, all = e[m] and #e[m] or 0, 0
+                for _, l in pairs(e) do all = all + #l end
+                ns:Print(("%s: %d nodes here, %d total"):format(ns:GetItemName(itemID) or itemID, here, all))
+            end
+        end
+    elseif cmd == "learndebug" then
+        ns.learnDebug = not ns.learnDebug
+        ns:Print("learn debug: " .. (ns.learnDebug and "ON" or "OFF"))
     elseif cmd == "debug" then
         local list = ns.db.blocked or {}
         if #list == 0 then ns:Print("no blocked actions recorded") end

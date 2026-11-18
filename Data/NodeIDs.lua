@@ -1,0 +1,113 @@
+-- FarmAtlas - which game objects (herb / ore nodes) give which item.
+-- Only Blizzard object IDs and zone ID conversions: no positions are stored here.
+-- Positions are read at run time from the node addons the player has installed
+-- (see NodeSources.lua).
+local _, ns = ...
+
+ns.NODE_OBJECTS = {
+    -- fishing pools (fish come from any water too: these are extra hints)
+    [6358] = { 180582, 180682 },  -- Oily Blackmouth School
+    [6359] = { 180683 },          -- Firefin Snapper School
+    [6522] = { 180658 },          -- School of Deviate Fish
+    [21071] = { 180663 },         -- Sagefish School
+    [21153] = { 180663 },
+    [765] = { 1617, 3725, 657380, 657457 },
+    [785] = { 1620, 3727, 657459 },
+    [2447] = { 1618, 3724, 657382, 657456 },
+    [2449] = { 1619, 3726, 657383, 657458 },
+    [2450] = { 1621, 3729, 657385, 657460 },
+    [2453] = { 1622, 3730, 657386, 657461 },
+    [2770] = { 1731, 2055, 3763, 103713, 562111 },
+    [2771] = { 1732, 2054, 3764, 103711 },
+    [2772] = { 1735 },
+    [2775] = { 1733, 105569 },
+    [2776] = { 1734, 150080 },
+    [3340] = { 1610, 1667 },
+    [3355] = { 1623, 657387 },
+    [3356] = { 1624 },
+    [3357] = { 2041, 657390 },
+    [3358] = { 2043 },
+    [3369] = { 1628, 657389 },
+    [3818] = { 2042 },
+    [3819] = { 2044 },
+    [3820] = { 2045, 657394 },
+    [3821] = { 2046 },
+    [3858] = { 2040, 150079, 176645 },
+    [4278] = { 2653 },
+    [4625] = { 2866 },
+    [5833] = { 19903 },
+    [7911] = { 2047, 150081 },
+    [8831] = { 142140, 180165 },
+    [8836] = { 142141, 176642 },
+    [8838] = { 142142, 176636, 180164 },
+    [8839] = { 142143 },
+    [8845] = { 142144 },
+    [8846] = { 142145, 176637 },
+    [10620] = { 324, 150082, 175404, 176643 },
+    [11370] = { 165658 },
+    [13463] = { 176584, 176639, 180168 },
+    [13464] = { 176583, 176638, 180167 },
+    [13465] = { 176586, 176640, 180166 },
+    [13466] = { 176587, 176641 },
+    [13467] = { 176588 },
+    [13468] = { 176589 },
+}
+
+-- node names (English) -> item, for addons that store nodes by name
+ns.NODE_NAMES = {
+    ["Arthas' Tears"] = 8836,
+    ["Black Lotus"] = 13468,
+    ["Blindweed"] = 8839,
+    ["Briarthorn"] = 2450,
+    ["Bruiseweed"] = 2453,
+    ["Dreamfoil"] = 13463,
+    ["Earthroot"] = 2449,
+    ["Fadeleaf"] = 3818,
+    ["Firebloom"] = 4625,
+    ["Ghost Mushroom"] = 8845,
+    ["Golden Sansam"] = 13464,
+    ["Goldthorn"] = 3821,
+    ["Grave Moss"] = 3369,
+    ["Gromsblood"] = 8846,
+    ["Icecap"] = 13467,
+    ["Khadgar's Whisker"] = 3358,
+    ["Kingsblood"] = 3356,
+    ["Liferoot"] = 3357,
+    ["Mageroyal"] = 785,
+    ["Mountain Silversage"] = 13465,
+    ["Peacebloom"] = 2447,
+    ["Plaguebloom"] = 13466,
+    ["Purple Lotus"] = 8831,
+    ["Silverleaf"] = 765,
+    ["Stranglekelp"] = 3820,
+    ["Sungrass"] = 8838,
+    ["Wild Steelbloom"] = 3355,
+    ["Wintersbite"] = 3819,
+    ["Copper Vein"] = 2770,
+    ["Dark Iron Deposit"] = 11370,
+    ["Gold Vein"] = 2776,
+    ["Incendicite Mineral Vein"] = 3340,
+    ["Indurium Mineral Vein"] = 5833,
+    ["Iron Deposit"] = 2772,
+    ["Lesser Bloodstone Deposit"] = 4278,
+    ["Mithril Deposit"] = 3858,
+    ["Poor Copper Vein"] = 2770,
+    ["Rich Thorium Vein"] = 10620,
+    ["Silver Vein"] = 2775,
+    ["Small Thorium Vein"] = 10620,
+    ["Tin Vein"] = 2771,
+    ["Truesilver Deposit"] = 7911,
+}
+
+-- zone area ID -> UI map ID (only the zones with herb / ore nodes)
+ns.AREA_TO_UIMAP = {
+    [1] = 1426, [3] = 1418, [4] = 1419, [8] = 1435, [10] = 1431, [11] = 1437,
+    [12] = 1429, [14] = 1411, [15] = 1445, [16] = 1447, [17] = 1413, [28] = 1422,
+    [33] = 1434, [36] = 1416, [38] = 1432, [40] = 1436, [44] = 1433, [45] = 1417,
+    [46] = 1428, [47] = 1425, [51] = 1427, [85] = 1420, [130] = 1421, [139] = 1423,
+    [141] = 1438, [148] = 1439, [215] = 1412, [267] = 1424, [331] = 1440, [357] = 1444,
+    [361] = 1448, [400] = 1441, [405] = 1443, [406] = 1442, [440] = 1446, [490] = 1449,
+    [491] = 301, [618] = 1452, [718] = 279, [719] = 221, [722] = 300, [796] = 302,
+    [1337] = 230, [1377] = 1451, [1581] = 291, [1585] = 243, [1638] = 1456, [1977] = 233,
+    [2100] = 280, [2557] = 234, [2717] = 232, [16593] = 2521,
+}
