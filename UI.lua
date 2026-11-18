@@ -886,6 +886,7 @@ function UI:GuideTooltip(r)
         if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
         if s.trainer then srcType, sources = "trainer", {} end
+        if s.npcs then srcType, sources = "vendor", ns:GuideTrainers(r.prof, s.npcs) end
         if s.trainer == nil and s.note and #sources == 0 then srcNote = ns.GuideNote(s) end
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(L("rc_where"), 1, 0.82, 0)
