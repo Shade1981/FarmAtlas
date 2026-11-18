@@ -19,7 +19,8 @@ local C = {
     muted   = { 0.55, 0.59, 0.66 },
 }
 
-local W, H = 800, 540
+local W, H = 860, 540
+local RAIL = 60          -- width of the section rail on the left
 local LIST_W = 300
 local ROW_H = 42
 
@@ -289,7 +290,7 @@ function UI:Build()
     -- Search ---------------------------------------------------------
     local search = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     self.search = search
-    search:SetPoint("TOPLEFT", 16, -60)
+    search:SetPoint("TOPLEFT", 16 + RAIL, -60)
     search:SetPoint("TOPRIGHT", -16, -60)
     search:SetHeight(32)
     SetBG(search, C.panel)
@@ -326,7 +327,61 @@ function UI:Build()
         if first ~= nil then UI:Select(first) end
     end)
 
-    -- Category chips -------------------------------------------------
+    -- Section rail (left): Atlas / Recipes / Guides / Tracked -------
+    self.rail = {}
+    local railPrev
+    for _, sec in ipairs(ns.SECTIONS) do
+        local b = FlatButton(f, "", 44, 44)
+        b.text:Hide()
+        b.icon = b:CreateTexture(nil, "ARTWORK")
+        b.icon:SetSize(28, 28)
+        b.icon:SetPoint("CENTER")
+        b.icon:SetTexture(sec.icon)
+        b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        if railPrev then b:SetPoint("TOP", railPrev, "BOTTOM", 0, -8)
+        else b:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -60) end
+        b.key = sec.key
+        b:SetScript("OnClick", function()
+            if sec.key == "atlas" then
+                UI.cat = UI.lastAtlasCat or "all"
+            else
+                UI.cat = sec.key
+            end
+            UI.scroll = 0
+            UI:RefreshChips()
+            UI:RefreshList()
+        end)
+        b:HookScript("OnEnter", function(s)
+            GameTooltip:SetOwner(s, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(L("sec_" .. sec.key), 1, 1, 1)
+            GameTooltip:AddLine(L("sec_" .. sec.key .. "_tip"), 0.8, 0.8, 0.8, true)
+            GameTooltip:Show()
+        end)
+        b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+        self.rail[#self.rail + 1] = b
+        railPrev = b
+    end
+
+    -- Guide chips (shown in the Guides section): one profession at a time
+    self.guideChips = {}
+    local gprev
+    for _, prof in ipairs(ns.GUIDE_ORDER or {}) do
+        local chip = FlatButton(f, "", 110, 26)
+        if gprev then chip:SetPoint("LEFT", gprev, "RIGHT", 6, 0)
+        else chip:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -10) end
+        chip.prof = prof
+        chip:SetScript("OnClick", function()
+            ns.db.settings.guideProf = prof
+            UI.scroll = 0
+            UI:RefreshChips()
+            UI:RefreshList()
+        end)
+        chip:Hide()
+        self.guideChips[#self.guideChips + 1] = chip
+        gprev = chip
+    end
+
+    -- Category chips (Atlas section) ---------------------------------
     self.cat = "all"
     self.chips = {}
     local prev
@@ -343,6 +398,7 @@ function UI:Build()
         else chip:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -10) end
         chip:SetScript("OnClick", function()
             UI.cat = cat.key
+            UI.lastAtlasCat = cat.key
             UI.scroll = 0
             UI:RefreshChips()
             UI:RefreshList()
@@ -356,7 +412,7 @@ function UI:Build()
     local list = CreateFrame("Frame", nil, f, "BackdropTemplate")
     self.list = list
     list:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -58)
-    list:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 44)
+    list:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16 + RAIL, 44)
     list:SetWidth(LIST_W)
     SetBG(list, C.panel)
 
@@ -642,15 +698,9 @@ function UI:RefreshList(keepResults)
     local results = self.results
     local listH = self.list:GetHeight()
     -- guide mode: sub-tabs on top of the list
-    local top = guideMode and 32 or 0
-    local current = guideMode and ns:GuideProf()
-    for _, b in ipairs(self.list.guideTabs or {}) do
-        b:SetShown(guideMode)
-        if guideMode then
-            b.text:SetText(L("cat_" .. b.prof))
-            b:SetActive(b.prof == current)
-        end
-    end
+    local top = 0
+    for _, b in ipairs(self.list.guideTabs or {}) do b:Hide() end
+    if guideMode then self:RefreshChips() end
     local visible = math.max(1, math.floor((listH - 8 - top) / ROW_H))
     self.maxScroll = math.max(0, #results - visible)
     self.scroll = math.max(0, math.min(self.scroll or 0, self.maxScroll))
@@ -835,6 +885,8 @@ function UI:GuideTooltip(r)
         GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
         if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
+        if s.trainer then srcType, sources = "trainer", {} end
+        if s.trainer == nil and s.note and #sources == 0 then srcNote = ns.GuideNote(s) end
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(L("rc_where"), 1, 0.82, 0)
         if srcType == "faction" then
@@ -906,7 +958,19 @@ function UI:GuideClick(r, button)
 end
 
 function UI:RefreshChips()
-    for _, chip in ipairs(self.chips) do chip:SetActive(chip.key == self.cat) end
+    local section = ns:SectionOf(self.cat)
+    for _, b in ipairs(self.rail or {}) do b:SetActive(b.key == section) end
+    for _, chip in ipairs(self.chips) do
+        chip:SetShown(section == "atlas")
+        chip:SetActive(chip.key == self.cat)
+    end
+    local current = section == "guide" and ns:GuideProf()
+    for _, chip in ipairs(self.guideChips or {}) do
+        chip:SetShown(section == "guide")
+        chip.text:SetText(L("cat_" .. chip.prof))
+        chip:SetWidth(math.max(110, math.floor((chip.text:GetStringWidth() or 0) + 24)))
+        chip:SetActive(chip.prof == current)
+    end
 end
 
 function UI:RefreshStats()
@@ -1488,7 +1552,10 @@ function UI:ApplyLocale()
     if not self.frame then return end
     self.sub:SetText(L("subtitle"))
     self.search.placeholder:SetText(L("placeholder"))
-    for _, chip in ipairs(self.chips) do chip.text:SetText(L("cat_" .. chip.key)) end
+    for _, chip in ipairs(self.chips) do
+        chip.text:SetText(L("cat_" .. chip.key))
+        chip:SetWidth(math.max(96, math.floor((chip.text:GetStringWidth() or 0) + 40)))
+    end
     self.list.empty:SetText(L("empty"))
     local d = self.detail
     d.open.text:SetText(L("open_best"))

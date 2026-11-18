@@ -2,7 +2,7 @@
 local _, ns = ...
 local L = ns.L
 
-local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning" }
+local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning", leatherworking = "Leatherworking" }
 
 local function MyFaction()
     local f = UnitFactionGroup and UnitFactionGroup("player")
@@ -21,8 +21,10 @@ function ns:ProfSkill(prof)
     if ok and GetProfessionInfo then
         for _, idx in ipairs({ a, b, c, d, e, f }) do
             if idx then
-                local ok2, name, _, rank = pcall(GetProfessionInfo, idx)
-                if ok2 and name == want and type(rank) == "number" then return rank end
+                local ok2, name, _, rank, _, _, _, line = pcall(GetProfessionInfo, idx)
+                -- skill line ID first: works on every client language
+                local byLine = ns.SKILL_LINE and ns.SKILL_LINE[prof] and ns.Plain(line) == ns.SKILL_LINE[prof]
+                if ok2 and (byLine or ns.Plain(name) == want) and type(rank) == "number" then return rank end
             end
         end
     end

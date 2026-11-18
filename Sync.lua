@@ -32,7 +32,7 @@ local VALID_SRC = { vendor = true, drop = true }
 local Sync = {}
 ns.Sync = Sync
 
-local VALID_CAT = { cooking = true, skinning = true, fishing = true, learned = true }
+local VALID_CAT = { cooking = true, skinning = true, fishing = true, mining = true, herbalism = true, learned = true }
 
 ------------------------------------------------------------------------
 -- helpers

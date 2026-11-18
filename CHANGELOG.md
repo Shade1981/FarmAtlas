@@ -1,3 +1,11 @@
+# FarmAtlas 1.3.0
+
+- New: Mining and Herbalism - every ore and herb with its zones, node clusters and required skill (compiled from public WoW Classic node data)
+- New: FarmAtlas learns the veins and herbs you gather and shares them with your guild
+- New: Leatherworking 1-300 leveling guide with all trainers and pattern vendors
+- New: left-side menu (Atlas, Recipes, Guides, Tracked) for a tidier window
+- All of it in English, Hungarian, French, German and Spanish
+
 # FarmAtlas 1.2.1
 
 - New: every meat, leather, scale and fish lists all the zones where it can be farmed - 746 new farm areas in 410 more zones, with mobs, levels and drop chances (compiled from public WoW Classic drop and fishing data); 3 new fish: Raw Slitherskin Mackerel, Raw Sagefish, Raw Greater Sagefish

@@ -5,6 +5,38 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.3.0", date = "2026-11-18",
+      en = {
+        "New: Mining and Herbalism - every ore and herb with its zones (node clusters, skill needed), e.g. Copper Ore in 20 zones, Peacebloom in 12.",
+        "New: FarmAtlas learns the veins and herbs you gather and shares them with your guild, like meat and leather.",
+        "New: Leatherworking 1-300 leveling guide with all trainers (Apprentice to Artisan, Horde and Alliance) and pattern vendors.",
+        "New layout: a menu on the left side of the window - Atlas, Recipes, Guides, Tracked - so everything is tidier.",
+      },
+      hu = {
+        "Új: Bányászat és Gyógynövénygyűjtés - minden érc és gyógynövény a zónáival (lelőhely-csoportok, szükséges szakértelem), pl. Copper Ore 20 zónában, Peacebloom 12-ben.",
+        "Új: a FarmAtlas megtanulja az általad gyűjtött ér- és növénylelőhelyeket, és megosztja a guilddel, mint a húst és a bőrt.",
+        "Új: Bőrművesség 1-300 szintező útmutató az összes trénerrel (Apprentice-től Artisanig, Horda és Szövetség) és mintaárusokkal.",
+        "Új elrendezés: menü az ablak bal oldalán - Atlasz, Receptek, Útmutatók, Követett - így minden átláthatóbb.",
+      },
+      fr = {
+        "Nouveau : Minage et Herboristerie - chaque minerai et herbe avec ses zones (groupes de gisements, compétence requise), p. ex. Copper Ore dans 20 zones, Peacebloom dans 12.",
+        "Nouveau : FarmAtlas apprend les filons et herbes que vous récoltez et les partage avec votre guilde, comme la viande et le cuir.",
+        "Nouveau : guide de progression Travail du cuir 1-300 avec tous les maîtres (d'apprenti à artisan, Horde et Alliance) et les vendeurs de patrons.",
+        "Nouvelle disposition : un menu sur le côté gauche de la fenêtre - Atlas, Recettes, Guides, Suivis - tout est plus clair.",
+      },
+      de = {
+        "Neu: Bergbau und Kräuterkunde - jedes Erz und Kraut mit seinen Gebieten (Vorkommen-Gruppen, benötigte Fertigkeit), z. B. Copper Ore in 20 Gebieten, Peacebloom in 12.",
+        "Neu: FarmAtlas lernt die Erz- und Kräutervorkommen, die du sammelst, und teilt sie mit deiner Gilde, wie Fleisch und Leder.",
+        "Neu: Leitfaden Lederverarbeitung 1-300 mit allen Lehrern (Lehrling bis Fachmann, Horde und Allianz) und Musterhändlern.",
+        "Neues Layout: ein Menü an der linken Fensterseite - Atlas, Rezepte, Leitfäden, Verfolgt - alles übersichtlicher.",
+      },
+      es = {
+        "Nuevo: Minería y Herboristería - cada mineral y hierba con sus zonas (grupos de nodos, habilidad necesaria), p. ej. Copper Ore en 20 zonas, Peacebloom en 12.",
+        "Nuevo: FarmAtlas aprende los filones y hierbas que recoges y los comparte con tu hermandad, como la carne y el cuero.",
+        "Nuevo: guía de subida de Peletería 1-300 con todos los instructores (de aprendiz a artesano, Horda y Alianza) y vendedores de patrones.",
+        "Nuevo diseño: un menú en el lado izquierdo de la ventana - Atlas, Recetas, Guías, Seguidos - todo más ordenado.",
+      },
+    },
     { v = "1.2.1", date = "2026-11-17",
       en = {
         "Every farm spot: each meat, leather, scale and fish now lists all the zones where it can be farmed (746 new areas in 410 more zones), with mobs, levels and drop chances - and 3 new fish: Slitherskin Mackerel, Sagefish, Greater Sagefish.",

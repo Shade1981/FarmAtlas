@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.2.1"
+ns.version = "1.3.0"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -17,20 +17,33 @@ do
     ns.localNames = not (ns.clientLocale == "enUS" or ns.clientLocale == "enGB")
 end
 
-ns.CATEGORIES = {
-    { key = "all",      icon = "Interface\\Icons\\INV_Misc_Map_01" },
-    { key = "cooking",  icon = "Interface\\Icons\\INV_Misc_Food_15" },
-    { key = "skinning", icon = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01" },
-    { key = "fishing",  icon = "Interface\\Icons\\Trade_Fishing" },
-    { key = "recipes",  icon = "Interface\\Icons\\INV_Scroll_03" },
-    { key = "guide",    icon = "Interface\\Icons\\INV_Misc_Book_09" },
-    { key = "tracked",  icon = "Interface\\Icons\\Ability_Hunter_Pathfinding" },
+-- Main sections: the icon rail on the left side of the atlas window
+ns.SECTIONS = {
+    { key = "atlas",   icon = "Interface\\Icons\\INV_Misc_Map_01" },
+    { key = "recipes", icon = "Interface\\Icons\\INV_Scroll_03" },
+    { key = "guide",   icon = "Interface\\Icons\\INV_Misc_Book_09" },
+    { key = "tracked", icon = "Interface\\Icons\\Ability_Hunter_Pathfinding" },
 }
+-- Profession filters inside the Atlas section (chips above the list)
+ns.CATEGORIES = {
+    { key = "all",       icon = "Interface\\Icons\\INV_Misc_Map_01" },
+    { key = "cooking",   icon = "Interface\\Icons\\INV_Misc_Food_15" },
+    { key = "skinning",  icon = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01" },
+    { key = "fishing",   icon = "Interface\\Icons\\Trade_Fishing" },
+    { key = "mining",    icon = "Interface\\Icons\\Trade_Mining" },
+    { key = "herbalism", icon = "Interface\\Icons\\Trade_Herbalism" },
+}
+function ns:SectionOf(cat)
+    if cat == "recipes" or cat == "guide" or cat == "tracked" then return cat end
+    return "atlas"
+end
 
 ns.CAT_COLORS = {
     cooking  = { 1.00, 0.62, 0.25 },
     skinning = { 0.55, 0.85, 0.35 },
     fishing  = { 0.30, 0.70, 1.00 },
+    mining   = { 0.80, 0.70, 0.55 },
+    herbalism = { 0.45, 0.95, 0.55 },
     learned  = { 0.80, 0.55, 1.00 },
 }
 

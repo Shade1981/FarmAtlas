@@ -46,6 +46,9 @@ local function GuessCategory(itemID, isFishing)
     -- Trade goods subclasses (modern ids): 6 leather, 8 cooking/meat
     if classID == 7 and subClassID == 6 then return "skinning" end
     if classID == 7 and subClassID == 8 then return "cooking" end
+    -- Trade goods: 7 metal & stone (mining), 9 herbs
+    if classID == 7 and subClassID == 7 then return "mining" end
+    if classID == 7 and subClassID == 9 then return "herbalism" end
     return "learned"
 end
 ns.GuessCategory = GuessCategory
@@ -56,8 +59,8 @@ local function ShouldRecord(itemID, isFishing, name)
     if type(itemID) ~= "number" then return false end
     local _, _, _, _, _, classID, subClassID = GetItemInfoInstant(itemID)
     if classID == 7 then
-        -- herbs (9) and metal & stone (7) are already covered by GatherMate.
-        if subClassID == 9 or subClassID == 7 then return false end
+        -- leather, meat, fish, herbs (9) and metal & stone (7): ore veins and
+        -- herb nodes are learned and shared like everything else
         return true
     end
     if isFishing and classID == 0 then return true end -- raw fish are consumables in some clients
