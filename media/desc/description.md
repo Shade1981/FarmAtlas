@@ -10,6 +10,15 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.4.0
+
+- **Best farm now** (gold button at the top, or `/farm best`): ranks what YOU can farm right now - your Herbalism, Mining, Fishing and Skinning skill and your level - by gold per hour. Prices come from **AH Snipe** (14-day median per realm and faction; Auctionator or TSM work too), items per hour are measured from your own farming (an estimate until you have farmed 10 minutes).
+- **Mining 1-300 and Herbalism 1-300 guides:** what to gather at each skill, the best zones for your faction - the map marks only those ores and herbs - and every trainer (junior trainers only up to 75).
+- **Tailoring 1-300 guide** with the Artisan trainers and pattern vendors; clicking a known recipe now opens every profession window, not only Cooking.
+- Auction prices FarmAtlas remembers are kept per realm and faction.
+
+**Works great with AH Snipe:** install AH Snipe for real auction prices in FarmAtlas - tooltips, Best farm now and farm value per hour all use it automatically.
+
 ## New in 1.3.1
 
 - **Tailoring, First Aid and Alchemy 1-300 guides (Tailoring new in 1.3.2):** every trainer at its exact position - and only the trainers who really teach your next rank. Recipe and manual vendors, the Expert First Aid book and the Triage quest are on the map too. Routes cross-checked on several guide sites.
@@ -94,7 +103,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 
 **Leveling guides**
-- **Cooking, Fishing, Skinning, Leatherworking, Tailoring, First Aid and Alchemy 1-300**, each on its own tab: what to make, where to go, which rank to train next.
+- **Cooking, Fishing, Skinning, Mining, Herbalism, Leatherworking, Tailoring, First Aid and Alchemy 1-300**, each on its own tab: what to make, where to go, which rank to train next.
 - Click a step: the place is marked in gold on the world map; cooking steps show where to farm the material.
 - The trainers of your current step appear on the map and minimap automatically.
 - **Town alert**: a movable, resizable banner when you arrive at a town, village or camp with a trainer of a profession you switched on.
@@ -180,6 +189,8 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 
 **Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
 
+**Újdonságok az 1.4.0-ban:** Legjobb farm most ablak (arany/óra a skilljeid és szinted szerint, AH Snipe árakkal), Bányászat és Gyógynövénygyűjtés 1-300 útmutató, Szabászat 1-300, receptkattintás minden szakmánál, árak realmenként és frakciónként.
+
 **Újdonságok az 1.3.1-ben:** Elsősegély 1-300 és Alkímia 1-300 útmutató (csak azok a trénerek, akik tényleg tanítják a következő rangot, recept- és könyvárusok, Triage küldetés, pontos helyen); halrajok megjegyzése és jelzés közelről; közösségi találatok az addonban; a könyves/küldetéses lépések (pl. Nat Pagle) már nem trénerként jelennek meg.
 
 **Újdonságok az 1.3.0-ban:** javítva a tanulás auto-loottal; Bányászat és Gyógynövény; pontos ér- és növény-node-ok a Questie / GatherMate2 / Gatherer adataiból (a gépeden olvassa, semmit nem másol); horgászhelyek magán a vízen, ráállva: mi fogható és milyen skill kell; Bőrművesség 1-300 útmutató; új bal oldali menü; állítható ikonméret és elrejtés közelről.
@@ -187,7 +198,7 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 
 - Keress rá bármire (pl. *boar*, *raptor*), és látod a farmterületeket mobokkal, szintekkel, esési eséllyel.
 - Áttetsző zónák a térképen, irányjelzés és keret a minimapon.
-- **Útmutató**: Főzés, Horgászat, Nyúzás, Bőrművesség, Szabászat, Elsősegély és Alkímia 1-300, trénerekkel a térképen és település-jelzéssel.
+- **Útmutató**: Főzés, Horgászat, Nyúzás, Bányászat, Gyógynövénygyűjtés, Bőrművesség, Szabászat, Elsősegély és Alkímia 1-300, trénerekkel a térképen és település-jelzéssel.
 - **Receptek** fül: mind a 123 főzőrecept, kattintásra megnyílik a szakma ablak, vagy megmutatja, hol tanulható.
 - **Farm / óra aranyban** és AH-árak a tooltipen (Auctionator / TSM / AHSnipe, vagy vendor ár).
 - Farm célok, táska / bank / alt számláló, valódi esési arányok a saját öléseidből.
