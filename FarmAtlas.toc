@@ -2,7 +2,7 @@
 ## Title: |cff3fc7ebFarm|r|cffffd200Atlas|r
 ## Notes: Search any cooking meat, leather, scale or fish and see exactly where to farm it on your world map.
 ## Author: Shade
-## Version: 1.5.0
+## Version: 1.5.1
 ## SavedVariables: FarmAtlasDB
 ## IconTexture: Interface\Icons\INV_Misc_Food_14
 ## AddonCompartmentFunc: FarmAtlas_OnAddonCompartmentClick

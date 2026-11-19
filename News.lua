@@ -5,6 +5,23 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.5.1", date = "2026-11-19",
+      en = {
+        "Fixed: fighting with the world map open could print \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" - during combat FarmAtlas no longer redraws map pins, it updates them right after the fight. Thanks to laykes for the report!",
+      },
+      hu = {
+        "Javítva: nyitott világtérképpel harcolva megjelenhetett az \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" sor - harc közben a FarmAtlas már nem rajzolja újra a térképjelölőket, a harc után azonnal frissíti őket. Köszönjük laykes-nak a jelzést!",
+      },
+      fr = {
+        "Corrigé : combattre avec la carte du monde ouverte pouvait afficher \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" - en combat FarmAtlas ne redessine plus les repères de la carte, il les met à jour juste après le combat. Merci à laykes pour le signalement !",
+      },
+      de = {
+        "Behoben: Kämpfen mit offener Weltkarte konnte \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" ausgeben - im Kampf zeichnet FarmAtlas die Kartenmarkierungen nicht mehr neu, sondern aktualisiert sie direkt nach dem Kampf. Danke an laykes für die Meldung!",
+      },
+      es = {
+        "Corregido: combatir con el mapa del mundo abierto podía mostrar \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" - en combate FarmAtlas ya no redibuja los marcadores del mapa, los actualiza justo después del combate. ¡Gracias a laykes por el aviso!",
+      },
+    },
     { v = "1.5.0", date = "2026-11-19",
       en = {
         "New: Blacksmithing 1-300 and Engineering 1-300 guides - every trainer with the rank they teach (Artisan: Brikk Keencraft in Booty Bay / Buzzek Bracketswing in Gadgetzan), the Imperial Plate quests and the schematic vendors at their exact positions.",

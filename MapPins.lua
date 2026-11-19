@@ -396,19 +396,52 @@ end
 local Provider = CreateFromMixins(MapCanvasDataProviderMixin)
 ns.MapProvider = Provider
 
+-- Combat: acquiring or releasing pins from addon code marks the map canvas
+-- dirty with a tainted value; the map then redraws Blizzard's own pins in a
+-- tainted state and the client blocks Button:SetPassThroughButtons() for them.
+-- So during combat FarmAtlas never acquires/releases pins: it only hides its
+-- own pins when the shown map changes, and redraws once combat is over.
+local function InCombat() return InCombatLockdown and InCombatLockdown() end
+local combatDeferred = false
+
+local function HideOwnPins(map)
+    for _, tpl in ipairs({ AREA_TEMPLATE, ICON_TEMPLATE, SHAPE_TEMPLATE }) do
+        for pin in map:EnumeratePinsByTemplate(tpl) do pin:Hide() end
+    end
+end
+
 function Provider:RemoveAllData()
     local map = self:GetMap()
+    if not map then return end
+    if InCombat() then
+        combatDeferred = true
+        self.faDrawnMap = nil
+        HideOwnPins(map)
+        return
+    end
     map:RemoveAllPinsByTemplate(AREA_TEMPLATE)
     map:RemoveAllPinsByTemplate(ICON_TEMPLATE)
     map:RemoveAllPinsByTemplate(SHAPE_TEMPLATE)
 end
 
 function Provider:RefreshAllData()
-    self:RemoveAllData()
-    if not ns.db then return end
     local map = self:GetMap()
+    if not map then return end
+    if InCombat() then
+        combatDeferred = true
+        if map:GetMapID() ~= self.faDrawnMap then
+            self.faDrawnMap = nil
+            HideOwnPins(map)
+        end
+        return
+    end
+    combatDeferred = false
+    self:RemoveAllData()
+    self.faDrawnMap = nil
+    if not ns.db then return end
     local mapID = map:GetMapID()
     if not mapID then return end
+    self.faDrawnMap = mapID
 
     -- single waypoint (recipe vendor / trainer)
     local wp = ns.waypoint
@@ -728,6 +761,17 @@ local f = CreateFrame("Frame")
 ns:SafeRegister(f, "ADDON_LOADED")
 f:SetScript("OnEvent", function(_, _, name)
     if name == "Blizzard_WorldMap" then Install() end
+end)
+
+-- redraw once combat is over if something changed during combat
+local regen = CreateFrame("Frame")
+ns:SafeRegister(regen, "PLAYER_REGEN_ENABLED")
+regen:SetScript("OnEvent", function()
+    if not combatDeferred then return end
+    combatDeferred = false
+    if installed and WorldMapFrame and WorldMapFrame:IsShown() and Provider.GetMap and Provider:GetMap() then
+        pcall(Provider.RefreshAllData, Provider)
+    end
 end)
 
 -- town trainers changed -> redraw the open world map

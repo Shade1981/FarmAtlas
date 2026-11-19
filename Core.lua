@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.5.0"
+ns.version = "1.5.1"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -580,7 +580,15 @@ function ns:OpenMapID(mapID)
         end
         if ToggleWorldMap then ToggleWorldMap() else ShowUIPanel(WorldMapFrame) end
     end
-    if mapID then WorldMapFrame:SetMapID(mapID) end
+    if mapID and WorldMapFrame:GetMapID() ~= mapID then
+        -- switching the map from addon code in combat redraws Blizzard's pins
+        -- in a tainted state (blocked SetPassThroughButtons)
+        if InCombatLockdown() then
+            self:Print(ns.L("c_combat_map"))
+            return
+        end
+        WorldMapFrame:SetMapID(mapID)
+    end
 end
 
 function ns:Print(msg)

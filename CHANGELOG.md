@@ -1,3 +1,7 @@
+# FarmAtlas 1.5.1
+
+- Fixed: fighting with the world map open could print "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()" - during combat FarmAtlas no longer acquires or releases map pins (that tainted the map canvas and Blizzard's own pins were then blocked); it hides its pins if you switch maps in combat and redraws them right after the fight. Switching the map from FarmAtlas during combat waits until the fight is over. Thanks to laykes for the report
+
 # FarmAtlas 1.5.0
 
 - New: Blacksmithing 1-300 guide (wow-professions.com route; ranks cross-checked with method.gg) - trainers with the highest rank each can teach, Artisan only at Brikk Keencraft (Booty Bay), Imperial Plate plans from Derotain Mudsipper's quests (Gadgetzan, level 50)
