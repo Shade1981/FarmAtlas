@@ -10,6 +10,10 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.5.1
+
+- Fixed: fighting with the world map open could print "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()". FarmAtlas now waits until the fight is over to update its map pins. Thanks to laykes for the report!
+
 ## New in 1.5.0
 
 - **Blacksmithing 1-300 and Engineering 1-300 guides:** 11 profession guides now, every trainer filtered by the rank they really teach, plan and schematic vendors on the map (Imperial Plate quests and Thorium Tube included).
@@ -195,6 +199,8 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 # FarmAtlas (magyar)
 
 **Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
+
+**Javítás az 1.5.1-ben:** nyitott térképpel harcolva már nem jelenik meg az "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()" hiba - a térképjelölők a harc után frissülnek.
 
 **Újdonságok az 1.5.0-ban:** Kovácsolás 1-300 és Engineering 1-300 útmutató (már 11 szakma); új gép vagy újratelepítés után a guild- és partytársak visszaküldik a saját találataidat (a nagyobb érték marad, semmi nem duplázódik); bővebb beépített közösségi adat (receptforrások, halrajok, trénerhelyek); görgethető beállítások.
 
