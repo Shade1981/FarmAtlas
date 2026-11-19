@@ -428,6 +428,134 @@ ns.Guides = {
         },
     },
     ------------------------------------------------------------------
+    -- Blacksmithing: route from wow-professions.com Forever (it warns that most
+    -- Classic recipes turn grey 25 points earlier in Forever); ranks and the
+    -- low steps cross-checked with method.gg. Trainer ranks from their in-game
+    -- titles (Journeyman Blacksmith = 75, Expert = 150, Artisan = 225, Master = 300);
+    -- positions and the Imperial Plate quests (Derotain Mudsipper, level 50)
+    -- checked against the Questie Forever database. 225-300: from the beta.
+    blacksmithing = {
+        icon = "Interface\\Icons\\Trade_BlackSmithing",
+        ranked = true,
+        trainers = {
+            T("Ug'thok", "Orgrimmar", "H", "Valley of Honor  1-75", 1454, 80.8, 23.7, 75),
+            T("Snarl", "Orgrimmar", "H", "Valley of Honor  1-150", 1454, 79.6, 23.3, 150),
+            T("Saru Steelfury", "Orgrimmar", "H", "Valley of Honor  1-225", 1454, 82.3, 23.0, 225),
+            T("Basil Frye", "Undercity", "H", "War Quarter  1-75", 1458, 60.2, 29.1, 75),
+            T("James Van Brunt", "Undercity", "H", "War Quarter  1-150", 1458, 61.3, 30.6, 150),
+            T("Thrag Stonehoof", "Thunder Bluff", "H", "Lower Rise  1-75", 1456, 39.4, 56.7, 75),
+            T("Karn Stonehoof", "Thunder Bluff", "H", "Lower Rise  1-150", 1456, 39.4, 55.1, 150),
+            T("Dwukk", "Durotar", "H", "Razor Hill  1-75", 1411, 52.0, 40.7, 75),
+            T("Guillaume Sorouy", "Silverpine Forest", "H", "The Sepulcher  1-75", 1421, 43.2, 41.1, 75),
+            T("Traugh", "The Barrens", "H", "Crossroads  1-150", 1413, 51.3, 28.9, 150),
+            T("Angus Hammerhand", "Tirisfal Glades", "H", "Bandarion Keep  1-150", 1420, 21.2, 45.7, 150),
+            T("Dane Lindgren", "Stormwind City", "A", "Dwarven District  1-75", 1453, 64.1, 37.0, 75),
+            T("Therum Deepforge", "Stormwind City", "A", "Dwarven District  1-150", 1453, 63.7, 37.0, 150),
+            T("Groum Stonebeard", "Ironforge", "A", "The Great Forge  1-75", 1455, 52.3, 41.9, 75),
+            T("Rotgath Stonebeard", "Ironforge", "A", "The Great Forge  1-150", 1455, 52.4, 42.5, 150),
+            T("Bengus Deepforge", "Ironforge", "A", "The Great Forge  1-225", 1455, 52.5, 41.5, 225),
+            T("Smith Argus", "Elwynn Forest", "A", "Goldshire  1-75", 1429, 41.7, 65.5, 75),
+            T("Tognus Flintfire", "Dun Morogh", "A", "Kharanos  1-75", 1426, 45.3, 51.9, 75),
+            T("Delfrum Flintbeard", "Darkshore", "A", "Auberdine  1-75", 1439, 38.2, 40.9, 75),
+            T("Clarise Gnarltree", "Duskwood", "A", "Darkshire  1-150", 1431, 74.0, 48.5, 150),
+            T("Alphonse Dumas", "Riverglades", "A", "1-75", 2548, 64.5, 82.0, 75),
+            T("Alard Schmied", "Alterac Mountains", "A", "Dalaran", 1416, 19.7, 63.4, 75),
+            T("Aedi Thriceforged", "Zephras Isle", "N", "Shen'dar Village  1-75", 2521, 44.9, 44.4, 75),
+            T("Daeann Steelwind", "Zephras Isle", "N", "Valanaar  1-150", 2521, 65.5, 80.3, 150),
+            T("Brikk Keencraft", "Stranglethorn Vale", "N", "Booty Bay  1-300", 1434, 29.0, 75.6, 300),
+        },
+        steps = {
+            { kind = "train", at = 1, rank = "Apprentice" },
+            { kind = "craft", from = 1, to = 25, recipe = "Rough Sharpening Stone", item = "Rough Stone", count = 30, trainer = true },
+            { kind = "craft", from = 25, to = 50, recipe = "Rough Grinding Stone", item = "Rough Stone", count = 30, trainer = true, note = N("2 Rough Stone each", "Darabonként 2 Rough Stone", "2 Rough Stone chacun", "Je 2 Rough Stone", "2 Rough Stone cada uno") },
+            { kind = "train", at = 50, rank = "Journeyman", note = N("Needs character level 10. Only the 1-150 trainers and up teach it", "10-es karakterszint kell. Csak az 1-150-es és feletti trénerek tanítják", "Niveau 10 requis. Seuls les entraîneurs 1-150 et plus l'enseignent", "Stufe 10 nötig. Nur die Lehrer ab 1-150 bringen es bei", "Requiere nivel 10. Solo lo enseñan los instructores 1-150 o superiores") },
+            { kind = "craft", from = 50, to = 75, recipe = "Coarse Grinding Stone", item = "Coarse Stone", count = 36, trainer = true, note = N("2 Coarse Stone each", "Darabonként 2 Coarse Stone", "2 Coarse Stone chacun", "Je 2 Coarse Stone", "2 Coarse Stone cada uno") },
+            { kind = "craft", from = 75, to = 80, recipe = "Silver Rod", item = "Silver Bar", extra = "Rough Grinding Stone", count = 5, trainer = true },
+            { kind = "craft", from = 80, to = 95, recipe = "Runed Copper Belt", item = "Copper Bar", count = 18, trainer = true, note = N("10 Copper Bar each", "Darabonként 10 Copper Bar", "10 Copper Bar chacun", "Je 10 Copper Bar", "10 Copper Bar cada uno") },
+            { kind = "craft", from = 95, to = 100, recipe = "Patterned Bronze Bracers", item = "Bronze Bar", extra = "Coarse Grinding Stone", count = 5, trainer = true, note = N("5 Bronze Bar + 2 Coarse Grinding Stone each", "Darabonként 5 Bronze Bar + 2 Coarse Grinding Stone", "5 Bronze Bar + 2 Coarse Grinding Stone chacun", "Je 5 Bronze Bar + 2 Coarse Grinding Stone", "5 Bronze Bar + 2 Coarse Grinding Stone cada uno") },
+            { kind = "craft", from = 100, to = 112, recipe = "Heavy Grinding Stone", item = "Heavy Stone", count = 20, trainer = true, note = N("3 Heavy Stone each", "Darabonként 3 Heavy Stone", "3 Heavy Stone chacun", "Je 3 Heavy Stone", "3 Heavy Stone cada uno") },
+            { kind = "craft", from = 112, to = 125, recipe = "Patterned Bronze Bracers", item = "Bronze Bar", extra = "Coarse Grinding Stone", count = 13, trainer = true, note = N("5 Bronze Bar + 2 Coarse Grinding Stone each", "Darabonként 5 Bronze Bar + 2 Coarse Grinding Stone", "5 Bronze Bar + 2 Coarse Grinding Stone chacun", "Je 5 Bronze Bar + 2 Coarse Grinding Stone", "5 Bronze Bar + 2 Coarse Grinding Stone cada uno") },
+            { kind = "train", at = 125, rank = "Expert", note = N("Needs character level 20 (50 silver). Only the 1-225 / 1-300 trainers teach it", "20-as karakterszint kell (50 ezüst). Csak az 1-225 / 1-300-as trénerek tanítják", "Niveau 20 requis (50 pa). Seuls les entraîneurs 1-225 / 1-300 l'enseignent", "Stufe 20 nötig (50 Silber). Nur die 1-225- / 1-300-Lehrer bringen es bei", "Requiere nivel 20 (50 de plata). Solo lo enseñan los instructores 1-225 / 1-300") },
+            { kind = "craft", from = 125, to = 140, recipe = "Bronze Shortsword", item = "Bronze Bar", extra = "Weak Flux, Medium Leather", count = 24, trainer = true },
+            { kind = "craft", from = 140, to = 150, recipe = "Bronze Warhammer", item = "Bronze Bar", extra = "Strong Flux, Medium Leather", count = 10, trainer = true, note = N("8 Bronze Bar each", "Darabonként 8 Bronze Bar", "8 Bronze Bar chacun", "Je 8 Bronze Bar", "8 Bronze Bar cada uno") },
+            { kind = "craft", from = 150, to = 175, recipe = "Green Iron Bracers", item = "Iron Bar", extra = "Green Dye", count = 30, trainer = true, note = N("6 Iron Bar + 1 Green Dye each", "Darabonként 6 Iron Bar + 1 Green Dye", "6 Iron Bar + 1 Green Dye chacun", "Je 6 Iron Bar + 1 Green Dye", "6 Iron Bar + 1 Green Dye cada uno") },
+            { kind = "craft", from = 175, to = 180, recipe = "Solid Grinding Stone", item = "Solid Stone", count = 8, trainer = true, note = N("4 Solid Stone each", "Darabonként 4 Solid Stone", "4 Solid Stone chacun", "Je 4 Solid Stone", "4 Solid Stone cada uno") },
+            { kind = "craft", from = 180, to = 195, recipe = "Golden Scale Bracers", item = "Steel Bar", extra = "Heavy Grinding Stone", count = 20, trainer = true },
+            { kind = "craft", from = 195, to = 210, recipe = "Mithril Plate Pants", item = "Mithril Bar", count = 17, trainer = true, note = N("12 Mithril Bar each", "Darabonként 12 Mithril Bar", "12 Mithril Bar chacun", "Je 12 Mithril Bar", "12 Mithril Bar cada uno") },
+            { kind = "train", at = 200, rank = "Artisan", note = N("Needs character level 35. Only Brikk Keencraft (Booty Bay) teaches it", "35-ös karakterszint kell. Csak Brikk Keencraft (Booty Bay) tanítja", "Niveau 35 requis. Seul Brikk Keencraft (Baie-du-Butin) l'enseigne", "Stufe 35 nötig. Nur Brikk Keencraft (Beutebucht) bringt es bei", "Requiere nivel 35. Solo lo enseña Brikk Keencraft (Bahía del Botín)") },
+            { kind = "craft", from = 210, to = 215, recipe = "Heavy Mithril Axe", item = "Mithril Bar", extra = "Citrine, Solid Grinding Stone, Heavy Leather", count = 6, trainer = true },
+            { kind = "craft", from = 215, to = 225, recipe = "Heavy Mithril Breastplate", item = "Mithril Bar", count = 10, trainer = true, note = N("16 Mithril Bar each", "Darabonként 16 Mithril Bar", "16 Mithril Bar chacun", "Je 16 Mithril Bar", "16 Mithril Bar cada uno") },
+            { kind = "craft", from = 225, to = 230, recipe = "Dense Sharpening Stone", item = "Dense Stone", count = 5, trainer = true },
+            { kind = "craft", from = 230, to = 240, recipe = "Heavy Mithril Boots", item = "Mithril Bar", extra = "Thick Leather", count = 16, trainer = true, note = N("14 Mithril Bar + 4 Thick Leather each", "Darabonként 14 Mithril Bar + 4 Thick Leather", "14 Mithril Bar + 4 Thick Leather chacun", "Je 14 Mithril Bar + 4 Thick Leather", "14 Mithril Bar + 4 Thick Leather cada uno") },
+            { kind = "craft", from = 240, to = 245, recipe = "Imperial Plate Belt", item = "Thorium Bar", extra = "Rugged Leather, Aquamarine", count = 5, npcs = { T("Derotain Mudsipper", "Tanaris", "N", "Gadgetzan - Imperial Plate quests", 1446, 51.4, 28.7) }, note = N("Plans from Derotain Mudsipper's quest (level 50, hand in 20 Thorium Bar)", "A terv Derotain Mudsipper küldetéséből (50-es szint, 20 Thorium Bar leadása)", "Plans de la quête de Derotain Mudsipper (niveau 50, rendre 20 Thorium Bar)", "Pläne aus Derotain Mudsippers Quest (Stufe 50, 20 Thorium Bar abgeben)", "Diseño de la misión de Derotain Mudsipper (nivel 50, entregar 20 Thorium Bar)") },
+            { kind = "craft", from = 245, to = 270, recipe = "Imperial Plate Bracers", item = "Thorium Bar", extra = "Star Ruby", count = 27, npcs = { T("Derotain Mudsipper", "Tanaris", "N", "Gadgetzan - Imperial Plate quests", 1446, 51.4, 28.7) }, note = N("Plans from Derotain Mudsipper's quest (level 50, hand in 20 Thorium Bar)", "A terv Derotain Mudsipper küldetéséből (50-es szint, 20 Thorium Bar leadása)", "Plans de la quête de Derotain Mudsipper (niveau 50, rendre 20 Thorium Bar)", "Pläne aus Derotain Mudsippers Quest (Stufe 50, 20 Thorium Bar abgeben)", "Diseño de la misión de Derotain Mudsipper (nivel 50, entregar 20 Thorium Bar)") },
+            { kind = "craft", from = 270, to = 290, recipe = "Imperial Plate Boots", item = "Thorium Bar", extra = "Star Ruby, Aquamarine", count = 20, npcs = { T("Derotain Mudsipper", "Tanaris", "N", "Gadgetzan - Imperial Plate quests", 1446, 51.4, 28.7) }, note = N("Plans from Derotain Mudsipper's quest (hand in 40 Thorium Bar)", "A terv Derotain Mudsipper küldetéséből (40 Thorium Bar leadása)", "Plans de la quête de Derotain Mudsipper (rendre 40 Thorium Bar)", "Pläne aus Derotain Mudsippers Quest (40 Thorium Bar abgeben)", "Diseño de la misión de Derotain Mudsipper (entregar 40 Thorium Bar)") },
+            { kind = "craft", from = 290, to = 300, recipe = "Imperial Plate Leggings", item = "Thorium Bar", extra = "Star Ruby", count = 10, npcs = { T("Derotain Mudsipper", "Tanaris", "N", "Gadgetzan - Imperial Plate quests", 1446, 51.4, 28.7) }, note = N("Plans from Derotain Mudsipper's quest (hand in 60 Thorium Bar)", "A terv Derotain Mudsipper küldetéséből (60 Thorium Bar leadása)", "Plans de la quête de Derotain Mudsipper (rendre 60 Thorium Bar)", "Pläne aus Derotain Mudsippers Quest (60 Thorium Bar abgeben)", "Diseño de la misión de Derotain Mudsipper (entregar 60 Thorium Bar)") },
+        },
+    },
+    ------------------------------------------------------------------
+    -- Engineering: route from wow-professions.com Forever, 1-225 cross-checked
+    -- with icy-veins.com (same recipes; icy-veins has no 225-300 route yet).
+    -- Trainer ranks from their titles; schematic vendors checked against the
+    -- Questie Forever database (Thorium Tube: Xizzer Fizzbolt and Kor'gar;
+    -- Thorium Widget: Gearcutter Cogspinner - Sovik only per wow-professions).
+    engineering = {
+        icon = "Interface\\Icons\\Trade_Engineering",
+        ranked = true,
+        trainers = {
+            T("Thund", "Orgrimmar", "H", "Valley of Honor  1-75", 1454, 76.0, 24.1, 75),
+            T("Nogg", "Orgrimmar", "H", "Valley of Honor  1-150", 1454, 76.0, 25.4, 150),
+            T("Roxxik", "Orgrimmar", "H", "Valley of Honor  1-225", 1454, 76.2, 25.2, 225),
+            T("Graham Van Talen", "Undercity", "H", "Rogues' Quarter  1-75", 1458, 75.3, 73.1, 75),
+            T("Franklin Lloyd", "Undercity", "H", "Rogues' Quarter  1-150", 1458, 76.1, 74.0, 150),
+            T("Mukdrak", "Durotar", "H", "Razor Hill  1-75", 1411, 52.2, 40.8, 75),
+            T("Sprite Jumpsprocket", "Stormwind City", "A", "Dwarven District  1-75", 1453, 61.9, 30.6, 75),
+            T("Lilliam Sparkspindle", "Stormwind City", "A", "Dwarven District  1-150", 1453, 62.1, 30.3, 150),
+            T("Jemma Quikswitch", "Ironforge", "A", "Tinker Town  1-75", 1455, 67.7, 44.2, 75),
+            T("Trixie Quikswitch", "Ironforge", "A", "Tinker Town  1-150", 1455, 67.5, 42.9, 150),
+            T("Springspindle Fizzlegear", "Ironforge", "A", "Tinker Town  1-225", 1455, 68.5, 43.5, 225),
+            T("Bronk Guzzlegear", "Dun Morogh", "A", "Steelgrill's Depot  1-75", 1426, 50.2, 50.4, 75),
+            T("Deek Fizzlebizz", "Loch Modan", "A", "Stonewrought Dam  1-75", 1432, 45.9, 13.4, 75),
+            T("Jenna Lemkenilli", "Darkshore", "A", "Auberdine  1-75", 1439, 38.3, 41.1, 75),
+            T("Finbus Geargrind", "Duskwood", "A", "Darkshire  1-150", 1431, 77.4, 48.8, 150),
+            T("Twizwick Sprocketgrind", "Mulgore", "N", "Venture Co. Mine  1-75", 1412, 58.6, 39.4, 75),
+            T("Tinkerwiz", "The Barrens", "N", "Ratchet  1-75", 1413, 62.7, 36.3, 75),
+            T("Strange Hermit", "Zephras Isle", "N", "Shadowgale Forest  1-75", 2521, 54.0, 38.9, 75),
+            T("Buzzek Bracketswing", "Tanaris", "N", "Gadgetzan  1-300", 1446, 52.3, 27.7, 300),
+        },
+        steps = {
+            { kind = "train", at = 1, rank = "Apprentice" },
+            { kind = "craft", from = 1, to = 30, recipe = "Rough Blasting Powder", item = "Rough Stone", count = 63, trainer = true },
+            { kind = "craft", from = 30, to = 50, recipe = "Handful of Copper Bolts", item = "Copper Bar", count = 31, trainer = true },
+            { kind = "train", at = 50, rank = "Journeyman", note = N("Needs character level 10. Only the 1-150 trainers and up teach it", "10-es karakterszint kell. Csak az 1-150-es és feletti trénerek tanítják", "Niveau 10 requis. Seuls les entraîneurs 1-150 et plus l'enseignent", "Stufe 10 nötig. Nur die Lehrer ab 1-150 bringen es bei", "Requiere nivel 10. Solo lo enseñan los instructores 1-150 o superiores") },
+            { kind = "craft", from = 50, to = 51, recipe = "Arclight Spanner", item = "Copper Bar", count = 1, trainer = true, note = N("Make only one - it is a tool you keep in your bags", "Csak egyet készíts - ez egy eszköz, ami a táskádban marad", "Une seule - c'est un outil à garder dans vos sacs", "Nur eins - es ist ein Werkzeug für deine Taschen", "Solo uno - es una herramienta que guardas en la bolsa") },
+            { kind = "craft", from = 51, to = 75, recipe = "Rough Copper Bomb", item = "Copper Bar", extra = "Handful of Copper Bolts, Rough Blasting Powder, Linen Cloth", count = 31, trainer = true },
+            { kind = "craft", from = 75, to = 90, recipe = "Coarse Blasting Powder", item = "Coarse Stone", count = 52, trainer = true },
+            { kind = "craft", from = 90, to = 100, recipe = "Coarse Dynamite", item = "Coarse Blasting Powder", extra = "Linen Cloth", count = 17, trainer = true, note = N("3 Coarse Blasting Powder each", "Darabonként 3 Coarse Blasting Powder", "3 Coarse Blasting Powder chacun", "Je 3 Coarse Blasting Powder", "3 Coarse Blasting Powder cada uno") },
+            { kind = "craft", from = 100, to = 105, recipe = "Silver Contact", item = "Silver Bar", count = 5, trainer = true },
+            { kind = "craft", from = 105, to = 125, recipe = "Bronze Tube", item = "Bronze Bar", extra = "Weak Flux", count = 25, trainer = true },
+            { kind = "train", at = 125, rank = "Expert", note = N("Needs character level 20 (50 silver). Only the 1-225 / 1-300 trainers teach it", "20-as karakterszint kell (50 ezüst). Csak az 1-225 / 1-300-as trénerek tanítják", "Niveau 20 requis (50 pa). Seuls les entraîneurs 1-225 / 1-300 l'enseignent", "Stufe 20 nötig (50 Silber). Nur die 1-225- / 1-300-Lehrer bringen es bei", "Requiere nivel 20 (50 de plata). Solo lo enseñan los instructores 1-225 / 1-300") },
+            { kind = "craft", from = 125, to = 135, recipe = "Standard Scope", item = "Bronze Tube", extra = "Moss Agate", count = 10, trainer = true },
+            { kind = "craft", from = 135, to = 150, recipe = "Whirring Bronze Gizmo", item = "Bronze Bar", extra = "Wool Cloth", count = 15, trainer = true, note = N("Also make 30 Heavy Blasting Powder (1 Heavy Stone each) for the Explosive Sheep", "Készíts 30 Heavy Blasting Powdert is (darabonként 1 Heavy Stone) az Explosive Sheep-hez", "Faites aussi 30 Heavy Blasting Powder (1 Heavy Stone chacun) pour l'Explosive Sheep", "Mach auch 30 Heavy Blasting Powder (je 1 Heavy Stone) für das Explosive Sheep", "Haz también 30 Heavy Blasting Powder (1 Heavy Stone cada uno) para la Explosive Sheep") },
+            { kind = "craft", from = 150, to = 160, recipe = "Bronze Framework", item = "Bronze Bar", extra = "Medium Leather, Wool Cloth", count = 15, trainer = true },
+            { kind = "craft", from = 160, to = 175, recipe = "Explosive Sheep", item = "Heavy Blasting Powder", extra = "Whirring Bronze Gizmo, Bronze Framework, Wool Cloth", count = 15, trainer = true },
+            { kind = "craft", from = 175, to = 194, recipe = "Solid Blasting Powder", item = "Solid Stone", count = 60, trainer = true },
+            { kind = "craft", from = 194, to = 195, recipe = "Gyromatic Micro-Adjustor", item = "Steel Bar", count = 1, trainer = true, note = N("Make only one - it is a tool you keep in your bags", "Csak egyet készíts - ez egy eszköz, ami a táskádban marad", "Une seule - c'est un outil à garder dans vos sacs", "Nur eins - es ist ein Werkzeug für deine Taschen", "Solo uno - es una herramienta que guardas en la bolsa") },
+            { kind = "craft", from = 195, to = 200, recipe = "Mithril Tube", item = "Mithril Bar", count = 6, trainer = true },
+            { kind = "train", at = 200, rank = "Artisan", note = N("Needs character level 35. Only Buzzek Bracketswing (Gadgetzan) teaches it", "35-ös karakterszint kell. Csak Buzzek Bracketswing (Gadgetzan) tanítja", "Niveau 35 requis. Seul Buzzek Bracketswing (Gadgetzan) l'enseigne", "Stufe 35 nötig. Nur Buzzek Bracketswing (Gadgetzan) bringt es bei", "Requiere nivel 35. Solo lo enseña Buzzek Bracketswing (Gadgetzan)") },
+            { kind = "craft", from = 200, to = 215, recipe = "Unstable Trigger", item = "Mithril Bar", extra = "Mageweave Cloth, Solid Blasting Powder", count = 20, trainer = true },
+            { kind = "craft", from = 215, to = 238, recipe = "Mithril Casing", item = "Mithril Bar", count = 40, trainer = true },
+            { kind = "craft", from = 238, to = 250, recipe = "Hi-Explosive Bomb", item = "Mithril Casing", extra = "Unstable Trigger, Solid Blasting Powder", count = 20, trainer = true },
+            { kind = "craft", from = 250, to = 260, recipe = "Dense Blasting Powder", item = "Dense Stone", count = 44, trainer = true },
+            { kind = "craft", from = 260, to = 285, recipe = "Thorium Widget", item = "Thorium Bar", extra = "Runecloth", count = 35,
+              npcs = { T("Gearcutter Cogspinner", "Ironforge", "A", "Tinker Town - Schematic: Thorium Widget", 1455, 67.8, 42.5), T("Sovik", "Orgrimmar", "H", "Valley of Honor - Schematic: Thorium Widget (not confirmed)", 1454, 75.5, 25.4) },
+              note = N("3 Thorium Bar + 1 Runecloth each", "Darabonként 3 Thorium Bar + 1 Runecloth", "3 Thorium Bar + 1 Runecloth chacun", "Je 3 Thorium Bar + 1 Runecloth", "3 Thorium Bar + 1 Runecloth cada uno") },
+            { kind = "craft", from = 285, to = 300, recipe = "Thorium Tube", item = "Thorium Bar", count = 20,
+              npcs = { T("Xizzer Fizzbolt", "Winterspring", "N", "Everlook - Schematic: Thorium Tube", 1452, 60.8, 38.6), T("Kor'gar", "Riverglades", "N", "Powderfuse Port - Schematic: Thorium Tube", 2548, 77.6, 50.9) },
+              note = N("Schematic is Bind on Pickup. 6 Thorium Bar each", "A schematic felvételkor kötődik. Darabonként 6 Thorium Bar", "Le schéma est lié quand ramassé. 6 Thorium Bar chacun", "Der Bauplan ist beim Aufheben gebunden. Je 6 Thorium Bar", "El esquema se liga al recogerlo. 6 Thorium Bar cada uno") },
+        },
+    },
+    ------------------------------------------------------------------
     -- Tailoring: route from wow-professions.com Forever, cross-checked with
     -- method.gg (Nov 2026; both: 225-300 from the beta, not yet tested on live).
     -- Trainer ranks from their in-game titles (Journeyman Tailor = 75, Expert =
@@ -632,4 +760,4 @@ ns.Guides = {
         },
     },
 }
-ns.GUIDE_ORDER = { "cooking", "fishing", "skinning", "mining", "herbalism", "leatherworking", "tailoring", "firstaid", "alchemy" }
+ns.GUIDE_ORDER = { "cooking", "fishing", "skinning", "mining", "herbalism", "blacksmithing", "engineering", "leatherworking", "tailoring", "firstaid", "alchemy" }

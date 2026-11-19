@@ -3,7 +3,8 @@ local _, ns = ...
 local L = ns.L
 
 local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning", leatherworking = "Leatherworking",
-    firstaid = "First Aid", alchemy = "Alchemy", tailoring = "Tailoring", herbalism = "Herbalism", mining = "Mining" }
+    firstaid = "First Aid", alchemy = "Alchemy", tailoring = "Tailoring", herbalism = "Herbalism", mining = "Mining",
+    blacksmithing = "Blacksmithing", engineering = "Engineering" }
 
 -- highest skill of each rank: a trainer must reach it to teach that rank
 local RANK_CAP = { Apprentice = 75, Journeyman = 150, Expert = 225, Artisan = 300 }

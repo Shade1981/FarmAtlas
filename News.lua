@@ -5,6 +5,28 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.5.0", date = "2026-11-19",
+      en = {
+        "New: Blacksmithing 1-300 and Engineering 1-300 guides - every trainer with the rank they teach (Artisan: Brikk Keencraft in Booty Bay / Buzzek Bracketswing in Gadgetzan), the Imperial Plate quests and the schematic vendors at their exact positions.",
+        "All 11 crafting and gathering professions with a guide are now in FarmAtlas.",
+      },
+      hu = {
+        "Új: Kovácsolás 1-300 és Engineering 1-300 útmutató - minden tréner a tanított ranggal (Artisan: Brikk Keencraft Booty Bayben / Buzzek Bracketswing Gadgetzanban), az Imperial Plate küldetések és a schematic-árusok pontos helyen.",
+        "Mostantól 11 gyártó és gyűjtő szakma útmutatója van benne a FarmAtlasban.",
+      },
+      fr = {
+        "Nouveau : guides Forge 1-300 et Ingénierie 1-300 - chaque maître avec le rang qu'il enseigne (Artisan : Brikk Keencraft à Baie-du-Butin / Buzzek Bracketswing à Gadgetzan), les quêtes Imperial Plate et les vendeurs de schémas à leur position exacte.",
+        "FarmAtlas a maintenant un guide pour 11 métiers de fabrication et de récolte.",
+      },
+      de = {
+        "Neu: Leitfäden Schmiedekunst 1-300 und Ingenieurskunst 1-300 - jeder Lehrer mit seinem Rang (Fachmann: Brikk Keencraft in Beutebucht / Buzzek Bracketswing in Gadgetzan), die Imperial-Plate-Quests und die Bauplanhändler an ihrer genauen Position.",
+        "FarmAtlas hat jetzt Leitfäden für 11 Herstellungs- und Sammelberufe.",
+      },
+      es = {
+        "Nuevo: guías de Herrería 1-300 e Ingeniería 1-300 - cada instructor con el rango que enseña (Artesano: Brikk Keencraft en Bahía del Botín / Buzzek Bracketswing en Gadgetzan), las misiones Imperial Plate y los vendedores de esquemas en su posición exacta.",
+        "FarmAtlas ya tiene guías para 11 profesiones de fabricación y recolección.",
+      },
+    },
     { v = "1.4.0", date = "2026-11-19",
       en = {
         "New: Best farm now (button at the top, /farm best) - what earns the most gold per hour for your skills and level. Prices from AH Snipe's 14-day history (or Auctionator / TSM), items per hour measured from your own farming.",

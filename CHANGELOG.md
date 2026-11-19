@@ -1,3 +1,9 @@
+# FarmAtlas 1.5.0
+
+- New: Blacksmithing 1-300 guide (wow-professions.com route; ranks cross-checked with method.gg) - trainers with the highest rank each can teach, Artisan only at Brikk Keencraft (Booty Bay), Imperial Plate plans from Derotain Mudsipper's quests (Gadgetzan, level 50)
+- New: Engineering 1-300 guide (wow-professions.com route, 1-225 cross-checked with icy-veins.com) - Artisan only at Buzzek Bracketswing (Gadgetzan), schematic vendors for Thorium Widget and Thorium Tube
+- 225-300 of both guides comes from the Forever beta (the sources say so)
+
 # FarmAtlas 1.4.0
 
 - New: Best farm now window (header button, /farm best) - ranks what you can farm right now (your Herbalism / Mining / Fishing / Skinning skill and your level) by gold per hour
