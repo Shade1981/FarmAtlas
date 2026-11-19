@@ -1,3 +1,10 @@
+# FarmAtlas 1.4.0
+
+- New: Best farm now window (header button, /farm best) - ranks what you can farm right now (your Herbalism / Mining / Fishing / Skinning skill and your level) by gold per hour
+- Prices: AH Snipe's 14-day median of daily lowest buyouts when AH Snipe is installed, else Auctionator / TSM, else vendor price
+- Items per hour: measured from your own farming (from 10 minutes on), shown as an estimate until then
+- Includes everything from 1.3.2 (Tailoring guide, recipe click for every profession)
+
 # FarmAtlas 1.3.2
 
 - New: Tailoring 1-300 guide - trainers with the highest rank each can teach, the Artisan trainers (Daryl Stack, Timothy Worthington), pattern vendors Qia and Pexmit and the Horde quest alternative, at exact positions

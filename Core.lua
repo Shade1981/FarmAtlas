@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.3.2"
+ns.version = "1.4.0"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -759,9 +759,12 @@ SlashCmdList.FARMATLAS = function(msg)
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then
         if ns.Goals then ns.Goals:Toggle() end
+    elseif cmd == "best" then
+        if ns.BestFarm then ns.BestFarm:Toggle() end
     elseif cmd == "help" then
         for _, line in ipairs(L("c_help")) do ns:Print(line) end
         ns:Print(L("c_goals"))
+        ns:Print(L("c_best"))
     else
         if ns.UI then ns.UI:Open(msg ~= "" and msg or nil) end
     end

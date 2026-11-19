@@ -286,6 +286,9 @@ function UI:Build()
     self.goalsButton = FlatButton(header, "", 70, 22)
     self.goalsButton:SetPoint("RIGHT", gear, "LEFT", -6, 0)
     self.goalsButton:SetScript("OnClick", function() if ns.Goals then ns.Goals:Toggle() end end)
+    self.bestButton = FlatButton(header, "", 90, 22)
+    self.bestButton:SetPoint("RIGHT", self.goalsButton, "LEFT", -6, 0)
+    self.bestButton:SetScript("OnClick", function() if ns.BestFarm then ns.BestFarm:Toggle() end end)
 
     -- Search ---------------------------------------------------------
     local search = CreateFrame("EditBox", nil, f, "BackdropTemplate")
@@ -1595,6 +1598,8 @@ function UI:ApplyLocale()
     if self.langButton then self.langButton.text:SetText(ns:Lang():upper()) end
     self.goalsButton.text:SetText(L("goals_btn"))
     Fit(self.goalsButton, 70)
+    self.bestButton.text:SetText("|cffffd200" .. L("bf_btn") .. "|r")
+    Fit(self.bestButton, 90)
     d.goalLabel:SetText(L("goal_label"))
     d.goalBtn.text:SetText(L("goal_set"))
     Fit(d.goalBtn, 34)
