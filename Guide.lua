@@ -342,8 +342,17 @@ function ns:GuideAreaSpots(area, mapID)
     local lo, hi
     if area.prof == "skinning" and s.from then lo, hi = math.floor(s.from / 5) - 2, math.ceil(s.to / 5) + 3 end
     local out = {}
+    -- gathering steps name the ores / herbs to mark (s.nodes = item names)
+    local want
+    if s.nodes then
+        want = {}
+        for _, n in ipairs(s.nodes) do
+            local k = self.ItemsByName[n:lower()]
+            if k ~= nil then want[k] = true end
+        end
+    end
     for id, data in pairs(self.Items) do
-        if data.cat == area.prof then
+        if data.cat == area.prof and (not want or want[id]) then
             for _, sp in ipairs(data.spots or {}) do
                 if self:ResolveZone(sp.z) == mapID then
                     local ok = true

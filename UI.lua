@@ -373,6 +373,19 @@ function UI:Build()
         if gprev then chip:SetPoint("LEFT", gprev, "RIGHT", 4, 0)
         else chip:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -10) end
         chip.prof = prof
+        chip.icon = chip:CreateTexture(nil, "ARTWORK")
+        chip.icon:SetSize(16, 16)
+        chip.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        chip.icon:SetTexture(ns.Guides[prof] and ns.Guides[prof].icon)
+        -- icon-only chips (too many professions for one row) name themselves on hover
+        chip:HookScript("OnEnter", function(self)
+            if self.compact then
+                GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+                GameTooltip:AddLine(L("cat_" .. self.prof), 1, 1, 1)
+                GameTooltip:Show()
+            end
+        end)
+        chip:HookScript("OnLeave", function() GameTooltip:Hide() end)
         chip:SetScript("OnClick", function()
             ns.db.settings.guideProf = prof
             UI.scroll = 0
@@ -821,6 +834,14 @@ local function GuideSub(r)
         if s.count then t = t .. "  ·  " .. L("g_crafts", s.count) end
         return t
     elseif s.kind == "area" then
+        if s.nodes then
+            local names = {}
+            for _, n in ipairs(s.nodes) do
+                local k = ns.ItemsByName[n:lower()]
+                names[#names + 1] = k ~= nil and ns:GetItemName(k) or n
+            end
+            return table.concat(names, ", ")
+        end
         return s.mobs or ns.GuideNote(s) or ns:ZoneList(s.zones)
     elseif s.kind == "special" then
         local names = {}
@@ -928,7 +949,13 @@ function UI:GuideTooltip(r)
     elseif s.kind == "area" then
         GameTooltip:AddLine(L("g_zones"), 1, 0.82, 0)
         GameTooltip:AddLine("   " .. ns:ZoneList(s.zones), 1, 1, 1, true)
-        if s.mobs then
+        if s.nodes then
+            GameTooltip:AddLine(L("g_nodes"), 1, 0.82, 0)
+            for _, n in ipairs(s.nodes) do
+                local k = ns.ItemsByName[n:lower()]
+                GameTooltip:AddLine("   " .. (k ~= nil and ns:GetItemColoredName(k) or n), 1, 1, 1)
+            end
+        elseif s.mobs then
             GameTooltip:AddLine(L("g_mobs"), 1, 0.82, 0)
             GameTooltip:AddLine("   " .. s.mobs, 1, 1, 1, true)
         end
@@ -985,18 +1012,33 @@ function UI:RefreshChips()
         chip:SetActive(chip.key == self.cat)
     end
     local current = section == "guide" and ns:GuideProf()
+    -- all profession chips on one row: icon + name when they fit, else only
+    -- the chosen one keeps its name and the others show their icon
     local total, widths = 0, {}
     for i, chip in ipairs(self.guideChips or {}) do
         chip:SetShown(section == "guide")
         chip.text:SetText(L("cat_" .. chip.prof))
-        widths[i] = math.max(84, math.floor((chip.text:GetStringWidth() or 0) + 16))
+        widths[i] = math.max(84, math.floor((chip.text:GetStringWidth() or 0) + 16 + 22))
         total = total + widths[i] + (i > 1 and 4 or 0)
         chip:SetActive(chip.prof == current)
     end
-    -- all profession chips on one row: shrink them evenly if a language makes them too wide
     local room = (self.search and self.search.GetWidth and self.search:GetWidth()) or 0
-    local scale = (room > 0 and total > room) and (room - 4 * (#widths - 1)) / (total - 4 * (#widths - 1)) or 1
-    for i, chip in ipairs(self.guideChips or {}) do chip:SetWidth(math.floor(widths[i] * scale)) end
+    local compact = room > 0 and total > room
+    for i, chip in ipairs(self.guideChips or {}) do
+        local small = compact and chip.prof ~= current
+        chip.compact = small
+        chip.text:SetShown(not small)
+        chip.text:ClearAllPoints()
+        chip.icon:ClearAllPoints()
+        if small then
+            chip:SetWidth(34)
+            chip.icon:SetPoint("CENTER")
+        else
+            chip:SetWidth(widths[i])
+            chip.text:SetPoint("CENTER", 10, 0)
+            chip.icon:SetPoint("RIGHT", chip.text, "LEFT", -5, 0)
+        end
+    end
 end
 
 function UI:RefreshStats()

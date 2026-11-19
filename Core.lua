@@ -260,7 +260,7 @@ function ns:ResolveZoneName(name)
     -- capitals: classic uiMapIDs as a fallback when the map index misses them
     local CAPITALS = { ["Stormwind City"] = 1453, ["Orgrimmar"] = 1454, ["Ironforge"] = 1455,
         ["Thunder Bluff"] = 1456, ["Darnassus"] = 1457, ["Undercity"] = 1458,
-        ["Zephras Isle"] = 2521, ["Riverglades"] = 2548, ["Mount Hyjal"] = 2482 }
+        ["Zephras Isle"] = 2521, ["Riverglades"] = 2548, ["Mount Hyjal"] = 2482, ["Moonglade"] = 1450 }
     return CAPITALS[name]
 end
 

@@ -5,6 +5,8 @@
 - Items per hour: measured from your own farming (from 10 minutes on), shown as an estimate until then
 - Uses the AH Snipe 3 price API (realm- and faction-aware median, listed quantity) when available
 - Fixed: remembered auction prices are kept per realm and faction
+- New: Mining 1-300 and Herbalism 1-300 guides (wow-professions.com route, cross-checked with icy-veins.com); the map marks only the step's ores / herbs; junior trainers listed only up to 75
+- Guide tabs show the profession icon; when they do not fit on one row, only the chosen one keeps its name
 - Includes everything from 1.3.2 (Tailoring guide, recipe click for every profession)
 
 # FarmAtlas 1.3.2
