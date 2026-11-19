@@ -187,6 +187,44 @@ function Options:Build()
     BG(f.body, C.panel)
     f.pageTitle = f.body:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.pageTitle:SetPoint("TOPLEFT", 14, -12)
+
+    -- the page's controls scroll under the title when they do not fit
+    f.scroll = CreateFrame("ScrollFrame", nil, f.body)
+    f.scroll:SetPoint("TOPLEFT", 0, -34)
+    f.scroll:SetPoint("BOTTOMRIGHT", -18, 6)
+    f.content = CreateFrame("Frame", nil, f.scroll)
+    f.content:SetSize(1, 1)
+    f.scroll:SetScrollChild(f.content)
+
+    -- scroll bar on the right
+    f.bar = CreateFrame("Slider", nil, f.body)
+    f.bar:SetPoint("TOPRIGHT", -6, -38)
+    f.bar:SetPoint("BOTTOMRIGHT", -6, 10)
+    f.bar:SetWidth(8)
+    f.bar:SetOrientation("VERTICAL")
+    f.bar:SetMinMaxValues(0, 0)
+    f.bar:SetValueStep(1)
+    if f.bar.SetObeyStepOnDrag then f.bar:SetObeyStepOnDrag(true) end
+    local track = f.bar:CreateTexture(nil, "BACKGROUND")
+    track:SetTexture(WHITE)
+    track:SetAllPoints()
+    track:SetVertexColor(0.13, 0.146, 0.176, 1)
+    f.bar:SetThumbTexture(WHITE)
+    local thumb = f.bar:GetThumbTexture()
+    if thumb then
+        thumb:SetSize(8, 40)
+        thumb:SetVertexColor(C.accent[1], C.accent[2], C.accent[3], 0.9)
+    end
+    f.bar:SetScript("OnValueChanged", function(_, v) f.scroll:SetVerticalScroll(v) end)
+    local function Wheel(_, delta)
+        if not f.bar:IsShown() then return end
+        local _, mx = f.bar:GetMinMaxValues()
+        f.bar:SetValue(math.max(0, math.min(mx, (f.bar:GetValue() or 0) - delta * 40)))
+    end
+    f.scroll:EnableMouseWheel(true)
+    f.scroll:SetScript("OnMouseWheel", Wheel)
+    f.body:EnableMouseWheel(true)
+    f.body:SetScript("OnMouseWheel", Wheel)
     f.widgets = {}
     self.page = "general"
 end
@@ -222,12 +260,13 @@ function Options:ShowPage(id)
     local page
     for _, p in ipairs(pages) do if p.id == id then page = p end end
     if not page then return end
-    local y = -40
-    local width = f.body:GetWidth() - 28
+    local y = -6
+    local width = f.body:GetWidth() - 46
+    f.content:SetWidth(f.body:GetWidth() - 18)
     for _, it in ipairs(page.items) do
         local kind = it[1]
         if kind == "head" then
-            local holder = CreateFrame("Frame", nil, f.body)
+            local holder = CreateFrame("Frame", nil, f.content)
             holder:SetPoint("TOPLEFT", 14, y - 6)
             holder:SetSize(width, 18)
             local h = holder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -237,7 +276,7 @@ function Options:ShowPage(id)
             table.insert(f.widgets, holder)
             y = y - 30
         elseif kind == "check" then
-            local c = Check(f.body)
+            local c = Check(f.content)
             c:SetPoint("TOPLEFT", 14, y)
             c:SetWidth(width)
             c.label:SetText(L(it[2]))
@@ -247,7 +286,7 @@ function Options:ShowPage(id)
             table.insert(f.widgets, c)
             y = y - (it[5] and 42 or 28)
         elseif kind == "button" then
-            local b = Button(f.body)
+            local b = Button(f.content)
             b:SetPoint("TOPLEFT", 14, y)
             b:SetWidth(220)
             b.label:SetText(L(it[2]))
@@ -264,7 +303,7 @@ function Options:ShowPage(id)
             y = y - 34
         elseif kind == "stepper" then
             local get, set, mn, mx, step, fmt = it[3], it[4], it[5], it[6], it[7], it[8]
-            local row = CreateFrame("Frame", nil, f.body)
+            local row = CreateFrame("Frame", nil, f.content)
             row:SetPoint("TOPLEFT", 14, y)
             row:SetSize(width, 26)
             local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -284,7 +323,7 @@ function Options:ShowPage(id)
             table.insert(f.widgets, row)
             y = y - 34
         elseif kind == "lang" then
-            local row = CreateFrame("Frame", nil, f.body)
+            local row = CreateFrame("Frame", nil, f.content)
             row:SetPoint("TOPLEFT", 14, y)
             row:SetSize(width, 26)
             local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -315,6 +354,14 @@ function Options:ShowPage(id)
             y = y - 34
         end
     end
+    -- content height and the scroll bar (hidden when everything fits)
+    local h = -y + 10
+    f.content:SetHeight(h)
+    local range = math.max(0, h - (f.scroll:GetHeight() or 0))
+    f.bar:SetMinMaxValues(0, range)
+    f.bar:SetValue(0)
+    f.scroll:SetVerticalScroll(0)
+    f.bar:SetShown(range > 0)
 end
 
 function Options:Refresh()
