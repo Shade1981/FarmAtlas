@@ -2,6 +2,8 @@
 
 **Find where to farm every cooking meat, leather, scale, fish, ore and herb - right on your world map and minimap.**
 
+[![Enjoying FarmAtlas? Support on Ko-fi](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/support-kofi.png)](https://ko-fi.com/rgvoicebot)
+
 Made for **WoW Forever**. Search *boar*, *raptor*, *stag* or *Giant Egg* and FarmAtlas shows you the best farm areas with mob names, levels and drop chances, marks them on your map, tells you which recipes use the ingredient, and counts what you already have in your bags, bank and on your alts.
 
 FarmAtlas is your farming and profession companion: where to farm it, what it is worth, what you can make from it and how to level your profession. For exact herb and ore nodes it works together with **Questie**, **GatherMate2** and **Gatherer** - no duplicate maps.
