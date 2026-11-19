@@ -5,6 +5,43 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.3.1", date = "2026-11-19",
+      en = {
+        "New: First Aid 1-300 and Alchemy 1-300 guides - every trainer (only the ones who really teach your next rank), recipe and manual vendors, the Expert book and the Triage quest, all at their exact positions.",
+        "New: fishing schools - FarmAtlas remembers where you fished from a school (any fish) and warns you when you come near a school spot of a fish you track. Setting: Settings > Map & minimap.",
+        "New: the addon ships with community finds - added to your own data at run time, never replacing it.",
+        "Fixed: book and quest steps (Expert / Artisan Cooking and Fishing, e.g. Nat Pagle) no longer look like trainers - they say what to do and which skill you need.",
+        "Fixed: the guide could miss Fishing and Cooking on characters without a main profession; a few trainer positions and counts corrected.",
+      },
+      hu = {
+        "Új: Elsősegély 1-300 és Alkímia 1-300 útmutató - minden tréner (csak akik tényleg tanítják a következő rangot), recept- és könyvárusok, az Expert könyv és a Triage küldetés, mind pontos helyen.",
+        "Új: halrajok - a FarmAtlas megjegyzi, hol horgásztál rajból (bármilyen hal), és szól, ha egy követett hal rajhelyéhez közel érsz. Beállítás: Beállítások > Térkép és minimap.",
+        "Új: az addon közösségi találatokkal érkezik - futás közben adódik hozzá a saját adataidhoz, sosem írja felül őket.",
+        "Javítva: a könyves és küldetéses lépések (Expert / Artisan Főzés és Horgászat, pl. Nat Pagle) már nem trénerként jelennek meg - leírják, mit kell tenni és milyen skill kell.",
+        "Javítva: fő szakma nélküli karakteren az útmutató nem látta a Horgászatot és Főzést; néhány tréner helye és darabszám pontosítva.",
+      },
+      fr = {
+        "Nouveau : guides Secourisme 1-300 et Alchimie 1-300 - tous les maîtres (seulement ceux qui enseignent vraiment votre rang suivant), vendeurs de recettes et de manuels, le livre Expert et la quête Triage, à leur position exacte.",
+        "Nouveau : bancs de poissons - FarmAtlas retient où vous avez pêché dans un banc (tout poisson) et vous avertit quand vous approchez d'un banc d'un poisson suivi. Option : Options > Carte et minicarte.",
+        "Nouveau : l'addon inclut les trouvailles de la communauté - ajoutées à vos données en jeu, sans jamais les remplacer.",
+        "Corrigé : les étapes livre et quête (Cuisine et Pêche Expert / Artisan, ex. Nat Pagle) ne ressemblent plus à des maîtres - elles disent quoi faire et la compétence requise.",
+        "Corrigé : le guide pouvait ignorer Pêche et Cuisine sur un personnage sans métier principal ; quelques positions de maîtres et quantités corrigées.",
+      },
+      de = {
+        "Neu: Leitfäden Erste Hilfe 1-300 und Alchemie 1-300 - alle Lehrer (nur die, die deinen nächsten Rang wirklich lehren), Rezept- und Handbuchhändler, das Expertenbuch und die Quest Triage, alle an ihrer genauen Position.",
+        "Neu: Fischschwärme - FarmAtlas merkt sich, wo du aus einem Schwarm geangelt hast (jeder Fisch), und warnt dich in der Nähe eines Schwarmplatzes eines verfolgten Fisches. Einstellung: Einstellungen > Karte & Minikarte.",
+        "Neu: Das Addon bringt Funde der Community mit - sie werden im Spiel zu deinen Daten hinzugefügt und ersetzen sie nie.",
+        "Behoben: Buch- und Questschritte (Kochkunst und Angeln Experte / Fachmann, z. B. Nat Pagle) sehen nicht mehr wie Lehrer aus - sie sagen, was zu tun ist und welcher Skill nötig ist.",
+        "Behoben: Ohne Hauptberuf konnte der Leitfaden Angeln und Kochkunst übersehen; einige Lehrerpositionen und Mengen korrigiert.",
+      },
+      es = {
+        "Nuevo: guías de Primeros auxilios 1-300 y Alquimia 1-300 - todos los instructores (solo los que de verdad enseñan tu siguiente rango), vendedores de recetas y manuales, el libro Experto y la misión Triage, en su posición exacta.",
+        "Nuevo: bancos de peces - FarmAtlas recuerda dónde pescaste en un banco (cualquier pez) y te avisa cuando te acercas al banco de un pez que sigues. Opción: Opciones > Mapa y minimapa.",
+        "Nuevo: el addon trae hallazgos de la comunidad - se añaden a tus datos en el juego y nunca los reemplazan.",
+        "Corregido: los pasos de libro y misión (Cocina y Pesca Experto / Artesano, p. ej. Nat Pagle) ya no parecen instructores - dicen qué hacer y qué habilidad necesitas.",
+        "Corregido: la guía podía no ver Pesca y Cocina en personajes sin profesión principal; corregidas algunas posiciones de instructores y cantidades.",
+      },
+    },
     { v = "1.3.0", date = "2026-11-18",
       en = {
         "Fixed: learning now works with auto loot - before, gathered and looted items were often not recorded. Your finds are learned and shared with your guild again.",

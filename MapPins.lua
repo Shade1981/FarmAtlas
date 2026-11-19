@@ -288,6 +288,11 @@ function FarmAtlasIconPinMixin:OnMouseEnter()
     if info.trainer then
         tip:AddLine(info.label or "?", 1, 0.82, 0)
         tip:AddLine(L("cat_" .. info.prof) .. (info.rank and (" - " .. info.rank) or (" - " .. L("g_trainer"))), 1, 1, 1)
+        if info.special then
+            -- a quest giver or book vendor, not a trainer: say so, with what is needed
+            tip:AddLine(L("g_special"), 1, 0.5, 0.3, true)
+            if info.need then tip:AddLine(L("g_need", info.need), 1, 0.5, 0.3) end
+        end
         if info.sub then tip:AddLine(info.sub, 0.7, 0.7, 0.7, true) end
         if info.guide then tip:AddLine(L("g_pin_guide"), 0.4, 1, 0.45, true) end
         if info.town then tip:AddLine(L("g_pin_town"), 0.25, 0.78, 0.92, true) end
@@ -431,7 +436,8 @@ function Provider:RefreshAllData()
                 if t.guide then r, g, b = 1, 0.82, 0 elseif t.town then r, g, b = 0.247, 0.780, 0.922 end
                 map:AcquirePin(ICON_TEMPLATE, { trainer = true, icon = ns.Guides[t.prof].icon, x = x, y = y,
                     cr = r, cg = g, cb = b,
-                    label = t.npc, prof = t.prof, sub = t.note, rank = t.rank, guide = t.guide, town = t.town })
+                    label = t.npc, prof = t.prof, sub = t.note, rank = t.rank, guide = t.guide, town = t.town,
+                    special = t.special, need = t.need })
             end
         end
     end

@@ -204,3 +204,109 @@ function ns:FishSiteTooltip(tip, site)
             L("np_skill", f.skill), r, g, b, ok and 0.8 or 1, ok and 0.8 or 0.35, ok and 0.8 or 0.35)
     end
 end
+
+------------------------------------------------------------------------
+-- Fishing schools (pools) you fished from
+-- db.pools[objectID] = { fish = { [itemID] = n }, zones = { [mapID] = { [cell] = { x, y, n, last } } } }
+-- A school always appears on one of a fixed set of spots; every spot you fish
+-- from is remembered, so the set fills up while you play (layer hopping too).
+------------------------------------------------------------------------
+local poolSeen = {}
+function ns:RecordPool(objID, guid, itemID, mapID, x, y)
+    if not ns.db then return end
+    ns.db.pools = ns.db.pools or {}
+    local p = ns.db.pools[objID]
+    if not p then p = { fish = {}, zones = {} }; ns.db.pools[objID] = p end
+    local fk = guid .. ":" .. itemID
+    if not poolSeen[fk] then poolSeen[fk] = true; p.fish[itemID] = (p.fish[itemID] or 0) + 1 end
+    if poolSeen[guid] then return end      -- the same school, cast again
+    poolSeen[guid] = true
+    local cx, cy = math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5)
+    local z = p.zones[mapID]
+    if not z then z = {}; p.zones[mapID] = z end
+    local key = cx .. ":" .. cy
+    local c = z[key]
+    if not c then c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c end
+    c.n = c.n + 1
+    c.last = time and time() or 0
+    ns:Fire("LEARNED_CHANGED")
+end
+
+-- known school spots of a fish: your own (db.pools) + the installed node addons
+local function PoolPoints(itemID, out)
+    local known = {}
+    for _, id in ipairs(ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID] or {}) do known[id] = true end
+    for objID, p in pairs(ns.db and ns.db.pools or {}) do
+        if known[objID] or (p.fish and p.fish[itemID]) then
+            for mapID, cells in pairs(p.zones or {}) do
+                for _, c in pairs(cells) do add(out, mapID, c.x, c.y) end
+            end
+        end
+    end
+end
+
+local baseExternal = ns.ExternalNodes
+function ns:ExternalNodes(itemID)
+    local base = baseExternal(self, itemID)
+    local cat = ns.Items[itemID] and ns.Items[itemID].cat
+    if cat ~= "fishing" or not (ns.db and ns.db.pools and next(ns.db.pools)) then return base end
+    local out = {}
+    for mapID, list in pairs(base or {}) do
+        local l = {}
+        for i, p in ipairs(list) do l[i] = p end
+        out[mapID] = l
+    end
+    PoolPoints(itemID, out)
+    return next(out) and out or nil
+end
+
+-- proximity alert near a known school spot of a fish you track. No addon can
+-- see whether the school is up right now: the alert tells you to look, the
+-- game's Find Fish tracking shows if it is there.
+local alerted = {}
+local function WorldYards(mapID, x, y)
+    if not (C_Map and C_Map.GetWorldPosFromMapPos and CreateVector2D) then return end
+    local ok, cont, pos = pcall(C_Map.GetWorldPosFromMapPos, mapID, CreateVector2D(x / 100, y / 100))
+    if ok and cont and pos then return cont, pos:GetXY() end
+end
+
+local function CheckPools()
+    local S = ns.db and ns.db.settings
+    if not S or S.poolAlert == false or not (C_Map and C_Map.GetBestMapForUnit) then return end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
+    if not pos then return end
+    local px, py = pos:GetXY()
+    if not px then return end
+    local pc, pwx, pwy = WorldYards(mapID, px * 100, py * 100)
+    if not pc then return end
+    local range = S.poolAlertRange or 60
+    local now = GetTime()
+    for itemID in pairs(ns.db.tracked or {}) do
+        local it = ns.Items[itemID]
+        if it and it.cat == "fishing" then
+            local all = ns:ExternalNodes(itemID)
+            for _, p in ipairs(all and all[mapID] or {}) do
+                local c, wx, wy = WorldYards(mapID, p[1], p[2])
+                if c == pc then
+                    local d = math.sqrt((wx - pwx) ^ 2 + (wy - pwy) ^ 2)
+                    local key = mapID .. ":" .. p[1] .. ":" .. p[2]
+                    if d <= range and (not alerted[key] or now - alerted[key] > 300) then
+                        alerted[key] = now
+                        local msg = L("pool_near", ns:GetItemName(itemID) or "?", math.floor(d + 0.5))
+                        if RaidNotice_AddMessage and RaidWarningFrame then
+                            RaidNotice_AddMessage(RaidWarningFrame, msg, { r = 1, g = 0.82, b = 0 })
+                        end
+                        ns:Print(msg)
+                        if PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then pcall(PlaySound, SOUNDKIT.RAID_WARNING) end
+                        return
+                    end
+                end
+            end
+        end
+    end
+end
+ns.CheckPools = CheckPools
+if C_Timer and C_Timer.NewTicker then
+    C_Timer.NewTicker(2, function() pcall(CheckPools) end)
+end

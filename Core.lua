@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.3.0"
+ns.version = "1.3.1"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -44,6 +44,9 @@ ns.CAT_COLORS = {
     fishing  = { 0.30, 0.70, 1.00 },
     mining   = { 0.80, 0.70, 0.55 },
     herbalism = { 0.45, 0.95, 0.55 },
+    leatherworking = { 0.80, 0.55, 0.30 },
+    firstaid = { 1.00, 0.40, 0.40 },
+    alchemy  = { 0.35, 0.90, 0.85 },
     learned  = { 0.80, 0.55, 1.00 },
 }
 
@@ -76,6 +79,8 @@ local DEFAULTS = {
         areaAlpha = 0.12,
         nodeIconSize = 14,
         nodeHideRange = 15,
+        poolAlert = true,
+        poolAlertRange = 60,
         minimapAngle = 220,
         hideMinimapButton = false,
         sync = true,        -- share discoveries with party / raid / guild in the background

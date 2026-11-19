@@ -1,3 +1,13 @@
+# FarmAtlas 1.3.1
+
+- New: First Aid 1-300 guide - all trainers, the Expert book vendors (and the two manuals), the Triage quest doctors who also teach the last bandages, at exact positions
+- New: Alchemy 1-300 guide - trainers with the highest rank each can teach (rank steps only list those who teach it), recipe vendors for Nature Protection Potion, Elixir of Superior Defense and Superior Mana Potion
+- New: fishing schools are learned for every fish (position of each school you fished from) with an optional proximity warning for tracked fish
+- New: community data shipped with the addon, merged at run time and never overwriting your own data
+- Fixed: Expert / Artisan book and quest steps (e.g. Nat Pagle) are no longer shown as trainers
+- Fixed: guide skill detection on characters without a main profession; Daryl Riknussun position; Cooked Crab Claw count
+- Routes cross-checked on wowhead.com, wow-professions.com and method.gg; every NPC position, vendor and quest checked against more than one source
+
 # FarmAtlas 1.3.0
 
 - Fixed: learning works with auto loot (gathered and looted items were often not recorded before)

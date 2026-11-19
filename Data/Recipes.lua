@@ -11,7 +11,7 @@ local _, ns = ...
 
 ns.Trainers = {
     { npc = "Alegorn", zone = "Darnassus", x = 48.9, y = 21.3, faction = "A" },
-    { npc = "Daryl Riknussun", zone = "Ironforge", x = 60.4, y = 38.1, faction = "A" },
+    { npc = "Daryl Riknussun", zone = "Ironforge", x = 60.1, y = 36.4, faction = "A" },
     { npc = "Stephen Ryback", zone = "Stormwind City", x = 78.3, y = 53.1, faction = "A" },
     { npc = "Cook Ghilm", zone = "Dun Morogh", x = 68.4, y = 54.5, faction = "A" },
     { npc = "Gremlock Pilsnor", zone = "Dun Morogh", x = 47.6, y = 52.4, faction = "A", note = "Kharanos" },

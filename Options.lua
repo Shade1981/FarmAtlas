@@ -86,6 +86,7 @@ local function Pages()
                 function(v) S().areaAlpha = v; fire() end, 0.04, 0.35, 0.02, function(v) return math.floor(v * 100 + 0.5) .. "%" end },
             { "stepper", "op_nodesize", function() return S().nodeIconSize or 14 end,
                 function(v) S().nodeIconSize = v; fire() end, 8, 28, 2, function(v) return v .. " px" end },
+            { "check", "op_poolalert", function() return S().poolAlert ~= false end, function(v) S().poolAlert = v end, "op_poolalert_hint" },
             { "stepper", "op_nodehide", function() return S().nodeHideRange or 15 end,
                 function(v) S().nodeHideRange = v; fire() end, 0, 50, 5, function(v) return v == 0 and L("op_off") or (v .. " " .. L("op_yd")) end },
         }),

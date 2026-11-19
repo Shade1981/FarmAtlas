@@ -427,6 +427,10 @@ local function NewTrainerPin()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(t.npc, 1, 0.82, 0)
         GameTooltip:AddLine(L("cat_" .. t.prof) .. " - " .. (t.rank or L("g_trainer")), 1, 1, 1)
+        if t.special then
+            GameTooltip:AddLine(L("g_special"), 1, 0.5, 0.3, true)
+            if t.need then GameTooltip:AddLine(L("g_need", t.need), 1, 0.5, 0.3) end
+        end
         if t.note then GameTooltip:AddLine(t.note, 0.7, 0.7, 0.7, true) end
         if self.dist then GameTooltip:AddLine(L("mm_dist", math.floor(self.dist + 0.5)), 1, 1, 1) end
         GameTooltip:Show()

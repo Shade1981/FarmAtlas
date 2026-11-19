@@ -2,7 +2,18 @@
 local _, ns = ...
 local L = ns.L
 
-local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning", leatherworking = "Leatherworking" }
+local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning", leatherworking = "Leatherworking",
+    firstaid = "First Aid", alchemy = "Alchemy" }
+
+-- highest skill of each rank: a trainer must reach it to teach that rank
+local RANK_CAP = { Apprentice = 75, Journeyman = 150, Expert = 225, Artisan = 300 }
+ns.RANK_CAP = RANK_CAP
+-- the trainer rank a recipe in this skill range needs (guides with ranked trainers)
+function ns:CapForSkill(from)
+    from = from or 0
+    if from < 75 then return 75 elseif from < 150 then return 150 elseif from < 225 then return 225 end
+    return 300
+end
 
 local function MyFaction()
     local f = UnitFactionGroup and UnitFactionGroup("player")
@@ -19,20 +30,28 @@ function ns:ProfSkill(prof)
     if not want then return nil end
     local ok, a, b, c, d, e, f = pcall(function() if GetProfessions then return GetProfessions() end end)
     if ok and GetProfessionInfo then
-        for _, idx in ipairs({ a, b, c, d, e, f }) do
+        -- not ipairs: the first slots are empty for a character without a main
+        -- profession, and ipairs would stop there before Fishing / Cooking
+        local slots = { a, b, c, d, e, f }
+        for i = 1, 6 do
+            local idx = slots[i]
             if idx then
-                local ok2, name, _, rank, _, _, _, line = pcall(GetProfessionInfo, idx)
+                local ok2, name, _, rank, maxRank, _, _, line = pcall(GetProfessionInfo, idx)
                 -- skill line ID first: works on every client language
                 local byLine = ns.SKILL_LINE and ns.SKILL_LINE[prof] and ns.Plain(line) == ns.SKILL_LINE[prof]
-                if ok2 and (byLine or ns.Plain(name) == want) and type(rank) == "number" then return rank end
+                if ok2 and (byLine or ns.Plain(name) == want) and type(rank) == "number" then
+                    return rank, type(maxRank) == "number" and maxRank or nil
+                end
             end
         end
     end
     -- older skill-line API
     if GetNumSkillLines and GetSkillLineInfo then
         for i = 1, GetNumSkillLines() do
-            local ok3, name, header, _, rank = pcall(GetSkillLineInfo, i)
-            if ok3 and not header and name == want and type(rank) == "number" then return rank end
+            local ok3, name, header, _, rank, _, _, maxRank = pcall(GetSkillLineInfo, i)
+            if ok3 and not header and name == want and type(rank) == "number" then
+                return rank, type(maxRank) == "number" and maxRank or nil
+            end
         end
     end
     return nil
@@ -60,7 +79,8 @@ end
 
 -- Trainers for a profession, filtered to your faction (neutral = both),
 -- with coordinates where known. Your current zone first.
-function ns:GuideTrainers(prof, list)
+-- need: only trainers who can train up to this skill (t.max; nil max = no limit)
+function ns:GuideTrainers(prof, list, need)
     local g = self.Guides[prof]
     if not g then return {} end
     local mine = MyFaction()
@@ -75,8 +95,8 @@ function ns:GuideTrainers(prof, list)
     for pass = 1, 2 do
         for _, t in ipairs(src) do
             local here = (t.zone == cur)
-            if FactionOK(t.faction, mine) and ((pass == 1) == here) then
-                local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID }
+            if FactionOK(t.faction, mine) and ((pass == 1) == here) and not (need and t.max and t.max < need) then
+                local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID, max = t.max }
                 local learned = self.db and self.db.trainerPos and self.db.trainerPos[t.npc]
                 if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
                 if not e.x then
@@ -134,10 +154,11 @@ function ns:GuideCurrentTrainers()
             for _, r in ipairs(self:GuideRows("", prof)) do
                 local s = r.step
                 if r.current and s and (s.kind == "train" or s.kind == "special") then
-                    for _, t in ipairs(self:GuideTrainers(prof, s.kind == "special" and s.npcs or nil)) do
+                    for _, t in ipairs(self:GuideTrainers(prof, s.kind == "special" and s.npcs or nil, s.kind == "train" and RANK_CAP[s.rank] or nil)) do
                         if t.mapID and t.x and t.y then
                             out[#out + 1] = { prof = prof, npc = t.npc, mapID = t.mapID, x = t.x, y = t.y,
-                                note = t.note, rank = s.rank, guide = true }
+                                note = t.note, rank = s.rank, guide = true, special = s.kind == "special",
+                                need = s.kind == "special" and s.at or nil }
                         end
                     end
                 end
@@ -224,7 +245,7 @@ function ns:GuideRows(query, onlyProf)
     for _, prof in ipairs(self.GUIDE_ORDER) do
       if not onlyProf or onlyProf == prof then
         local g = self.Guides[prof]
-        local skill = self:ProfSkill(prof)
+        local skill, maxSkill = self:ProfSkill(prof)
         local profName = L("cat_" .. prof)
         local steps = {}
         local currentMarked = false
@@ -241,7 +262,9 @@ function ns:GuideRows(query, onlyProf)
                     local hi = s.to or s.at or 0
                     if skill then
                         if s.kind == "train" or s.kind == "special" then
-                            r.done = skill > (s.at or 0) + 25
+                            -- done once you are past it, or the rank is already learned
+                            -- (your skill cap is above this step's old cap)
+                            r.done = skill > (s.at or 0) + 25 or (maxSkill and maxSkill > (s.at or 0) + 25) or false
                             r.current = not r.done and skill >= (s.at or 0) - 0 and skill < (s.at or 0) + 25
                         else
                             r.done = skill >= hi
@@ -348,7 +371,7 @@ function ns:GuideAction(r)
     elseif s.kind == "area" then
         return "area", { prof = r.prof, step = s, zone = s.zones and s.zones[1] }
     else
-        local list = self:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
+        local list = self:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil, s.kind == "train" and RANK_CAP[s.rank] or nil)
         local t = list[1]
         if t then return "point", { zone = t.zone, mapID = t.mapID, x = t.x, y = t.y, label = t.npc, sub = t.note } end
     end

@@ -211,6 +211,12 @@ local function OnEvent(_, event, ...)
         local link = GetLootSlotLink(slot)
         local itemID = link and tonumber(link:match("item:(%d+)"))
         local lootName = link and link:match("%[(.-)%]")
+        -- fishing from a school: remember the school's spot (by its game object ID)
+        if isFishing and itemID and type(guid) == "string" and guid:find("^GameObject") and mapID and x then
+            local objID = tonumber((select(6, strsplit("-", guid))))
+            -- 35591 = the fishing bobber itself (open water), not a school
+            if objID and objID ~= 35591 and ns.RecordPool then ns:RecordPool(objID, guid, itemID, mapID, x, y) end
+        end
         if itemID and ShouldRecord(itemID, isFishing, lootName) then
             local _, _, quantity = GetLootSlotInfo(slot)
             local sessionKey = (guid or ("loot" .. lootSession)) .. ":" .. itemID .. ":" .. slot

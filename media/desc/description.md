@@ -8,6 +8,16 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.3.1
+
+- **First Aid 1-300 and Alchemy 1-300 guides:** every trainer at its exact position - and only the trainers who really teach your next rank. Recipe and manual vendors, the Expert First Aid book and the Triage quest are on the map too. Routes cross-checked on several guide sites.
+
+![Alchemy guide: recipe vendor with position](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v131-alchemy-guide.png)
+
+- **Fishing schools:** FarmAtlas remembers where you fished from a school (any fish) and can warn you when you come near a school spot of a fish you track.
+- **Community finds** ship with the addon and are added to your own data in game - never replacing it.
+- Book and quest steps (Expert / Artisan Cooking and Fishing, e.g. Nat Pagle) are no longer shown as trainers.
+
 ## New in 1.3.0
 
 - **Fixed: learning works with auto loot.** Before, gathered and looted items were often not recorded. Your finds are learned and shared with your guild again.
@@ -82,7 +92,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 
 **Leveling guides**
-- **Cooking, Fishing, Skinning and Leatherworking 1-300**, each on its own tab: what to make, where to go, which rank to train next.
+- **Cooking, Fishing, Skinning, Leatherworking, First Aid and Alchemy 1-300**, each on its own tab: what to make, where to go, which rank to train next.
 - Click a step: the place is marked in gold on the world map; cooking steps show where to farm the material.
 - The trainers of your current step appear on the map and minimap automatically.
 - **Town alert**: a movable, resizable banner when you arrive at a town, village or camp with a trainer of a profession you switched on.
@@ -168,12 +178,14 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 
 **Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
 
+**Újdonságok az 1.3.1-ben:** Elsősegély 1-300 és Alkímia 1-300 útmutató (csak azok a trénerek, akik tényleg tanítják a következő rangot, recept- és könyvárusok, Triage küldetés, pontos helyen); halrajok megjegyzése és jelzés közelről; közösségi találatok az addonban; a könyves/küldetéses lépések (pl. Nat Pagle) már nem trénerként jelennek meg.
+
 **Újdonságok az 1.3.0-ban:** javítva a tanulás auto-loottal; Bányászat és Gyógynövény; pontos ér- és növény-node-ok a Questie / GatherMate2 / Gatherer adataiból (a gépeden olvassa, semmit nem másol); horgászhelyek magán a vízen, ráállva: mi fogható és milyen skill kell; Bőrművesség 1-300 útmutató; új bal oldali menü; állítható ikonméret és elrejtés közelről.
 
 
 - Keress rá bármire (pl. *boar*, *raptor*), és látod a farmterületeket mobokkal, szintekkel, esési eséllyel.
 - Áttetsző zónák a térképen, irányjelzés és keret a minimapon.
-- **Útmutató**: Főzés, Horgászat, Nyúzás és Bőrművesség 1-300, trénerekkel a térképen és település-jelzéssel.
+- **Útmutató**: Főzés, Horgászat, Nyúzás, Bőrművesség, Elsősegély és Alkímia 1-300, trénerekkel a térképen és település-jelzéssel.
 - **Receptek** fül: mind a 123 főzőrecept, kattintásra megnyílik a szakma ablak, vagy megmutatja, hol tanulható.
 - **Farm / óra aranyban** és AH-árak a tooltipen (Auctionator / TSM / AHSnipe, vagy vendor ár).
 - Farm célok, táska / bank / alt számláló, valódi esési arányok a saját öléseidből.

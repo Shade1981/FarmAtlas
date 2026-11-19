@@ -804,6 +804,10 @@ local function GuideTitle(r)
         local z = ns:ZoneLabel(s.zones[1]) .. ((#s.zones > 1) and (" +" .. (#s.zones - 1)) or "")
         return range .. "  " .. z
     end
+    if s.kind == "special" then
+        -- Expert / Artisan of Cooking and Fishing: a book or a quest, never a trainer
+        return range .. "  " .. L(s.how == "quest" and "g_how_quest" or "g_how_book", s.rank or "")
+    end
     return range .. "  " .. L("g_train", s.rank or "")
 end
 
@@ -820,6 +824,13 @@ local function GuideSub(r)
         local list = ns:GuideTrainers(r.prof, s.npcs)
         for _, t in ipairs(list) do names[#names + 1] = t.npc .. " (" .. (ns:ZoneLabel(t.zone) or "?") .. ")" end
         return table.concat(names, ", ")
+    elseif s.kind == "train" and ns.Guides[r.prof] and ns.Guides[r.prof].ranked then
+        -- only some trainers teach this rank: name the nearest ones
+        local names = {}
+        local list = ns:GuideTrainers(r.prof, nil, ns.RANK_CAP[s.rank])
+        for i = 1, math.min(3, #list) do names[#names + 1] = list[i].npc .. " (" .. (ns:ZoneLabel(list[i].zone) or "?") .. ")" end
+        if #list > 3 then names[#names + 1] = "..." end
+        if #names > 0 then return table.concat(names, ", ") end
     end
     return L("g_any_trainer")
 end
@@ -885,7 +896,11 @@ function UI:GuideTooltip(r)
         GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
         if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
-        if s.trainer then srcType, sources = "trainer", {} end
+        if s.trainer then
+            srcType, sources = "trainer", {}
+            -- ranked trainers: list the ones who teach recipes of this skill range
+            if ns.Guides[r.prof] and ns.Guides[r.prof].ranked and ns:CapForSkill(s.from) > 75 then sources = ns:GuideTrainers(r.prof, nil, ns:CapForSkill(s.from)) end
+        end
         if s.npcs then srcType, sources = "vendor", ns:GuideTrainers(r.prof, s.npcs) end
         if s.trainer == nil and s.note and #sources == 0 then srcNote = ns.GuideNote(s) end
         GameTooltip:AddLine(" ")
@@ -915,7 +930,7 @@ function UI:GuideTooltip(r)
         end
     else
         GameTooltip:AddLine(s.kind == "special" and L("g_npcs") or L("g_trainers"), 1, 0.82, 0)
-        local list = ns:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil)
+        local list = ns:GuideTrainers(r.prof, s.kind == "special" and s.npcs or nil, s.kind == "train" and ns.RANK_CAP[s.rank] or nil)
         for i = 1, math.min(6, #list) do
             local t = list[i]
             local loc = (ns:ZoneLabel(t.zone) or "?") .. ((t.x and t.y) and (" %.1f, %.1f"):format(t.x, t.y) or "") .. (t.note and (" (" .. t.note .. ")") or "")
@@ -969,7 +984,7 @@ function UI:RefreshChips()
     for _, chip in ipairs(self.guideChips or {}) do
         chip:SetShown(section == "guide")
         chip.text:SetText(L("cat_" .. chip.prof))
-        chip:SetWidth(math.max(110, math.floor((chip.text:GetStringWidth() or 0) + 24)))
+        chip:SetWidth(math.max(96, math.floor((chip.text:GetStringWidth() or 0) + 24)))
         chip:SetActive(chip.prof == current)
     end
 end
