@@ -1,3 +1,10 @@
+# FarmAtlas 1.3.2
+
+- New: Tailoring 1-300 guide - trainers with the highest rank each can teach, the Artisan trainers (Daryl Stack, Timothy Worthington), pattern vendors Qia and Pexmit and the Horde quest alternative, at exact positions
+- Fixed: clicking a known recipe opens the right profession window for every profession (not only Cooking) and selects the recipe in older-style windows
+- Fixed: Mount Hyjal NPCs (e.g. Elderwild cooking trainers) now get their map position
+- Guide tabs fit on one row in every language
+
 # FarmAtlas 1.3.1
 
 - New: First Aid 1-300 guide - all trainers, the Expert book vendors (and the two manuals), the Triage quest doctors who also teach the last bandages, at exact positions

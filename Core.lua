@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.3.1"
+ns.version = "1.3.2"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -260,7 +260,7 @@ function ns:ResolveZoneName(name)
     -- capitals: classic uiMapIDs as a fallback when the map index misses them
     local CAPITALS = { ["Stormwind City"] = 1453, ["Orgrimmar"] = 1454, ["Ironforge"] = 1455,
         ["Thunder Bluff"] = 1456, ["Darnassus"] = 1457, ["Undercity"] = 1458,
-        ["Zephras Isle"] = 2521, ["Riverglades"] = 2548 }
+        ["Zephras Isle"] = 2521, ["Riverglades"] = 2548, ["Mount Hyjal"] = 2482 }
     return CAPITALS[name]
 end
 

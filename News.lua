@@ -5,6 +5,28 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.3.2", date = "2026-11-19",
+      en = {
+        "New: Tailoring 1-300 guide - every trainer with the rank they teach, the Artisan trainers, and the pattern vendors (Qia, Pexmit) at their exact positions.",
+        "Fixed: clicking a known recipe now opens every profession window (e.g. Alchemy, First Aid) and selects the recipe - before, only Cooking opened.",
+      },
+      hu = {
+        "Új: Szabászat 1-300 útmutató - minden tréner a tanított ranggal, az Artisan trénerek és a mintaárusok (Qia, Pexmit) pontos helyen.",
+        "Javítva: egy ismert receptre kattintva most minden szakma ablaka megnyílik (pl. Alkímia, Elsősegély), és kijelöli a receptet - eddig csak a Főzés nyílt meg.",
+      },
+      fr = {
+        "Nouveau : guide Couture 1-300 - chaque maître avec le rang qu'il enseigne, les maîtres Artisan et les vendeurs de patrons (Qia, Pexmit) à leur position exacte.",
+        "Corrigé : cliquer sur une recette connue ouvre maintenant toutes les fenêtres de métier (ex. Alchimie, Secourisme) et sélectionne la recette - avant, seule la Cuisine s'ouvrait.",
+      },
+      de = {
+        "Neu: Leitfaden Schneiderei 1-300 - jeder Lehrer mit dem Rang, den er lehrt, die Fachmann-Lehrer und die Musterhändler (Qia, Pexmit) an ihrer genauen Position.",
+        "Behoben: Ein Klick auf ein bekanntes Rezept öffnet jetzt jedes Berufsfenster (z. B. Alchemie, Erste Hilfe) und wählt das Rezept aus - vorher öffnete sich nur Kochkunst.",
+      },
+      es = {
+        "Nuevo: guía de Sastrería 1-300 - cada instructor con el rango que enseña, los instructores Artesanos y los vendedores de patrones (Qia, Pexmit) en su posición exacta.",
+        "Corregido: al hacer clic en una receta conocida ahora se abre la ventana de cualquier profesión (p. ej. Alquimia, Primeros auxilios) y se selecciona la receta - antes solo se abría Cocina.",
+      },
+    },
     { v = "1.3.1", date = "2026-11-19",
       en = {
         "New: First Aid 1-300 and Alchemy 1-300 guides - every trainer (only the ones who really teach your next rank), recipe and manual vendors, the Expert book and the Triage quest, all at their exact positions.",

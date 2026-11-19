@@ -367,7 +367,7 @@ function UI:Build()
     local gprev
     for _, prof in ipairs(ns.GUIDE_ORDER or {}) do
         local chip = FlatButton(f, "", 110, 26)
-        if gprev then chip:SetPoint("LEFT", gprev, "RIGHT", 6, 0)
+        if gprev then chip:SetPoint("LEFT", gprev, "RIGHT", 4, 0)
         else chip:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -10) end
         chip.prof = prof
         chip:SetScript("OnClick", function()
@@ -899,7 +899,8 @@ function UI:GuideTooltip(r)
         if s.trainer then
             srcType, sources = "trainer", {}
             -- ranked trainers: list the ones who teach recipes of this skill range
-            if ns.Guides[r.prof] and ns.Guides[r.prof].ranked and ns:CapForSkill(s.from) > 75 then sources = ns:GuideTrainers(r.prof, nil, ns:CapForSkill(s.from)) end
+            local cap = s.cap or ns:CapForSkill(s.from) -- s.cap: only higher-rank trainers teach this recipe
+            if ns.Guides[r.prof] and ns.Guides[r.prof].ranked and cap > 75 then sources = ns:GuideTrainers(r.prof, nil, cap) end
         end
         if s.npcs then srcType, sources = "vendor", ns:GuideTrainers(r.prof, s.npcs) end
         if s.trainer == nil and s.note and #sources == 0 then srcNote = ns.GuideNote(s) end
@@ -981,12 +982,18 @@ function UI:RefreshChips()
         chip:SetActive(chip.key == self.cat)
     end
     local current = section == "guide" and ns:GuideProf()
-    for _, chip in ipairs(self.guideChips or {}) do
+    local total, widths = 0, {}
+    for i, chip in ipairs(self.guideChips or {}) do
         chip:SetShown(section == "guide")
         chip.text:SetText(L("cat_" .. chip.prof))
-        chip:SetWidth(math.max(96, math.floor((chip.text:GetStringWidth() or 0) + 24)))
+        widths[i] = math.max(84, math.floor((chip.text:GetStringWidth() or 0) + 16))
+        total = total + widths[i] + (i > 1 and 4 or 0)
         chip:SetActive(chip.prof == current)
     end
+    -- all profession chips on one row: shrink them evenly if a language makes them too wide
+    local room = (self.search and self.search.GetWidth and self.search:GetWidth()) or 0
+    local scale = (room > 0 and total > room) and (room - 4 * (#widths - 1)) / (total - 4 * (#widths - 1)) or 1
+    for i, chip in ipairs(self.guideChips or {}) do chip:SetWidth(math.floor(widths[i] * scale)) end
 end
 
 function UI:RefreshStats()
