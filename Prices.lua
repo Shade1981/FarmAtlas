@@ -25,9 +25,30 @@ function FarmAtlas_AddPriceSource(name, fn)
     end
 end
 
+-- remembered prices are kept per realm and faction: auction houses differ
+local function CacheKey()
+    local realm = GetRealmName and ns.Plain(GetRealmName())
+    local faction = UnitFactionGroup and ns.Plain(UnitFactionGroup("player"))
+    if type(realm) ~= "string" or realm == "" then return nil end
+    return realm .. "-" .. (type(faction) == "string" and faction or "?")
+end
+
+local function Cache(create)
+    local db = ns.db
+    if not db then return nil end
+    local key = CacheKey()
+    if not key then return nil end
+    -- the old cache (before 1.4.0) did not know the realm: it is dropped once
+    if db.priceCache and not db.priceCacheRF then db.priceCache = nil end
+    db.priceCacheRF = db.priceCacheRF or {}
+    if create and not db.priceCacheRF[key] then db.priceCacheRF[key] = {} end
+    return db.priceCacheRF[key]
+end
+
 -- copper, sourceName, savedAt
 -- A live price from a price addon is remembered; when none of them knows the
--- item right now, the last known price is used (with the time it was seen).
+-- item right now, the last known price on this realm and faction is used
+-- (with the time it was seen).
 function ns:GetAHPrice(key)
     local itemID = self:RealID(key)
     if not itemID then return nil end
@@ -36,18 +57,19 @@ function ns:GetAHPrice(key)
         v = ok and ns.Plain(v) or nil
         if type(v) == "number" and v > 0 then
             v = math.floor(v)
-            if self.db then
-                self.db.priceCache = self.db.priceCache or {}
+            local cache = Cache(true)
+            if cache then
                 local now = time and time() or 0
-                local c = self.db.priceCache[itemID]
+                local c = cache[itemID]
                 if not c or c.c ~= v or now - (c.t or 0) > 3600 then
-                    self.db.priceCache[itemID] = { c = v, t = now, src = p.name }
+                    cache[itemID] = { c = v, t = now, src = p.name }
                 end
             end
             return v, p.name
         end
     end
-    local c = self.db and self.db.priceCache and self.db.priceCache[itemID]
+    local cache = Cache(false)
+    local c = cache and cache[itemID]
     if c and c.c then return c.c, c.src, c.t end
 end
 

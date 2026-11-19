@@ -3,6 +3,8 @@
 - New: Best farm now window (header button, /farm best) - ranks what you can farm right now (your Herbalism / Mining / Fishing / Skinning skill and your level) by gold per hour
 - Prices: AH Snipe's 14-day median of daily lowest buyouts when AH Snipe is installed, else Auctionator / TSM, else vendor price
 - Items per hour: measured from your own farming (from 10 minutes on), shown as an estimate until then
+- Uses the AH Snipe 3 price API (realm- and faction-aware median, listed quantity) when available
+- Fixed: remembered auction prices are kept per realm and faction
 - Includes everything from 1.3.2 (Tailoring guide, recipe click for every profession)
 
 # FarmAtlas 1.3.2

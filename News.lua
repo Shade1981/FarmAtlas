@@ -8,26 +8,31 @@ local HISTORY = {
     { v = "1.4.0", date = "2026-11-19",
       en = {
         "New: Best farm now (button at the top, /farm best) - what earns the most gold per hour for your skills and level. Prices from AH Snipe's 14-day history (or Auctionator / TSM), items per hour measured from your own farming.",
+        "Fixed: remembered auction prices are now kept per realm and faction (they could mix between characters). With AH Snipe 3 its realm- and faction-aware prices are used directly.",
         "New: Tailoring 1-300 guide - every trainer with the rank they teach, the Artisan trainers, and the pattern vendors (Qia, Pexmit) at their exact positions.",
         "Fixed: clicking a known recipe now opens every profession window (e.g. Alchemy, First Aid) and selects the recipe - before, only Cooking opened.",
       },
       hu = {
         "Új: Legjobb farm most (gomb fent, /farm best) - mi hozza a legtöbb aranyat óránként a skilljeiddel és a szinteddel. Árak az AH Snipe 14 napos előzményéből (vagy Auctionator / TSM), a darab/óra a saját farmolásodból mérve.",
+        "Javítva: a megjegyzett aukciós árak most realmenként és frakciónként külön tárolódnak (eddig keveredhettek a karakterek között). AH Snipe 3-mal annak realm- és frakció-szerinti árait használja közvetlenül.",
         "Új: Szabászat 1-300 útmutató - minden tréner a tanított ranggal, az Artisan trénerek és a mintaárusok (Qia, Pexmit) pontos helyen.",
         "Javítva: egy ismert receptre kattintva most minden szakma ablaka megnyílik (pl. Alkímia, Elsősegély), és kijelöli a receptet - eddig csak a Főzés nyílt meg.",
       },
       fr = {
         "Nouveau : Meilleur farm maintenant (bouton en haut, /farm best) - ce qui rapporte le plus d'or par heure selon vos compétences et votre niveau. Prix tirés de l'historique de 14 jours d'AH Snipe (ou Auctionator / TSM), objets par heure mesurés sur votre propre farm.",
+        "Corrigé : les prix d'enchères mémorisés sont maintenant gardés par royaume et par faction (ils pouvaient se mélanger). Avec AH Snipe 3, ses prix par royaume et faction sont utilisés directement.",
         "Nouveau : guide Couture 1-300 - chaque maître avec le rang qu'il enseigne, les maîtres Artisan et les vendeurs de patrons (Qia, Pexmit) à leur position exacte.",
         "Corrigé : cliquer sur une recette connue ouvre maintenant toutes les fenêtres de métier (ex. Alchimie, Secourisme) et sélectionne la recette - avant, seule la Cuisine s'ouvrait.",
       },
       de = {
         "Neu: Beste Farm jetzt (Knopf oben, /farm best) - was dir mit deinen Fertigkeiten und deiner Stufe das meiste Gold pro Stunde bringt. Preise aus dem 14-Tage-Verlauf von AH Snipe (oder Auctionator / TSM), Stück pro Stunde aus deinem eigenen Farmen gemessen.",
+        "Behoben: gemerkte Auktionspreise werden jetzt pro Realm und Fraktion gespeichert (sie konnten sich vermischen). Mit AH Snipe 3 werden dessen Preise pro Realm und Fraktion direkt genutzt.",
         "Neu: Leitfaden Schneiderei 1-300 - jeder Lehrer mit dem Rang, den er lehrt, die Fachmann-Lehrer und die Musterhändler (Qia, Pexmit) an ihrer genauen Position.",
         "Behoben: Ein Klick auf ein bekanntes Rezept öffnet jetzt jedes Berufsfenster (z. B. Alchemie, Erste Hilfe) und wählt das Rezept aus - vorher öffnete sich nur Kochkunst.",
       },
       es = {
         "Nuevo: Mejor farmeo ahora (botón arriba, /farm best) - lo que más oro por hora te da con tus habilidades y tu nivel. Precios del historial de 14 días de AH Snipe (o Auctionator / TSM), objetos por hora medidos de tu propio farmeo.",
+        "Corregido: los precios de subasta recordados ahora se guardan por reino y facción (podían mezclarse). Con AH Snipe 3 se usan directamente sus precios por reino y facción.",
         "Nuevo: guía de Sastrería 1-300 - cada instructor con el rango que enseña, los instructores Artesanos y los vendedores de patrones (Qia, Pexmit) en su posición exacta.",
         "Corregido: al hacer clic en una receta conocida ahora se abre la ventana de cualquier profesión (p. ej. Alquimia, Primeros auxilios) y se selecciona la receta - antes solo se abría Cocina.",
       },

@@ -210,6 +210,7 @@ ns.Locales.es = {
     bf_rate = "~%d / hora",
     bf_src_hist = "AH Snipe, mediana de 14 días (%d días)",
     bf_src_vendor = "precio de vendedor",
+    bf_qty = "%d en venta en el último escaneo",
     bf_value = "Valor",
     bf_price_l = "Precio",
     bf_rate_l = "Objetos",

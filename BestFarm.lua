@@ -64,12 +64,25 @@ local function SnipeMedian(itemID)
     return med, n
 end
 
--- copper, source label
+-- copper, source label, items listed on the auction house (when known)
 function ns:FarmPrice(key)
     local id = self:RealID(key)
     if type(id) == "number" then
-        local ok, med, days = pcall(SnipeMedian, id)
-        if ok and med then return med, L("bf_src_hist", days) end
+        -- AH Snipe 3+: stable API, prices kept per realm and faction
+        local api = rawget(_G, "AHSnipe_GetPriceInfo")
+        if type(api) == "function" and (tonumber(rawget(_G, "AHSnipe_API_VERSION")) or 0) >= 1 then
+            local ok, info = pcall(api, id)
+            if ok and type(info) == "table" then
+                local med, days, qty = tonumber(info.median), tonumber(info.days), tonumber(info.qty)
+                if med and med > 0 then return med, L("bf_src_hist", days or 1), qty end
+                local last = tonumber(info.last)
+                if last and last > 0 then return last, "AHSnipe", qty end
+            end
+        else
+            -- older AH Snipe: read its saved price history directly
+            local ok, med, days = pcall(SnipeMedian, id)
+            if ok and med then return med, L("bf_src_hist", days) end
+        end
     end
     local v, src = self:GetAHPrice(key)
     if v then return v, src end
@@ -117,13 +130,13 @@ function ns:BestFarms()
                 if SpotOK(cat, sp, skills[cat], plevel) then zone = sp.z break end
             end
             if zone then
-                local price, src = self:FarmPrice(key)
+                local price, src, qty = self:FarmPrice(key)
                 if price then
                     local rate, minutes = self:MeasuredRate(key)
                     local measured = rate ~= nil
                     rate = rate or EST_RATE[cat]
                     out[#out + 1] = { key = key, cat = cat, price = price, src = src, rate = rate,
-                        measured = measured, minutes = minutes, value = price * rate, zone = zone }
+                        measured = measured, minutes = minutes, value = price * rate, zone = zone, qty = qty }
                 else
                     noPrice = noPrice + 1
                 end
@@ -252,6 +265,7 @@ function BestFarm:GetRow(i)
         GameTooltip:AddDoubleLine(L("bf_value"), L("bf_hour", ns:Money(e.value)), 0.8, 0.8, 0.8, 1, 0.82, 0)
         GameTooltip:AddDoubleLine(L("bf_price_l"), ns:Money(e.price), 0.8, 0.8, 0.8, 1, 1, 1)
         GameTooltip:AddLine("   " .. tostring(e.src or ""), 0.6, 0.6, 0.6)
+        if e.qty then GameTooltip:AddLine("   " .. L("bf_qty", e.qty), 0.6, 0.6, 0.6) end
         GameTooltip:AddDoubleLine(L("bf_rate_l"), L("bf_rate", math.floor(e.rate + 0.5)), 0.8, 0.8, 0.8, 1, 1, 1)
         if e.measured then
             GameTooltip:AddLine("   " .. L("bf_tip_measured", e.minutes or 0), 0.4, 0.88, 0.44, true)
