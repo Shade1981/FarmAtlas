@@ -170,6 +170,7 @@ ns.Locales.es = {
     g_zones       = "Zonas:",
     g_mobs        = "Enemigos:",
     g_nodes = "Recolectar",
+    sync_restored = "FarmAtlas: %s te devolvió tus hallazgos anteriores (combinados, nada duplicado).",
     g_exact       = "punto exacto registrado",
     g_click_item  = "Clic: ver en el mapa dónde farmear %s",
     g_click_map   = "Clic: ver en el mapa",

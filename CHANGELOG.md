@@ -4,6 +4,7 @@
 - New: Engineering 1-300 guide (wow-professions.com route, 1-225 cross-checked with icy-veins.com) - Artisan only at Buzzek Bracketswing (Gadgetzan), schematic vendors for Thorium Widget and Thorium Tube
 - 225-300 of both guides comes from the Forever beta (the sources say so)
 - Community data now also ships recipe sources (trainers, vendors, drops), fishing schools and trainer positions players saw in game; each release keeps everything the previous one had
+- New: restore after a fresh install / new computer - at login FarmAtlas says hello to your guild and group; a member who once received your finds (and has more than you now) sends them back to you only. Merged by the larger value, so nothing is ever doubled; only accepted right after your own hello. Works with members on 1.5.0 or newer
 - Fixed: long settings pages (town alerts, trainer pins for 11 professions) ran out of the window - they now scroll, with a scroll bar
 
 # FarmAtlas 1.4.0

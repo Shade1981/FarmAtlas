@@ -14,7 +14,18 @@
 --   M^key^npcID^n^lvl^name                  how often an NPC dropped the item
 --   K^npcID^n                               how many of that NPC were killed
 --   R^recipe^type^npc^mapID^x^y^fac^copper  where a recipe is sold / drops
+--
+-- Restore (fresh install / new computer): at login you say hello
+--   H^items^recipes^Name1,Name2           your own counts and your characters
+-- A group / guild member who once received data from one of those characters,
+-- and holds more than you have now, sends it back to you only (whisper):
+--   S^Name                                "I am restoring Name" (the others skip)
+--   XC / XM / XK / XR ...                 same fields as C / M / K / R
+-- Restored values are merged by MAXIMUM, never added, so nothing can grow by
+-- being sent twice; only data that earlier came from your own character name
+-- is sent back, and only to a player who asked for it (hello) a moment ago.
 local _, ns = ...
+local L = ns.L
 
 local PREFIX = "FarmAtlas"
 local PROTO = "1"
@@ -28,6 +39,10 @@ local RATE_PER_MIN = 60      -- incoming messages per sender per minute
 local MAX_RECIPES_PER_PLAYER = 300
 local MAX_SOURCES_PER_RECIPE = 4
 local VALID_SRC = { vendor = true, drop = true }
+local HELLO_DELAYS = { 20, 300 }   -- seconds after login: say hello (twice, for late roster)
+local RESTORE_WINDOW = 900         -- restore messages are accepted this long after our hello
+local MAX_RESTORE_MSGS = 3000      -- per restoring player and session
+local MAX_RESTORE_ITEMS = 1000
 
 local Sync = {}
 ns.Sync = Sync
@@ -367,12 +382,225 @@ local function HandleR(s, f)
     list[#list + 1] = entry
 end
 
+
+------------------------------------------------------------------------
+-- restore: get your own finds back after a fresh install
+------------------------------------------------------------------------
+local helloAt = nil                 -- when we last asked (restores accepted for a while)
+local restoreGot = {}               -- [sender] = restore messages received this session
+local restoreSkip = {}              -- [name] = time someone else started restoring them
+local restorePending = {}           -- [name] = true while we wait to start
+local rq, rqTarget = {}, nil        -- our outgoing restore queue (one target at a time)
+
+local function MyNames()
+    local realm = GetRealmName and ns.Plain(GetRealmName()) or nil
+    local out, seen = {}, {}
+    local me = ns.Plain(UnitName("player"))
+    if me then out[1] = me; seen[me] = true end
+    for key in pairs(ns.db.chars or {}) do
+        local r, n = tostring(key):match("^(.-)%-([^%-]+)$")
+        if n and r == realm and not seen[n] and #out < 10 then out[#out + 1] = n; seen[n] = true end
+    end
+    return out
+end
+
+local function OwnCounts()
+    local items, recipes = 0, 0
+    for _, e in pairs(ns.db.learned) do if e.own and e.zones and next(e.zones) then items = items + 1 end end
+    for _, list in pairs(ns.db.recipeSources or {}) do
+        for _, s in ipairs(list) do if VALID_SRC[s.type] then recipes = recipes + 1; break end end
+    end
+    return items, recipes
+end
+
+local function SayHello()
+    if not Enabled() then return end
+    local channels = Channels()
+    if #channels == 0 then return end
+    local items, recipes = OwnCounts()
+    local names = {}
+    for _, n in ipairs(MyNames()) do names[#names + 1] = Clean(n) end
+    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ",") }, SEP)
+    if #msg > MAX_LEN then return end
+    helloAt = GetTime()
+    for _, ch in ipairs(channels) do C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, ch) end
+end
+
+-- build the restore messages of one shared player bucket, for one target
+local function BuildRestore(s)
+    local out = {}
+    for key, it in pairs(s.items or {}) do
+        local cat = ns.Items[key] and ns.Items[key].cat or (ns.db.learned[key] and ns.db.learned[key].cat)
+        cat = VALID_CAT[cat] and cat or "learned"
+        for mapID, cells in pairs(it.zones or {}) do
+            local head = table.concat({ "XC", EncodeKey(key), cat, tostring(mapID) }, SEP) .. SEP
+            local parts, len = {}, #head
+            local function flush()
+                if #parts > 0 then out[#out + 1] = head .. table.concat(parts, ";") end
+                wipe(parts); len = #head
+            end
+            for ck, c in pairs(cells) do
+                local part = ck .. "," .. Fmt(c.x) .. "," .. Fmt(c.y) .. "," .. c.n
+                if len + #part + 1 > MAX_LEN or #parts >= 25 then flush() end
+                parts[#parts + 1] = part
+                len = len + #part + 1
+            end
+            flush()
+        end
+        for npcID, m in pairs(it.mobs or {}) do
+            out[#out + 1] = table.concat({ "XM", EncodeKey(key), tostring(npcID), tostring(m.n), tostring(m.lvl or 0),
+                Cut(Clean(m.name or ""), 40) }, SEP)
+        end
+    end
+    for npcID, n in pairs(s.kills or {}) do out[#out + 1] = table.concat({ "XK", tostring(npcID), tostring(n) }, SEP) end
+    for recipe, list in pairs(s.recipes or {}) do
+        for _, src in ipairs(list) do
+            out[#out + 1] = table.concat({ "XR", Cut(Clean(recipe), 60), src.type, Cut(Clean(src.npc or "?"), 40),
+                tostring(src.mapID), Fmt(src.x), Fmt(src.y), src.faction or "", tostring(math.floor(tonumber(src.copper) or 0)) }, SEP)
+        end
+    end
+    return out
+end
+
+local function SendRestoreNext()
+    if not rqTarget then return end
+    if #rq == 0 then rqTarget = nil; return end
+    if InCombatLockdown and InCombatLockdown() then return end
+    local msg = table.remove(rq, 1)
+    if #msg <= MAX_LEN then C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, "WHISPER", rqTarget) end
+end
+
+-- someone said hello: if we hold more of their own finds than they have, send them back
+local function HandleHello(f, channel, sender, short)
+    local theirItems, theirRecipes = tonumber(f[2]) or 0, tonumber(f[3]) or 0
+    if rqTarget then return end                      -- one restore at a time
+    for name in (f[4] or ""):gmatch("[^,]+") do
+        local s = ns.db.shared[name]
+        local items = s and s.nItems or 0
+        local recipes = s and s.nRecipes or 0
+        if s and (items > theirItems or recipes > theirRecipes) and not restorePending[short] then
+            restorePending[short] = true
+            -- wait a random moment; whoever starts first tells the others to skip
+            C_Timer.After(3 + math.random() * 17, function()
+                restorePending[short] = nil
+                if rqTarget or (restoreSkip[short] and GetTime() - restoreSkip[short] < 120) then return end
+                local msgs = BuildRestore(s)
+                if #msgs == 0 then return end
+                C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. "S" .. SEP .. Clean(short), channel)
+                rq, rqTarget = msgs, sender
+            end)
+            return
+        end
+    end
+end
+
+-- merge a restored value into YOUR data: keep the larger value, never add
+local function RestoreC(f)
+    local key = DecodeKey(f[2])
+    local cat = VALID_CAT[f[3]] and f[3] or nil
+    local mapID = tonumber(f[4])
+    if not (key and mapID and f[5]) then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    local entry = ns.db.learned[key]
+    if not entry then
+        local n = 0
+        for _ in pairs(ns.db.learned) do n = n + 1 end
+        if n >= MAX_RESTORE_ITEMS then return end
+        entry = { zones = {}, mobs = {}, total = 0, cat = cat or ns.GuessCategory(key, false),
+            name = type(key) == "string" and key or nil, icon = ns:GetItemIcon(key) }
+        ns.db.learned[key] = entry
+    end
+    entry.own = true
+    local zone = entry.zones[mapID] or {}
+    local n, sum = 0, 0
+    for part in f[5]:gmatch("[^;]+") do
+        n = n + 1
+        if n > 25 then break end
+        local _, x, y, cnt = part:match("^(%d+:%d+),([%d%.]+),([%d%.]+),(%d+)$")
+        x, y, cnt = tonumber(x), tonumber(y), tonumber(cnt)
+        if x and y and cnt and x >= 0 and x <= 100 and y >= 0 and y <= 100 and cnt >= 1 and cnt <= 100000 then
+            local ck = ns:CellKey(x, y)
+            local old = zone[ck]
+            if not old or cnt > (old.n or 0) then zone[ck] = { x = x, y = y, n = cnt } end
+        end
+    end
+    if next(zone) then entry.zones[mapID] = zone end
+    for _, cells in pairs(entry.zones) do for _, c in pairs(cells) do sum = sum + (c.n or 0) end end
+    if sum > (entry.total or 0) then entry.total = sum end
+end
+
+local function RestoreM(f)
+    local key = DecodeKey(f[2])
+    local npcID, cnt, lvl = tonumber(f[3]), tonumber(f[4]), tonumber(f[5])
+    if not (key and npcID and cnt) or npcID < 1 or npcID > 9999999 or cnt < 1 or cnt > 100000 then return end
+    local entry = ns.db.learned[key]
+    if not entry then return end            -- mobs only for items restored above
+    local old = entry.mobs[npcID]
+    if not old or cnt > (old.n or 0) then
+        local name = f[6] and f[6] ~= "" and Cut(f[6], 40) or (old and old.name) or nil
+        entry.mobs[npcID] = { n = cnt, lvl = (lvl and lvl > 0 and lvl <= 63) and lvl or (old and old.lvl), name = name }
+        if name and not ns.db.npcNames[npcID] then ns.db.npcNames[npcID] = name end
+    end
+end
+
+local function RestoreK(f)
+    local npcID, cnt = tonumber(f[2]), tonumber(f[3])
+    if not (npcID and cnt) or npcID < 1 or npcID > 9999999 or cnt < 1 or cnt > 1000000 then return end
+    if cnt > (ns.db.kills[npcID] or 0) then ns.db.kills[npcID] = cnt end
+end
+
+local function RestoreR(f)
+    local tmp = { kills = {}, items = {} }
+    HandleR(tmp, { "R", f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9] })
+    for recipe, list in pairs(tmp.recipes or {}) do
+        for _, src in ipairs(list) do
+            local have = false
+            for _, o in ipairs(ns.db.recipeSources[recipe] or {}) do
+                if o.type == src.type and o.npc == src.npc then have = true end
+            end
+            if not have then
+                ns:AddRecipeSource(recipe, { type = src.type, npc = src.npc, mapID = src.mapID, x = src.x, y = src.y,
+                    faction = src.faction == "A" and "Alliance" or (src.faction == "H" and "Horde" or nil), copper = src.copper })
+            end
+        end
+    end
+end
+
+-- a restore message for us (whisper, shortly after our hello, bounded)
+local function HandleRestore(f, channel, short)
+    if channel ~= "WHISPER" then return end
+    if not helloAt or GetTime() - helloAt > RESTORE_WINDOW then return end
+    restoreGot[short] = (restoreGot[short] or 0) + 1
+    if restoreGot[short] > MAX_RESTORE_MSGS then return end
+    local kind = f[1]
+    if kind == "XC" then RestoreC(f)
+    elseif kind == "XM" then RestoreM(f)
+    elseif kind == "XK" then RestoreK(f)
+    elseif kind == "XR" then RestoreR(f) end
+    if not restoreGot.notified then
+        restoreGot.notified = true
+        C_Timer.After(30, function() ns:Print(L("sync_restored", short)) end)
+    end
+    ScheduleRefresh()
+end
+ns.SyncRestore = { Hello = SayHello, HandleHello = HandleHello, HandleRestore = HandleRestore, Build = BuildRestore,
+    Send = SendRestoreNext, Names = MyNames, State = function() return rq, rqTarget end }
+
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
     local me = UnitName("player")
     local short = Ambiguate(sender, "none")
     if short == me or sender == me then return end
+
+    local f = { strsplit(SEP, msg) }
+    if f[1] ~= PROTO then return end
+    table.remove(f, 1)
+    -- restore traffic has its own limits (only after our hello, capped per sender)
+    if f[1] == "XC" or f[1] == "XM" or f[1] == "XK" or f[1] == "XR" then
+        HandleRestore(f, channel, short)
+        return
+    end
 
     -- simple flood protection per sender
     local now = GetTime()
@@ -381,9 +609,8 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     r.n = r.n + 1
     if r.n > RATE_PER_MIN then return end
 
-    local f = { strsplit(SEP, msg) }
-    if f[1] ~= PROTO then return end
-    table.remove(f, 1)
+    if f[1] == "H" then HandleHello(f, channel, sender, short); return end
+    if f[1] == "S" then if f[2] then restoreSkip[f[2]] = GetTime() end; return end
     local s = PlayerBucket(short)
     if f[1] == "C" then HandleC(s, f)
     elseif f[1] == "M" then HandleM(s, f)
@@ -416,6 +643,8 @@ ns:On("LOGIN", function()
     end
     C_Timer.NewTicker(SEND_EVERY, SendNext)
     C_Timer.NewTicker(TRICKLE_EVERY, TrickleOne)
+    C_Timer.NewTicker(SEND_EVERY, SendRestoreNext)
+    for _, d in ipairs(HELLO_DELAYS) do C_Timer.After(d, function() pcall(SayHello) end) end
 end)
 
 function Sync:Toggle()
