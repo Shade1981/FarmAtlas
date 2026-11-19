@@ -678,11 +678,52 @@ local function CraftWindowShown()
     return false
 end
 
+local PROF_EN = { Cooking = "cooking", Fishing = "fishing", Skinning = "skinning", ["First Aid"] = "firstaid",
+    Leatherworking = "leatherworking", Tailoring = "tailoring", Alchemy = "alchemy", Blacksmithing = "blacksmithing",
+    Engineering = "engineering", Enchanting = "enchanting", Mining = "mining", Herbalism = "herbalism" }
+
 function ns:RecipeSkillLine(recipe)
     local line = self.db.recipeLine and self.db.recipeLine[recipe]
     if line then return line end
+    -- the profession the recipe was read from (its name as the game shows it)
+    local c = self:CharData()
+    local pname = c and c.recipes and c.recipes[recipe]
+    if type(pname) == "string" then
+        if GetProfessions and GetProfessionInfo then
+            local ok, a, b, cc, d, e, f = pcall(GetProfessions)
+            if ok then
+                local slots = { a, b, cc, d, e, f }
+                for i = 1, 6 do
+                    if slots[i] then
+                        local ok2, name, _, _, _, _, _, skillLine = pcall(GetProfessionInfo, slots[i])
+                        name, skillLine = ns.Plain(name), ns.Plain(skillLine)
+                        if ok2 and name == pname and type(skillLine) == "number" then return skillLine end
+                    end
+                end
+            end
+        end
+        if PROF_EN[pname] then return SKILL_LINE[PROF_EN[pname]] end
+    end
     if (self.RecipeInfo and self.RecipeInfo[recipe]) or (self.Recipes and self.Recipes[recipe]) then
         return SKILL_LINE.cooking
+    end
+end
+
+-- older profession window (no recipe IDs): pick the recipe in its list
+local function SelectInOldWindow(recipe)
+    if not (GetNumTradeSkills and GetTradeSkillInfo and SelectTradeSkill) then return end
+    local ok, n = pcall(GetNumTradeSkills)
+    if not ok or type(n) ~= "number" then return end
+    local want = ns:RecipeLabel(recipe)
+    for i = 1, n do
+        local ok2, name, kind = pcall(GetTradeSkillInfo, i)
+        name = ok2 and ns.Plain(name)
+        if name and kind ~= "header" and kind ~= "subheader" and (name == recipe or name == want) then
+            pcall(SelectTradeSkill, i)
+            if TradeSkillFrame_SetSelection then pcall(TradeSkillFrame_SetSelection, i) end
+            if TradeSkillFrame_Update then pcall(TradeSkillFrame_Update) end
+            return true
+        end
     end
 end
 
@@ -717,10 +758,14 @@ function ns:OpenCraft(recipe)
     end
     -- the window should be up a moment later; if not, try the other way, then say so
     C_Timer.After(0.6, function()
-        if CraftWindowShown() then return end
+        if CraftWindowShown() then
+            if not id then SelectInOldWindow(recipe) end
+            return
+        end
         if ByLine() then
             C_Timer.After(0.6, function()
-                if not CraftWindowShown() then ns:Print(L("craft_manual", ns:RecipeLabel(recipe))) end
+                if not CraftWindowShown() then ns:Print(L("craft_manual", ns:RecipeLabel(recipe)))
+                elseif not id then SelectInOldWindow(recipe) end
             end)
         else
             ns:Print(L("craft_manual", ns:RecipeLabel(recipe)))
