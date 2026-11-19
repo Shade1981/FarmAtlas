@@ -196,3 +196,23 @@ function ns:ValuePer100(key, rate)
     if not (price and rate) then return nil end
     return price * rate * 100
 end
+
+-- Public: does FarmAtlas print an AH price line in this item's tooltip?
+-- (price addons such as AH Snipe use it to avoid showing the price twice,
+-- and to show it themselves when FarmAtlas does not)
+function FarmAtlas_ShowsAHPrice(itemID)
+    local ok, r = pcall(function()
+        itemID = ns.Plain(itemID)
+        if type(itemID) ~= "number" then return false end
+        local s = ns.db and ns.db.settings
+        if not (s and s.tooltip and s.tooltipPrices) then return false end
+        if ns.Items[itemID] then return true end
+        for key, id in pairs(ns.db.idAlias or {}) do
+            if id == itemID and ns.Items[key] then return true end
+        end
+        local nameFn = (C_Item and C_Item.GetItemNameByID) or (GetItemInfo and function(id) return (GetItemInfo(id)) end)
+        local name = nameFn and ns.Plain(nameFn(itemID))
+        return type(name) == "string" and ns.ItemsByName[string.lower(name)] ~= nil
+    end)
+    return ok and r == true
+end
