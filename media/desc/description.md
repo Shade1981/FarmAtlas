@@ -10,6 +10,13 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.5.0
+
+- **Blacksmithing 1-300 and Engineering 1-300 guides:** 11 profession guides now, every trainer filtered by the rank they really teach, plan and schematic vendors on the map (Imperial Plate quests and Thorium Tube included).
+- **Get your finds back after a reinstall or a new computer:** at login FarmAtlas says hello to your guild and group; a member who once received your discoveries sends them back to you only. Merged by the larger value, so nothing is ever doubled (they need 1.5.0 or newer too).
+- **More shipped community data:** recipe vendors and drop sources, fishing schools and trainer positions found by players are now built in - and every release keeps the previous data, it only grows.
+- Settings pages scroll, so nothing slides out of the window; profession tabs turn into icons when there are many.
+
 ## New in 1.4.0
 
 - **Best farm now** (gold button at the top, or `/farm best`): ranks what YOU can farm right now - your Herbalism, Mining, Fishing and Skinning skill and your level - by gold per hour. Prices come from **AH Snipe** (14-day median per realm and faction; Auctionator or TSM work too), items per hour are measured from your own farming (an estimate until you have farmed 10 minutes).
@@ -103,7 +110,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 
 **Leveling guides**
-- **Cooking, Fishing, Skinning, Mining, Herbalism, Leatherworking, Tailoring, First Aid and Alchemy 1-300**, each on its own tab: what to make, where to go, which rank to train next.
+- **Cooking, Fishing, Skinning, Mining, Herbalism, Blacksmithing, Engineering, Leatherworking, Tailoring, First Aid and Alchemy 1-300**, each on its own tab: what to make, where to go, which rank to train next.
 - Click a step: the place is marked in gold on the world map; cooking steps show where to farm the material.
 - The trainers of your current step appear on the map and minimap automatically.
 - **Town alert**: a movable, resizable banner when you arrive at a town, village or camp with a trainer of a profession you switched on.
@@ -140,7 +147,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 - **Real WoW Forever drop rates** from your own kills (e.g. `Mottled Boar: 42% (21/50)`).
 
 **Automatic sharing (no buttons)**
-- Discoveries are shared in the background with your **party, raid and guild** members who also use FarmAtlas, through Blizzard's hidden addon channel (like GatherMate2). Turn it off with `/farm sync`.
+- Discoveries are shared in the background with your **party, raid and guild** members who also use FarmAtlas, through Blizzard's hidden addon channel (like GatherMate2). Lost your data (new PC, reinstall)? Guild and group members on 1.5.0+ send your own finds back at login. Turn sharing off with `/farm sync`.
 
 **Quick search**
 - **Alt + click** any item (bags, chat link, recipe reagent) to open it in FarmAtlas.
@@ -188,6 +195,8 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 # FarmAtlas (magyar)
 
 **Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
+
+**Újdonságok az 1.5.0-ban:** Kovácsolás 1-300 és Engineering 1-300 útmutató (már 11 szakma); új gép vagy újratelepítés után a guild- és partytársak visszaküldik a saját találataidat (a nagyobb érték marad, semmi nem duplázódik); bővebb beépített közösségi adat (receptforrások, halrajok, trénerhelyek); görgethető beállítások.
 
 **Újdonságok az 1.4.0-ban:** Legjobb farm most ablak (arany/óra a skilljeid és szinted szerint, AH Snipe árakkal), Bányászat és Gyógynövénygyűjtés 1-300 útmutató, Szabászat 1-300, receptkattintás minden szakmánál, árak realmenként és frakciónként.
 
