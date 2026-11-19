@@ -236,10 +236,13 @@ end
 local function PoolPoints(itemID, out)
     local known = {}
     for _, id in ipairs(ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID] or {}) do known[id] = true end
-    for objID, p in pairs(ns.db and ns.db.pools or {}) do
-        if known[objID] or (p.fish and p.fish[itemID]) then
-            for mapID, cells in pairs(p.zones or {}) do
-                for _, c in pairs(cells) do add(out, mapID, c.x, c.y) end
+    -- your own schools, then the community's (Data\Community.lua)
+    for _, pools in ipairs({ ns.db and ns.db.pools or {}, ns.Community and ns.Community.pools or {} }) do
+        for objID, p in pairs(pools) do
+            if known[objID] or (p.fish and p.fish[itemID]) then
+                for mapID, cells in pairs(p.zones or {}) do
+                    for _, c in pairs(cells) do add(out, mapID, c.x, c.y) end
+                end
             end
         end
     end
@@ -249,7 +252,8 @@ local baseExternal = ns.ExternalNodes
 function ns:ExternalNodes(itemID)
     local base = baseExternal(self, itemID)
     local cat = ns.Items[itemID] and ns.Items[itemID].cat
-    if cat ~= "fishing" or not (ns.db and ns.db.pools and next(ns.db.pools)) then return base end
+    local cp = ns.Community and ns.Community.pools
+    if cat ~= "fishing" or not ((ns.db and ns.db.pools and next(ns.db.pools)) or (cp and next(cp))) then return base end
     local out = {}
     for mapID, list in pairs(base or {}) do
         local l = {}

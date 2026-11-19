@@ -529,6 +529,9 @@ function ns:RecipeSources(recipe)
     for _, p in pairs(self.db.shared or {}) do
         for _, s in ipairs(p.recipes and p.recipes[recipe] or {}) do addFound(s, true) end
     end
+    -- community finds shipped with the addon (Data\Community.lua)
+    local cr = ns.Community and ns.Community.recipes
+    for _, s in ipairs(cr and cr[recipe] or {}) do addFound(s, true) end
     if info and info.where then
         for _, w in ipairs(info.where) do
             local pass, neutral = check(w.faction, w.npc)

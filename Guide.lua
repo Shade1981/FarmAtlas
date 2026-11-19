@@ -98,7 +98,8 @@ function ns:GuideTrainers(prof, list, need)
             local here = (t.zone == cur)
             if FactionOK(t.faction, mine) and ((pass == 1) == here) and not (need and t.max and t.max < need) then
                 local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID, max = t.max }
-                local learned = self.db and self.db.trainerPos and self.db.trainerPos[t.npc]
+                local learned = (self.db and self.db.trainerPos and self.db.trainerPos[t.npc])
+                    or (ns.Community and ns.Community.trainerPos and ns.Community.trainerPos[t.npc])
                 if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
                 if not e.x then
                     -- the same NPC may have coordinates in the recipe data

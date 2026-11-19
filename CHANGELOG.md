@@ -3,6 +3,7 @@
 - New: Blacksmithing 1-300 guide (wow-professions.com route; ranks cross-checked with method.gg) - trainers with the highest rank each can teach, Artisan only at Brikk Keencraft (Booty Bay), Imperial Plate plans from Derotain Mudsipper's quests (Gadgetzan, level 50)
 - New: Engineering 1-300 guide (wow-professions.com route, 1-225 cross-checked with icy-veins.com) - Artisan only at Buzzek Bracketswing (Gadgetzan), schematic vendors for Thorium Widget and Thorium Tube
 - 225-300 of both guides comes from the Forever beta (the sources say so)
+- Community data now also ships recipe sources (trainers, vendors, drops), fishing schools and trainer positions players saw in game; each release keeps everything the previous one had
 - Fixed: long settings pages (town alerts, trainer pins for 11 professions) ran out of the window - they now scroll, with a scroll bar
 
 # FarmAtlas 1.4.0

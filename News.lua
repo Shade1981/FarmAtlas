@@ -9,26 +9,31 @@ local HISTORY = {
       en = {
         "New: Blacksmithing 1-300 and Engineering 1-300 guides - every trainer with the rank they teach (Artisan: Brikk Keencraft in Booty Bay / Buzzek Bracketswing in Gadgetzan), the Imperial Plate quests and the schematic vendors at their exact positions.",
         "All 11 crafting and gathering professions with a guide are now in FarmAtlas.",
+        "The shipped community data now also has recipe sources (trainers, vendors, drops), fishing schools and trainer positions players found - added to yours, never replacing it.",
         "Fixed: long settings pages now scroll (scroll bar on the right) instead of running out of the window.",
       },
       hu = {
         "Új: Kovácsolás 1-300 és Engineering 1-300 útmutató - minden tréner a tanított ranggal (Artisan: Brikk Keencraft Booty Bayben / Buzzek Bracketswing Gadgetzanban), az Imperial Plate küldetések és a schematic-árusok pontos helyen.",
         "Mostantól 11 gyártó és gyűjtő szakma útmutatója van benne a FarmAtlasban.",
+        "A beépített közösségi adat mostantól a játékosok által talált receptforrásokat (tréner, árus, drop), halrajokat és trénerhelyeket is tartalmazza - a sajátodhoz adódik, sosem írja felül.",
         "Javítva: a hosszú beállításoldalak most görgethetők (görgetősáv jobb oldalt), nem lógnak ki az ablakból.",
       },
       fr = {
         "Nouveau : guides Forge 1-300 et Ingénierie 1-300 - chaque maître avec le rang qu'il enseigne (Artisan : Brikk Keencraft à Baie-du-Butin / Buzzek Bracketswing à Gadgetzan), les quêtes Imperial Plate et les vendeurs de schémas à leur position exacte.",
         "FarmAtlas a maintenant un guide pour 11 métiers de fabrication et de récolte.",
+        "Les données communautaires incluent maintenant les sources de recettes (maîtres, vendeurs, butin), les bancs de poissons et les positions des maîtres trouvés par les joueurs - ajoutées aux vôtres, sans jamais les remplacer.",
         "Corrigé : les longues pages d'options défilent maintenant (barre à droite) au lieu de sortir de la fenêtre.",
       },
       de = {
         "Neu: Leitfäden Schmiedekunst 1-300 und Ingenieurskunst 1-300 - jeder Lehrer mit seinem Rang (Fachmann: Brikk Keencraft in Beutebucht / Buzzek Bracketswing in Gadgetzan), die Imperial-Plate-Quests und die Bauplanhändler an ihrer genauen Position.",
         "FarmAtlas hat jetzt Leitfäden für 11 Herstellungs- und Sammelberufe.",
+        "Die mitgelieferten Community-Daten enthalten jetzt auch Rezeptquellen (Lehrer, Händler, Beute), Fischschwärme und Lehrerpositionen, die Spieler gefunden haben - sie ergänzen deine Daten und ersetzen sie nie.",
         "Behoben: lange Einstellungsseiten lassen sich jetzt scrollen (Leiste rechts), statt aus dem Fenster zu ragen.",
       },
       es = {
         "Nuevo: guías de Herrería 1-300 e Ingeniería 1-300 - cada instructor con el rango que enseña (Artesano: Brikk Keencraft en Bahía del Botín / Buzzek Bracketswing en Gadgetzan), las misiones Imperial Plate y los vendedores de esquemas en su posición exacta.",
         "FarmAtlas ya tiene guías para 11 profesiones de fabricación y recolección.",
+        "Los datos de la comunidad ahora incluyen también fuentes de recetas (instructores, vendedores, botín), bancos de peces y posiciones de instructores que encontraron los jugadores - se suman a los tuyos y nunca los reemplazan.",
         "Corregido: las páginas largas de opciones ahora se desplazan (barra a la derecha) en vez de salirse de la ventana.",
       },
     },
