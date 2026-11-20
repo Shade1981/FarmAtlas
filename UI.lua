@@ -2004,6 +2004,119 @@ do
         end)
     end
 
+    --------------------------------------------------------------------
+    -- Profession themes: every profession (Atlas filters, Recipes, Guide
+    -- tabs) gets its own colour wash and a still life of its own icons in
+    -- the corner, plus its name in the header - you always see which tab
+    -- you are on. Overlay only (no mouse), so nothing under it changes.
+    --------------------------------------------------------------------
+    local THEMES = {
+        cooking        = { "Interface\\Icons\\INV_Misc_Food_15", "Interface\\Icons\\Spell_Fire_Fire", "Interface\\Icons\\INV_Misc_Food_14", "Interface\\Icons\\INV_Misc_Food_19" },
+        fishing        = { "Interface\\Icons\\Trade_Fishing", "Interface\\Icons\\INV_Misc_Fish_02", "Interface\\Icons\\INV_Misc_Fish_14", "Interface\\Icons\\INV_Misc_Fish_09" },
+        skinning       = { "Interface\\Icons\\INV_Misc_Pelt_Wolf_01", "Interface\\Icons\\INV_Misc_LeatherScrap_02", "Interface\\Icons\\INV_Misc_Pelt_Bear_01", "Interface\\Icons\\INV_Weapon_ShortBlade_01" },
+        mining         = { "Interface\\Icons\\Trade_Mining", "Interface\\Icons\\INV_Ore_Copper_01", "Interface\\Icons\\INV_Ore_Iron_01", "Interface\\Icons\\INV_Ingot_03" },
+        herbalism      = { "Interface\\Icons\\Trade_Herbalism", "Interface\\Icons\\INV_Misc_Flower_02", "Interface\\Icons\\INV_Misc_Herb_07", "Interface\\Icons\\INV_Misc_Herb_01" },
+        alchemy        = { "Interface\\Icons\\Trade_Alchemy", "Interface\\Icons\\INV_Potion_51", "Interface\\Icons\\INV_Potion_11", "Interface\\Icons\\INV_Potion_76" },
+        blacksmithing  = { "Interface\\Icons\\Trade_BlackSmithing", "Interface\\Icons\\INV_Hammer_20", "Interface\\Icons\\INV_Ingot_05", "Interface\\Icons\\INV_Stone_GrindingStone_01" },
+        engineering    = { "Interface\\Icons\\Trade_Engineering", "Interface\\Icons\\INV_Gizmo_01", "Interface\\Icons\\INV_Misc_Gear_01", "Interface\\Icons\\INV_Misc_Bomb_08" },
+        enchanting     = { "Interface\\Icons\\Trade_Engraving", "Interface\\Icons\\INV_Enchant_DustArcane", "Interface\\Icons\\INV_Enchant_EssenceMagicLarge", "Interface\\Icons\\INV_Enchant_ShardBrilliantLarge" },
+        leatherworking = { "Interface\\Icons\\Trade_LeatherWorking", "Interface\\Icons\\INV_Misc_LeatherScrap_03", "Interface\\Icons\\INV_Misc_Pelt_Bear_03", "Interface\\Icons\\INV_Chest_Leather_09" },
+        tailoring      = { "Interface\\Icons\\Trade_Tailoring", "Interface\\Icons\\INV_Fabric_Linen_01", "Interface\\Icons\\INV_Fabric_Silk_01", "Interface\\Icons\\INV_Misc_Bag_09" },
+        firstaid       = { "Interface\\Icons\\Spell_Holy_SealOfSacrifice", "Interface\\Icons\\INV_Misc_Bandage_15", "Interface\\Icons\\INV_Misc_Bandage_12", "Interface\\Icons\\INV_Potion_51" },
+    }
+
+    local function ThemeKey(self)
+        local sec = ns:SectionOf(self.cat)
+        if sec == "guide" then return ns.db and ns.db.settings.guideProf or "cooking" end
+        if sec == "recipes" then return "cooking" end
+        if sec == "atlas" and self.cat ~= "all" then return self.cat end
+    end
+
+    local function BuildTheme(self)
+        local f = self.frame
+        local th = CreateFrame("Frame", nil, f)
+        th:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -56)
+        th:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+        th:SetFrameLevel(f:GetFrameLevel() + 25)
+        th:EnableMouse(false)
+        -- colour wash rising from the bottom
+        th.wash = th:CreateTexture(nil, "BACKGROUND")
+        th.wash:SetTexture(WHITE)
+        th.wash:SetPoint("BOTTOMLEFT"); th.wash:SetPoint("BOTTOMRIGHT")
+        th.wash:SetHeight(170)
+        th.wash:SetBlendMode("ADD")
+        -- thin profession-coloured line under the header
+        th.line = th:CreateTexture(nil, "ARTWORK")
+        th.line:SetTexture(WHITE)
+        th.line:SetPoint("TOPLEFT"); th.line:SetPoint("TOPRIGHT"); th.line:SetHeight(2)
+        -- still life in the bottom-right corner
+        th.icons = {}
+        local spots = { { 230, -18, 2, 0.11 }, { 84, -230, 116, 0.09 }, { 70, -150, 6, 0.08 }, { 60, -56, 196, 0.07 } }
+        for i, sp in ipairs(spots) do
+            local tx = th:CreateTexture(nil, "ARTWORK")
+            tx:SetSize(sp[1], sp[1])
+            tx:SetPoint("BOTTOMRIGHT", th, "BOTTOMRIGHT", sp[2], sp[3] + 40)
+            tx:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            tx:SetAlpha(sp[4])
+            th.icons[i] = tx
+        end
+        th:Hide()
+        self.theme = th
+        -- the profession's name and icon in the header
+        local header = self.title and self.title:GetParent()
+        if header then
+            local badge = CreateFrame("Frame", nil, header)
+            badge:SetSize(200, 24)
+            if self.bestButton then badge:SetPoint("RIGHT", self.bestButton, "LEFT", -14, 0)
+            else badge:SetPoint("CENTER", header, "CENTER", 40, -2) end
+            badge:SetFrameLevel(header:GetFrameLevel() + 6)
+            badge.icon = badge:CreateTexture(nil, "OVERLAY")
+            badge.icon:SetSize(22, 22)
+            badge.icon:SetPoint("RIGHT", badge, "RIGHT", 0, 0)
+            badge.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            badge.text = badge:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+            badge.text:SetPoint("RIGHT", badge.icon, "LEFT", -6, 0)
+            badge.text:SetJustifyH("RIGHT")
+            pcall(badge.text.SetFont, badge.text, "Fonts\\MORPHEUS.TTF", 17, "OUTLINE")
+            badge:Hide()
+            self.themeBadge = badge
+        end
+    end
+
+    function UI:ApplyTheme()
+        local th = self.theme
+        if not th then return end
+        local key = ThemeKey(self)
+        local icons = key and THEMES[key]
+        if not icons then
+            th:Hide()
+            if self.themeBadge then self.themeBadge:Hide() end
+            return
+        end
+        local c = ns.CAT_COLORS[key] or ns.CAT_COLORS.learned or { 1, 1, 1 }
+        if th.wash.SetGradient and CreateColor then
+            th.wash:SetGradient("VERTICAL", CreateColor(c[1], c[2], c[3], 0.16), CreateColor(c[1], c[2], c[3], 0))
+        else
+            th.wash:SetVertexColor(c[1], c[2], c[3], 0.08)
+        end
+        th.line:SetVertexColor(c[1], c[2], c[3], 0.7)
+        for i, tx in ipairs(th.icons) do tx:SetTexture(icons[i] or icons[1]) end
+        th:Show()
+        local badge = self.themeBadge
+        if badge then
+            badge.icon:SetTexture(ns.Guides[key] and ns.Guides[key].icon or icons[1])
+            badge.text:SetText(L("cat_" .. key))
+            badge.text:SetTextColor(c[1], c[2], c[3])
+            badge:Show()
+        end
+    end
+
+    local origChips = UI.RefreshChips
+    function UI:RefreshChips(...)
+        origChips(self, ...)
+        if self.theme then pcall(self.ApplyTheme, self) end
+    end
+
     local origBuild = UI.Build
     function UI:Build()
         local first = not self.frame
@@ -2011,6 +2124,9 @@ do
         if first and self.frame and Fancy() then
             local ok, err = pcall(SkinMain, self)
             if not ok and ns.Print then ns:Print("Fancy look: " .. tostring(err)) end
+            ok, err = pcall(BuildTheme, self)
+            if not ok and ns.Print then ns:Print("Fancy look: " .. tostring(err)) end
+            pcall(self.ApplyTheme, self)
         end
     end
 
