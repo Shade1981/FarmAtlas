@@ -128,6 +128,18 @@ end
 ------------------------------------------------------------------------
 local queue, queued = {}, {}
 
+local recentSent = {}                   -- [full message] = time we sent it (echo detection)
+local selfFull = nil                    -- our name as others see it (WoW Forever: "First Last")
+local sentCount = 0
+local function MarkSent(full)
+    local now = GetTime()
+    sentCount = sentCount + 1
+    if sentCount > 200 then
+        sentCount = 0
+        for k, t in pairs(recentSent) do if now - t > 30 then recentSent[k] = nil end end
+    end
+    recentSent[full] = now
+end
 local capture, captureSeen = nil, nil   -- set while building a full dump
 local DevLive                           -- forward to the collector (defined below)
 
@@ -157,6 +169,7 @@ local function SendNext()
     local msg = queued[id]
     queued[id] = nil
     if not msg then return end
+    MarkSent(PROTO .. SEP .. msg)
     for _, ch in ipairs(channels) do
         C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, ch)
     end
@@ -611,6 +624,7 @@ local function SayHello()
     local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ",") }, SEP)
     if #msg > MAX_LEN then return end
     helloAt = GetTime()
+    MarkSent(PROTO .. SEP .. msg)
     for _, ch in ipairs(channels) do C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, ch) end
 end
 
@@ -786,7 +800,17 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
     local me = UnitName("player")
     local short = Ambiguate(sender, "none")
-    if short == me or sender == me then return end
+    if short == me or sender == me or (selfFull and (short == selfFull or sender == selfFull)) then return end
+    -- our own guild / group / channel message coming back under our full name
+    local sentAt = recentSent[msg]
+    if sentAt and GetTime() - sentAt < 15 and channel ~= "WHISPER" then
+        local first = tostring(short):match("^([^%s%-]+)")
+        if first == me then
+            selfFull = short
+            if ns.db.shared then ns.db.shared[short] = nil end
+            return
+        end
+    end
 
     local f = { strsplit(SEP, msg) }
     if f[1] ~= PROTO then return end
@@ -839,7 +863,8 @@ end
 --   CH   on the hidden channel: "the collector is here" (only that character)
 -- after that the normal C / M / K / R / P / O / Q / T messages go to it.
 ------------------------------------------------------------------------
-local COLLECTORS = { { name = "Shade", realm = "CAMWOWEU5Realm1PvE" } }
+-- full = the name other players see (WoW Forever: first and last name), lower case, no spaces
+local COLLECTORS = { { name = "Shade", full = "shadetide", realm = "CAMWOWEU5Realm1PvE" } }
 local DEV_CHANNEL = "FarmAtlasData"
 local DEV_EVERY = 1.5          -- seconds between two messages to the collector
 local DEV_ACTIVE = 150         -- collector counts as online this long after its last "here"
@@ -856,20 +881,28 @@ function Dev.IsCollector()
     local me = ns.Plain(UnitName("player"))
     local realm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or "")
     for _, c in ipairs(COLLECTORS) do
-        if me == c.name and realm == c.realm then return true end
+        if me == c.name and realm == c.realm then
+            -- once our full name is known, only the right character collects
+            if selfFull and NoSpace(selfFull):lower():gsub("%-.*$", "") ~= c.full then return false end
+            return true
+        end
     end
     return false
 end
 IsCollectorFn = Dev.IsCollector
 
 local function ValidCollector(sender, short)
-    local name, realm = tostring(sender):match("^([^%-]+)%-(.+)$")
-    name = name or short
-    realm = NoSpace(realm or (GetRealmName and ns.Plain(GetRealmName())) or "")
-    for _, c in ipairs(COLLECTORS) do
-        if name == c.name and realm == c.realm then return true end
+    local myRealm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or ""):lower()
+    local function Check(s)
+        s = NoSpace(s):lower()
+        local name, realm = s:match("^([^%-]+)%-(.+)$")
+        if not name then name, realm = s, myRealm end
+        for _, c in ipairs(COLLECTORS) do
+            if name == c.full and (realm == myRealm or realm == c.realm:lower()) then return true end
+        end
+        return false
     end
-    return false
+    return Check(sender) or Check(short)
 end
 
 local devTarget, devSeen, devAway = nil, nil, true
@@ -1020,6 +1053,7 @@ local function CollectorHello()
     if InCombatLockdown and InCombatLockdown() then return end
     local id = ChannelID()
     if not id then JoinDev(); return end
+    MarkSent(PROTO .. SEP .. "CH")
     pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id)
 end
 

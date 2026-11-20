@@ -158,7 +158,7 @@ def merge(files):
         take_player(store, own_origin, own, db.get('kills'))
         for sender, s in (db.get('shared') or {}).items():
             if not isinstance(s, dict): continue
-            origin = own_origin if str(sender).split('-')[0] in aliases else str(sender).split('-')[0]
+            origin = own_origin if str(sender).split('-')[0].split(' ')[0] in aliases else str(sender).split('-')[0]
             take_player(store, origin, s.get('items'), s.get('kills'))
 
     # recipe sources (trainer / vendor / drop), fishing schools, trainer positions

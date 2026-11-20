@@ -58,9 +58,10 @@ OUT = {}
 for i = 1, 5 do B.SyncDev.Send() end
 check(#OUT == 0, "nothing sent without collector")
 -- fake collector on another realm is ignored
-ME = "Buddy"; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade-OtherRealm")
+ME = "Buddy"; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide-OtherRealm")
 check(B.SyncDev.State() == nil, "other realm Shade ignored")
 Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Faker")
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Hun")
 check(B.SyncDev.State() == nil, "faker ignored")
 -- data on channel from someone is ignored
 Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^999", "CHANNEL", "Evil")
@@ -69,14 +70,14 @@ check(not (dbB.shared.Evil), "channel data ignored")
 ME = "Shade"; OUT = {}; A.SyncDev.Hello()
 check(#OUT == 1 and OUT[1].m == "1^CH" and OUT[1].c == "CHANNEL", "collector hello", OUT[1] and OUT[1].m)
 -- B receives (same realm -> sender without realm)
-ME = "Buddy"; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade")
+ME = "Buddy"; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide")
 local tgt, q = B.SyncDev.State()
-check(tgt == "Shade" and #q > 0, "dump queued", tgt, #q)
+check(tgt == "Shade Tide" and #q > 0, "dump queued", tgt, #q)
 OUT = {}
 for i = 1, 200 do B.SyncDev.Send() end
 check(#OUT > 0, "dump sent")
 local kinds = {}
-for _, o in ipairs(OUT) do check(o.c == "WHISPER" and o.t == "Shade", "only to Shade"); local k = o.m:match("^1%^(%u)%^"); kinds[k or "?"] = (kinds[k or "?"] or 0) + 1 end
+for _, o in ipairs(OUT) do check(o.c == "WHISPER" and o.t == "Shade Tide", "only to Shade Tide"); local k = o.m:match("^1%^(%u)%^"); kinds[k or "?"] = (kinds[k or "?"] or 0) + 1 end
 check(kinds.C and kinds.M and kinds.K and kinds.P and kinds.T, "kinds", kinds.C, kinds.M, kinds.K, kinds.P, kinds.T)
 -- A receives the whispers
 ME = "Shade"
@@ -86,29 +87,43 @@ check(s and s.items[2447] and s.kills[3100] == 7 and s.pools and s.pools[180582]
 local got = 0 for _, p in ipairs(PRINTS) do if p:find("Buddy") then got = got + 1 end end
 check(got == 1, "collector notified once", got)
 -- second hello shortly after: no re-dump
-ME = "Buddy"; NOW = NOW + 60; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade")
+ME = "Buddy"; NOW = NOW + 60; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide")
 local _, q2 = B.SyncDev.State(); check(#q2 == 0, "no redump", #q2)
 -- live loot is forwarded
 B:Fire("LOOT_RECORDED", 2447, 1411, K1, nil); OUT = {}
 for i = 1, 5 do for _, fn in ipairs(TICKERS or {}) do pcall(fn) end end
 local wh = {} for _, o in ipairs(OUT) do if o.c == "WHISPER" then wh[#wh + 1] = o end end
-check(#wh >= 1 and wh[1].t == "Shade", "live forwarded", #OUT, #wh)
+check(#wh >= 1 and wh[1].t == "Shade Tide", "live forwarded", #OUT, #wh)
 -- collector logs off: system message hidden and queue stopped
 local f = filters.CHAT_MSG_SYSTEM
-check(f and f(nil, "CHAT_MSG_SYSTEM", "No player named 'Shade' is currently playing.") == true, "offline msg hidden")
+check(f and f(nil, "CHAT_MSG_SYSTEM", "No player named 'Shade Tide' is currently playing.") == true, "offline msg hidden")
 B:Fire("LOOT_RECORDED", 2447, 1411, K1, nil); OUT = {}
 for i = 1, 5 do B.SyncDev.Send() end
 check(#OUT == 0, "nothing after offline")
 check(f(nil, "CHAT_MSG_SYSTEM", "No player named 'Other' is currently playing.") == false, "other msg kept")
 -- collector stale -> nothing
-ME = "Buddy"; NOW = NOW + 1000; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade")
+ME = "Buddy"; NOW = NOW + 1000; Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide")
 local _, q3 = B.SyncDev.State(); check(#q3 > 0, "redump after away")
 NOW = NOW + 400; OUT = {}; B.SyncDev.Send(); check(#OUT == 0, "stale collector: stop")
 -- switched off: nothing
 dbB.settings.devShare = false; NOW = NOW + 1000
-Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade")
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide")
 OUT = {}; for i = 1, 5 do B.SyncDev.Send() end; check(#OUT == 0, "off: nothing")
 -- note printed once
 local notes = 0 for _, p in ipairs(PRINTS) do if p:find("B:") and p:find("community") then notes = notes + 1 end end
 print("notes", notes)
+-- echo: collector's own guild message comes back as "Shade Tide" -> not stored, full name learned
+ME = "Shade"; dbA.shared["Shade Tide"] = nil
+SENT_OUT = {}
+OUT = {}; A.SyncDev.Hello()
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Tide")
+check(A.SyncDev.IsCollector(), "Shade Tide still collector after echo")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^5", "GUILD", "Shade Tide")
+check(not dbA.shared["Shade Tide"], "own echo not stored")
+-- the other character "Shade Hun": after its echo it is not a collector
+FarmAtlasDB = nil; ME = "Shade"
+local C, c1, c2 = Load(); Fire(c1, c2, "ADDON_LOADED", "FarmAtlas"); Fire(c1, c2, "PLAYER_LOGIN")
+C.SyncDev.Join(); RunTimers(); C.SyncDev.Hello()
+Fire(c1, c2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Hun")
+check(not C.SyncDev.IsCollector(), "Shade Hun not collector")
 print("DEV ERRORS:", E)

@@ -1,3 +1,8 @@
+# FarmAtlas 1.6.1
+
+- Fixed: WoW Forever shows players with first and last names ("Name Surname"), so your own guild / group sync messages came back under that full name and were stored as another player's finds - counted twice in the community data. Own echoes are now recognised and skipped
+- Community data rebuilt without those doubles: 3 players, 59 items, 51 NPCs with kill counts, 5 recipe sources, 2 fishing schools, 3 trainer positions, 2 fishable wreckage spots
+
 # FarmAtlas 1.6.0 - The Complete Atlas
 
 - New: every crafting guide step lists its exact materials in total (per craft x crafts) and how many you have; reagents per craft from the metabot.gg and seemeta.com recipe tables (both read from the Forever client), cross-checked with the wow-professions.com totals. Your own profession window's reagents win once you know the recipe

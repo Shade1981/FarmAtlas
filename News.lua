@@ -5,6 +5,28 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.6.1", date = "2026-11-20",
+      en = {
+        "Fixed: with WoW Forever's first and last names, your own guild sync messages came back to you as if from another player and were counted twice. The built-in community data is cleaned of these doubles (and now has the first wreckage spots).",
+        "New look and Link button (from 1.6.0): marble window with the zone's map art and a painting for every profession (plain look in Settings), and the Link button puts the item into the chat you are typing in - party, guild, whisper.",
+      },
+      hu = {
+        "Javítva: a WoW Forever vezeték- és keresztneveivel a saját guild-szinkron üzeneteid úgy jöttek vissza hozzád, mintha egy másik játékostól jöttek volna, és duplán számolódtak. A beépített közösségi adatból kiszűrtük ezeket a duplázásokat (és már az első roncs-helyek is benne vannak).",
+        "Új megjelenés és Link gomb (az 1.6.0-ból): márvány ablak a zóna térképrajzával és minden szakmához egy festménnyel (az egyszerű kinézet a beállításokban), a Link gomb pedig abba a chatbe teszi a tárgyat, ahová éppen írsz - party, guild, suttogás.",
+      },
+      fr = {
+        "Corrigé : avec les prénoms et noms de WoW Forever, vos propres messages de synchronisation de guilde vous revenaient comme venant d'un autre joueur et étaient comptés deux fois. Les données communautaires intégrées sont nettoyées de ces doublons (et contiennent les premières épaves).",
+        "Nouveau look et bouton Lien (depuis 1.6.0) : fenêtre en marbre avec l'art de la carte de la zone et une peinture par métier (look simple dans les options), et le bouton Lien met l'objet dans le chat où vous écrivez - groupe, guilde, chuchotement.",
+      },
+      de = {
+        "Behoben: Mit den Vor- und Nachnamen von WoW Forever kamen deine eigenen Gilden-Sync-Nachrichten wie von einem anderen Spieler zurück und wurden doppelt gezählt. Die eingebauten Community-Daten sind davon bereinigt (und enthalten die ersten Wrackplätze).",
+        "Neues Aussehen und Link-Knopf (seit 1.6.0): Marmorfenster mit der Kartengrafik der Zone und einem Gemälde für jeden Beruf (schlichtes Aussehen in den Optionen), und der Link-Knopf setzt den Gegenstand in den Chat, in dem du gerade schreibst - Gruppe, Gilde, Flüstern.",
+      },
+      es = {
+        "Corregido: con los nombres y apellidos de WoW Forever, tus propios mensajes de sincronización de hermandad volvían como si fueran de otro jugador y se contaban dos veces. Los datos comunitarios integrados se han limpiado de esos duplicados (y ya incluyen los primeros restos).",
+        "Nuevo aspecto y botón Enlace (desde 1.6.0): ventana de mármol con el arte del mapa de la zona y una pintura para cada profesión (aspecto sencillo en las opciones), y el botón Enlace pone el objeto en el chat en el que escribes - grupo, hermandad, susurro.",
+      },
+    },
     { v = "1.6.0", date = "2026-11-20",
       en = {
         "New: Enchanting 1-300 guide - 12 professions now. Every trainer filtered by the rank they really teach (Annora in Uldaman is the only Artisan trainer), Mote of Magic and formula vendors on the map.",
