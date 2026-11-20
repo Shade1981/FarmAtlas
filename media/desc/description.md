@@ -10,6 +10,11 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.6.1
+
+- Fixed: a sync problem in party and guild.
+- A chat line now tells you when a newer FarmAtlas version is out - update it in the CurseForge app, then restart the game.
+
 ## New in 1.6.0 - The Complete Atlas
 
 - **Enchanting 1-300 guide:** 12 profession guides now. Every trainer filtered by the rank they really teach (Annora in Uldaman is the only Artisan trainer), Mote of Magic and formula vendors on the map.
