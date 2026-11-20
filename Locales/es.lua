@@ -120,6 +120,7 @@ ns.Locales.es = {
     op_poolalert  = "Aviso de banco",
     op_poolalert_hint = "Mensaje y sonido cerca de un lugar conocido de banco de un pez que sigues",
     pool_near     = "Lugar de banco de %s cerca (%d m) - ¡míralo!",
+    pool_rec      = "Lugar de banco de %s registrado - se mostrará en el mapa",
     op_nodesize   = "Tamaño de iconos de nodos",
     np_learned    = "Recogido aquí: %d×",
     np_known      = "Nodo conocido (de tu addon)",

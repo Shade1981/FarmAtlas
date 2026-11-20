@@ -120,6 +120,7 @@ ns.Locales.de = {
     op_poolalert  = "Schwarm-Hinweis",
     op_poolalert_hint = "Nachricht und Ton in der Nähe eines bekannten Schwarmplatzes eines verfolgten Fisches",
     pool_near     = "%s-Schwarmplatz in der Nähe (%d m) - schau nach!",
+    pool_rec      = "%s-Schwarmplatz gespeichert - er wird auf der Karte angezeigt",
     op_nodesize   = "Größe der Vorkommen-Symbole",
     np_learned    = "Hier gesammelt: %d×",
     np_known      = "Bekanntes Vorkommen (aus deinem Addon)",

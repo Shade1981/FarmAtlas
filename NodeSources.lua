@@ -226,7 +226,12 @@ function ns:RecordPool(objID, guid, itemID, mapID, x, y)
     if not z then z = {}; p.zones[mapID] = z end
     local key = cx .. ":" .. cy
     local c = z[key]
-    if not c then c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c end
+    if not c then
+        c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c
+        if ns.db.settings and ns.db.settings.poolAlert ~= false then
+            ns:Print(ns.L("pool_rec", ns:GetItemName(itemID) or "?"))
+        end
+    end
     c.n = c.n + 1
     c.last = time and time() or 0
     ns:Fire("LEARNED_CHANGED")

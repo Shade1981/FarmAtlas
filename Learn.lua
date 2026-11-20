@@ -215,7 +215,14 @@ local function OnEvent(_, event, ...)
         if isFishing and itemID and type(guid) == "string" and guid:find("^GameObject") and mapID and x then
             local objID = tonumber((select(6, strsplit("-", guid))))
             -- 35591 = the fishing bobber itself (open water), not a school
-            if objID and objID ~= 35591 and ns.RecordPool then ns:RecordPool(objID, guid, itemID, mapID, x, y) end
+            if objID and objID ~= 35591 and ns.RecordPool then
+                ns:RecordPool(objID, guid, itemID, mapID, x, y)
+            elseif ns.SchoolKeyForCatch then
+                -- WoW Forever reports the bobber as the source even for a school:
+                -- the school is known from its tooltip (see SchoolHint below)
+                local key = ns:SchoolKeyForCatch(itemID, mapID, x, y)
+                if key and ns.RecordPool then ns:RecordPool(key, guid, itemID, mapID, x, y) end
+            end
         end
         if itemID and ShouldRecord(itemID, isFishing, lootName) then
             local _, _, quantity = GetLootSlotInfo(slot)
@@ -399,3 +406,122 @@ function ns:ForgetLearned(itemID)
     if itemID then self.db.learned[itemID] = nil else wipe(self.db.learned); wipe(self.db.kills) end
     self:Fire("LEARNED_CHANGED")
 end
+
+------------------------------------------------------------------------
+-- Fishing schools in WoW Forever: the client gives the bobber as the loot
+-- source even when you fish a school, so the school is recognised from its
+-- tooltip instead. When the mouse is on a school ("Oily Blackmouth School")
+-- the world tooltip shows its name; if it names a fish, that spot is a school
+-- for the next catches nearby (the hint is renewed by every school catch, so
+-- you do not have to keep the mouse on it).
+------------------------------------------------------------------------
+do
+    local HINT_TIME = 45      -- seconds a hint stays valid after the last school catch / hover
+    local HINT_DIST = 1.5     -- map percent you may move away from where the hint was made
+    local hint                -- { t, mapID, x, y } (x, y in percent)
+    local fishWords           -- { lower-case word } from the names of the fishing items
+
+    local function SplitWords(name)
+        local out = {}
+        for w in name:gmatch("[^%s%-%(%)]+") do out[#out + 1] = w:lower() end
+        return out
+    end
+
+    -- one distinctive word per fishing item: its longest word that is not also
+    -- in the name of a herb / ore (those are world objects with tooltips too):
+    -- "Raw Mithril Head Trout" -> "trout", not "mithril" (Mithril Deposit)
+    local function Words()
+        if fishWords then return fishWords end
+        local fish, other, ready = {}, {}, true
+        for id, it in pairs(ns.Items or {}) do
+            local name = ns.GetItemInfo and ns.Plain(ns.GetItemInfo(id))
+            if type(name) ~= "string" then
+                if it.cat == "fishing" then ready = false end
+            elseif it.cat == "fishing" then
+                fish[#fish + 1] = SplitWords(name)
+            elseif it.cat == "herbalism" or it.cat == "mining" then
+                for _, w in ipairs(SplitWords(name)) do other[w] = true end
+            end
+        end
+        local list = {}
+        for _, words in ipairs(fish) do
+            table.sort(words, function(a, b) return #a > #b end)
+            for _, w in ipairs(words) do
+                if #w >= 4 and not other[w] then list[#list + 1] = w; break end
+            end
+        end
+        if ready then fishWords = list end   -- item names not cached yet: try again later
+        return list
+    end
+
+    local function NamesAFish(text)
+        if type(text) ~= "string" or text == "" then return false end
+        -- whole words only: "Fishing Bobber" must not match "fish"
+        local inText = {}
+        for _, w in ipairs(SplitWords(text)) do inText[w] = true end
+        for _, w in ipairs(Words()) do
+            if inText[w] then return true end
+        end
+        return false
+    end
+
+    local function PlayerPos()
+        if not (C_Map and C_Map.GetBestMapForUnit) then return end
+        local mapID = C_Map.GetBestMapForUnit("player")
+        local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
+        if not pos then return end
+        local x, y = pos:GetXY()
+        if not x or (x == 0 and y == 0) then return end
+        return mapID, x * 100, y * 100
+    end
+
+    -- the tooltip of a world object (no unit) that names a fish = a school
+    local function CheckTooltip()
+        if not (GameTooltip and GameTooltip:IsShown()) then return end
+        local owner = GameTooltip:GetOwner()
+        if owner ~= UIParent and owner ~= WorldFrame then return end
+        if GameTooltip.GetUnit and ns.Plain((GameTooltip:GetUnit())) ~= nil then return end
+        local fs = _G.GameTooltipTextLeft1
+        local text = fs and ns.Plain(fs:GetText())
+        if not NamesAFish(text) then return end
+        local mapID, x, y = PlayerPos()
+        if mapID then hint = { t = GetTime(), mapID = mapID, x = x, y = y } end
+    end
+
+    if GameTooltip and GameTooltip.HookScript then
+        GameTooltip:HookScript("OnShow", function() pcall(CheckTooltip) end)
+    end
+
+    -- the mouse may already rest on the school when the cast starts
+    local fishSpell
+    local cf = CreateFrame("Frame")
+    ns:SafeRegister(cf, "UNIT_SPELLCAST_SENT")
+    cf:SetScript("OnEvent", function(_, _, unit, _, _, spellID)
+        if unit ~= "player" then return end
+        pcall(function()
+            local gsn = (C_Spell and C_Spell.GetSpellName) or GetSpellInfo
+            if not gsn then return end
+            fishSpell = fishSpell or ns.Plain(gsn(7620))
+            local name = spellID and ns.Plain(gsn(spellID))
+            if name and fishSpell and name == fishSpell then CheckTooltip() end
+        end)
+    end)
+
+    -- key of the school a catch came from, or nil (open water)
+    function ns:SchoolKeyForCatch(itemID, mapID, x, y)
+        if not hint or not itemID or not mapID or not x then return end
+        if GetTime() - hint.t > HINT_TIME or hint.mapID ~= mapID then hint = nil; return end
+        local px, py = x * 100, y * 100
+        if math.abs(px - hint.x) > HINT_DIST or math.abs(py - hint.y) > HINT_DIST then hint = nil; return end
+        hint.t = GetTime()                                    -- still fishing the same school
+        local it = ns.Items and ns.Items[itemID]
+        if not (it and it.cat == "fishing") then return end   -- trunks, junk from wreckage
+        local ids = ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID]
+        return (ids and ids[1]) or (9000000 + itemID)
+    end
+
+    -- test hook
+    ns.SchoolHintState = function() return hint end
+    ns.SchoolWords = function() return Words() end
+end
+

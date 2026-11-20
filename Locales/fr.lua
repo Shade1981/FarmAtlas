@@ -120,6 +120,7 @@ ns.Locales.fr = {
     op_poolalert  = "Alerte banc",
     op_poolalert_hint = "Message et son près d'un emplacement de banc connu d'un poisson suivi",
     pool_near     = "Emplacement de banc %s tout près (%d m) - allez voir !",
+    pool_rec      = "Emplacement de banc %s enregistré - il apparaîtra sur la carte",
     op_nodesize   = "Taille des icônes de gisements",
     np_learned    = "Récolté ici : %d×",
     np_known      = "Gisement connu (de votre addon)",
