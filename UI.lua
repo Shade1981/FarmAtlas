@@ -830,7 +830,15 @@ end
 local function GuideSub(r)
     local s = r.step
     if s.kind == "craft" then
-        local t = s.item .. (s.extra and (" + " .. s.extra) or "")
+        local mats = ns:GuideStepMats(s)
+        local t
+        if mats and s.count then
+            local parts = {}
+            for _, m in ipairs(mats) do parts[#parts + 1] = m.total .. " " .. ns:MatLabel(m.name) end
+            t = table.concat(parts, ", ")
+        else
+            t = s.item .. (s.extra and (" + " .. s.extra) or "")
+        end
         if s.count then t = t .. "  ·  " .. L("g_crafts", s.count) end
         return t
     elseif s.kind == "area" then
@@ -916,9 +924,23 @@ function UI:GuideTooltip(r)
     GameTooltip:AddLine(GuideTitle(r), 1, 0.82, 0)
     local note = ns.GuideNote(s)
     if s.kind == "craft" then
-        GameTooltip:AddLine(L("g_mats"), 1, 0.82, 0)
-        GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
-        if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
+        local mats, exact = ns:GuideStepMats(s)
+        GameTooltip:AddLine(L("g_mats") .. (s.count and ("  |cffcccccc" .. L("g_crafts", s.count) .. "|r") or ""), 1, 0.82, 0)
+        if mats then
+            for _, m in ipairs(mats) do
+                local have = ns:HaveCount(m.name)
+                local right, r, g, b = "", 0.8, 0.8, 0.8
+                if have then
+                    right = L("g_have", have)
+                    if have >= (m.total or m.per or 1) then r, g, b = 0.4, 1, 0.4 else r, g, b = 1, 0.6, 0.25 end
+                end
+                GameTooltip:AddDoubleLine("   " .. (m.total and (m.total .. " x ") or "") .. ns:MatLabel(m.name) .. "  |cff999999(" .. L("g_each", m.per) .. ")|r",
+                    right, 1, 1, 1, r, g, b)
+            end
+            if exact then GameTooltip:AddLine("   " .. L("g_mats_exact"), 0.55, 0.59, 0.66, true) end
+        else
+            GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
+        end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
         if s.trainer then
             srcType, sources = "trainer", {}

@@ -81,6 +81,42 @@ end
 -- Trainers for a profession, filtered to your faction (neutral = both),
 -- with coordinates where known. Your current zone first.
 -- need: only trainers who can train up to this skill (t.max; nil max = no limit)
+-- materials of a craft step: per craft and in total (per craft x crafts).
+-- Your profession window's exact reagents (scanned) win over the built-in list.
+function ns:GuideStepMats(s)
+    if not (s and s.kind == "craft" and s.recipe) then return end
+    local base = (ns.GuideMats and ns.GuideMats[s.recipe])
+        or (ns.RecipeInfo and ns.RecipeInfo[s.recipe] and ns.RecipeInfo[s.recipe].mats)
+    local scanned = self.db and self.db.recipeReagents and self.db.recipeReagents[s.recipe]
+    local list, exact = {}, false
+    if scanned and next(scanned) then
+        exact = true
+        local seen = {}
+        for _, m in ipairs(base or {}) do
+            if scanned[m[1]] then list[#list + 1] = { name = m[1], per = scanned[m[1]] }; seen[m[1]] = true end
+        end
+        local rest = {}
+        for n, q in pairs(scanned) do if not seen[n] then rest[#rest + 1] = { name = n, per = q } end end
+        table.sort(rest, function(x, y) return x.name < y.name end)
+        for _, m in ipairs(rest) do list[#list + 1] = m end
+    elseif base then
+        for _, m in ipairs(base) do list[#list + 1] = { name = m[1], per = m[2] } end
+    else
+        return
+    end
+    -- no craft count: only the per-craft amounts are known (total stays nil)
+    for _, m in ipairs(list) do m.total = s.count and (tonumber(m.per) or 1) * s.count or nil end
+    return list, exact
+end
+
+-- how many of a material you have (bags + bank), nil if the client cannot tell
+function ns:HaveCount(name)
+    local fn = (C_Item and C_Item.GetItemCount) or GetItemCount
+    if not fn or not name then return end
+    local ok, n = pcall(fn, name, true)
+    if ok and type(n) == "number" then return n end
+end
+
 function ns:GuideTrainers(prof, list, need)
     local g = self.Guides[prof]
     if not g then return {} end
