@@ -10,6 +10,17 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.6.0 - The Complete Atlas
+
+- **Enchanting 1-300 guide:** 12 profession guides now. Every trainer filtered by the rank they really teach (Annora in Uldaman is the only Artisan trainer), Mote of Magic and formula vendors on the map.
+- **Exact materials for every guide step:** e.g. *Tailoring 1-30: 60 Linen Cloth (30 Bolts of Linen Cloth)* - with how many you already have. Once you know the recipe, the amounts come from your own profession window.
+- **New look:** marble window with a gold frame, the zone's own map art in the header and behind the item details, and a muted, map-style painting for every profession (the plain look is one click away in Settings).
+- **Fishing schools now recorded in WoW Forever:** move the mouse onto a school once - the catches there are saved as a school spot, shown on the map, and you get the school alert when you come back.
+- **Fishable wreckage, debris and oil spills:** their spots appear on the world map with what you caught there.
+- **Louder bite while fishing:** music and ambience go down, effects up, and your own volumes come back 20 seconds after your last cast.
+- **Link button:** puts the item link into the chat you are typing in - party, guild, whisper - not always /say.
+- Guild and group members now also share fishing schools, wreckage spots and trainer positions; restoring after a reinstall no longer stops while data is still coming; shift-click into the search box fixed.
+
 ## New in 1.5.1
 
 - Fixed: fighting with the world map open could print "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()". FarmAtlas now waits until the fight is over to update its map pins. Thanks to laykes for the report!
