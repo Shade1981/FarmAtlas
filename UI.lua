@@ -2060,6 +2060,13 @@ do
             tx:SetAlpha(sp[4])
             th.icons[i] = tx
         end
+        -- the profession's own illustration (Media/Themes/<key>.tga), glowing
+        -- over the panel (additive: its dark parts vanish, its lights shine)
+        th.art = th:CreateTexture(nil, "OVERLAY")
+        th.art:SetSize(520, 260)
+        th.art:SetPoint("BOTTOMRIGHT", th, "BOTTOMRIGHT", -6, 38)
+        th.art:SetBlendMode("ADD")
+        th.art:SetAlpha(0.62)
         th:Hide()
         self.theme = th
         -- the profession's name and icon in the header
@@ -2100,7 +2107,12 @@ do
             th.wash:SetVertexColor(c[1], c[2], c[3], 0.08)
         end
         th.line:SetVertexColor(c[1], c[2], c[3], 0.7)
-        for i, tx in ipairs(th.icons) do tx:SetTexture(icons[i] or icons[1]) end
+        local hasArt = TryTexture(th.art, "Interface\\AddOns\\FarmAtlas\\Media\\Themes\\" .. key)
+        th.art:SetShown(hasArt)
+        for i, tx in ipairs(th.icons) do
+            tx:SetTexture(icons[i] or icons[1])
+            tx:SetShown(not hasArt)          -- the icon still life only if the picture is missing
+        end
         th:Show()
         local badge = self.themeBadge
         if badge then
