@@ -79,6 +79,8 @@ local function Pages()
             { "check", "op_sync_on", function() return S().sync end,
                 function(v) if ns.Sync and v ~= S().sync then ns.Sync:Toggle() else S().sync = v end end, "op_sync_hint" },
             { "check", "op_sync_guild", function() return S().syncGuild end, function(v) S().syncGuild = v end },
+            { "check", "op_devshare", function() return S().devShare ~= false end,
+                function(v) S().devShare = v; if ns.SyncDev then if v then pcall(ns.SyncDev.Join) else pcall(ns.SyncDev.Leave) end end end, "op_devshare_hint" },
         }),
         Page("map", "op_map", {
             { "check", "t_pins", function() return S().showOnMap end, function(v) S().showOnMap = v; fire() end, "op_pins_hint" },

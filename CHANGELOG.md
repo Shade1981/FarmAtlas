@@ -1,4 +1,4 @@
-# FarmAtlas 1.6.0
+# FarmAtlas 1.6.0 - The Complete Atlas
 
 - New: every crafting guide step lists its exact materials in total (per craft x crafts) and how many you have; reagents per craft from the metabot.gg and seemeta.com recipe tables (both read from the Forever client), cross-checked with the wow-professions.com totals. Your own profession window's reagents win once you know the recipe
 - New: Enchanting 1-300 guide (12 professions now). Route from wow-professions.com Forever, cross-checked with method.gg and rankedboost.com - only steps at least two of them agree on. Trainers filtered by the rank they really teach (in-game titles); Annora (Uldaman) is the only Artisan trainer. Positions, Mote of Magic and formula vendors from the Questie Forever database

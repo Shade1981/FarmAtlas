@@ -128,8 +128,16 @@ end
 ------------------------------------------------------------------------
 local queue, queued = {}, {}
 
+local capture, captureSeen = nil, nil   -- set while building a full dump
+local DevLive                           -- forward to the collector (defined below)
+
 local function Enqueue(id, msg)
     if #msg > MAX_LEN then return end
+    if capture then
+        if not captureSeen[id] then captureSeen[id] = true; capture[#capture + 1] = msg end
+        return
+    end
+    if DevLive then DevLive(id, msg) end
     if queued[id] then
         queued[id] = msg
     else
@@ -362,8 +370,10 @@ local function ScheduleRefresh()
     end)
 end
 
+local IsCollectorFn
 local function PlayerBucket(sender)
     local shared = ns.db.shared
+    local MAX_PLAYERS = (IsCollectorFn and IsCollectorFn()) and 5000 or MAX_PLAYERS
     local s = shared[sender]
     if not s then
         -- keep the store bounded: drop the player we heard from least recently
@@ -769,6 +779,8 @@ end
 ns.SyncRestore = { Hello = SayHello, HandleHello = HandleHello, HandleRestore = HandleRestore, Build = BuildRestore,
     Send = SendRestoreNext, Names = MyNames, State = function() return rq, rqTarget end }
 
+local Dev = {}
+
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
@@ -779,6 +791,12 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     local f = { strsplit(SEP, msg) }
     if f[1] ~= PROTO then return end
     table.remove(f, 1)
+    -- the shared data channel only carries the collector's "I am here"
+    if channel == "CHANNEL" then
+        if f[1] == "CH" then Dev.OnCollector(sender, short) end
+        return
+    end
+    if channel == "WHISPER" and Dev.IsCollector() then Dev.Got(short) end
     -- restore traffic has its own limits (only after our hello, capped per sender)
     if f[1] == "XC" or f[1] == "XM" or f[1] == "XK" or f[1] == "XR" then
         HandleRestore(f, channel, short)
@@ -814,6 +832,211 @@ local function OnAddonMessage(prefix, msg, channel, sender)
 end
 
 ------------------------------------------------------------------------
+-- community collector: while the addon author's character is online, the
+-- other FarmAtlas users on the same realm send their finds to that one
+-- character (whisper), so they can ship with the next version for everyone.
+-- Only game data, never anything personal; can be switched off in Options.
+--   CH   on the hidden channel: "the collector is here" (only that character)
+-- after that the normal C / M / K / R / P / O / Q / T messages go to it.
+------------------------------------------------------------------------
+local COLLECTORS = { { name = "Shade", realm = "CAMWOWEU5Realm1PvE" } }
+local DEV_CHANNEL = "FarmAtlasData"
+local DEV_EVERY = 1.5          -- seconds between two messages to the collector
+local DEV_ACTIVE = 150         -- collector counts as online this long after its last "here"
+local DEV_REDUMP = 600         -- a full dump again only after the collector was away this long
+local COLLECTOR_HELLO = 60
+
+local function NoSpace(s) return (tostring(s or ""):gsub("%s", "")) end
+
+local function DevOn()
+    return Enabled() and ns.db.settings.devShare ~= false
+end
+
+function Dev.IsCollector()
+    local me = ns.Plain(UnitName("player"))
+    local realm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or "")
+    for _, c in ipairs(COLLECTORS) do
+        if me == c.name and realm == c.realm then return true end
+    end
+    return false
+end
+IsCollectorFn = Dev.IsCollector
+
+local function ValidCollector(sender, short)
+    local name, realm = tostring(sender):match("^([^%-]+)%-(.+)$")
+    name = name or short
+    realm = NoSpace(realm or (GetRealmName and ns.Plain(GetRealmName())) or "")
+    for _, c in ipairs(COLLECTORS) do
+        if name == c.name and realm == c.realm then return true end
+    end
+    return false
+end
+
+local devTarget, devSeen, devAway = nil, nil, true
+local devQ, devQueued = {}, {}
+
+local function DevActive()
+    return devTarget and devSeen and GetTime() - devSeen <= DEV_ACTIVE and DevOn()
+end
+
+DevLive = function(id, msg)
+    if not DevActive() then return end
+    if devQueued[id] then devQueued[id] = msg; return end
+    devQueued[id] = msg
+    devQ[#devQ + 1] = id
+end
+
+-- every own find, built with the same message builders as the group sync
+local function BuildDump()
+    capture, captureSeen = {}, {}
+    local ok = pcall(function()
+        for key, e in pairs(ns.db.learned) do
+            if e.own and e.zones and next(e.zones) then
+                for mapID in pairs(e.zones) do QueueCells(key, mapID) end
+                for npcID in pairs(e.mobs or {}) do QueueMob(key, npcID); QueueKill(npcID) end
+            end
+        end
+        for recipe, list in pairs(ns.db.recipeSources or {}) do
+            for _, src in ipairs(list) do if VALID_SRC[src.type] then QueueRecipeSource(recipe, src) end end
+        end
+        for objID, p in pairs(ns.db.pools or {}) do
+            for mapID in pairs(p.zones or {}) do QueuePool(objID, mapID) end
+        end
+        for name, o in pairs(ns.db.fishObjects or {}) do
+            for mapID in pairs(o.zones or {}) do QueueFishObj(name, mapID) end
+            QueueFishObj(name, nil)
+        end
+        for npc in pairs(ns.db.trainerPos or {}) do QueueTrainer(npc) end
+    end)
+    local out = capture
+    capture, captureSeen = nil, nil
+    return ok and out or {}
+end
+
+function Dev.OnCollector(sender, short)
+    if not DevOn() or Dev.IsCollector() then return end
+    if not ValidCollector(sender, short) then return end
+    local now = GetTime()
+    local away = devAway or not devSeen or now - devSeen > DEV_REDUMP
+    devTarget, devSeen, devAway = sender, now, false
+    if away then
+        local i = 0
+        for _, msg in ipairs(BuildDump()) do
+            i = i + 1
+            DevLive("dump" .. i, msg)
+        end
+    end
+end
+
+local function DevSendNext()
+    if #devQ == 0 then return end
+    if not DevActive() then wipe(devQ); wipe(devQueued); return end
+    if #queue > 0 then return end                       -- the group sync goes first
+    if InCombatLockdown and InCombatLockdown() then return end
+    if IsInInstance and IsInInstance() then return end
+    local id = table.remove(devQ, 1)
+    local msg = devQueued[id]
+    devQueued[id] = nil
+    if msg then pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. msg, "WHISPER", devTarget) end
+end
+
+-- the collector: who sent something this session
+local devGot, devGotN = {}, 0
+function Dev.Got(short)
+    if devGot[short] then return end
+    devGot[short] = true
+    devGotN = devGotN + 1
+    if devGotN <= 30 then ns:Print(L("dev_got", short)) end
+end
+
+-- hide our "joined channel" lines; the channel itself never prints anything
+local function NoticeFilter(_, _, _, _, _, _, _, _, _, _, chanName)
+    chanName = ns.Plain(chanName)
+    if chanName and tostring(chanName):find(DEV_CHANNEL, 1, true) then return true end
+    return false
+end
+-- the collector just logged off: hide "No player named ... is currently playing"
+local notFound = nil
+local function SystemFilter(_, _, text)
+    text = ns.Plain(text)
+    if not (text and devTarget) then return false end
+    if not notFound then
+        local fmt = ERR_CHAT_PLAYER_NOT_FOUND_S or "No player named '%s' is currently playing."
+        notFound = "^" .. fmt:gsub("([%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%s", "(.+)") .. "$"
+    end
+    local who = tostring(text):match(notFound)
+    if who and (who == devTarget or Ambiguate(devTarget, "none") == who or devTarget:find(who, 1, true) == 1) then
+        devSeen, devAway = nil, true
+        wipe(devQ); wipe(devQueued)
+        return true
+    end
+    return false
+end
+local filterAdded = false
+local function AddFilter()
+    if filterAdded then return end
+    local add = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
+    if add then
+        filterAdded = true
+        pcall(add, "CHAT_MSG_CHANNEL_NOTICE", NoticeFilter)
+        pcall(add, "CHAT_MSG_CHANNEL_NOTICE_USER", NoticeFilter)
+        pcall(add, "CHAT_MSG_SYSTEM", SystemFilter)
+    end
+end
+
+local function ChannelID()
+    local id = GetChannelName and GetChannelName(DEV_CHANNEL)
+    id = tonumber(ns.Plain(id))
+    return (id and id > 0) and id or nil
+end
+
+local function JoinDev()
+    if not DevOn() then return end
+    if ChannelID() then return end
+    AddFilter()
+    local join = JoinTemporaryChannel or JoinChannelByName
+    if not join then return end
+    pcall(join, DEV_CHANNEL)
+    C_Timer.After(2, function()
+        local n = NUM_CHAT_WINDOWS or 10
+        for i = 1, n do
+            local cf = _G["ChatFrame" .. i]
+            if cf then
+                if ChatFrame_RemoveChannel then pcall(ChatFrame_RemoveChannel, cf, DEV_CHANNEL)
+                elseif cf.RemoveChannel then pcall(cf.RemoveChannel, cf, DEV_CHANNEL) end
+            end
+        end
+    end)
+end
+
+function Dev.Leave()
+    devTarget, devSeen, devAway = nil, nil, true
+    wipe(devQ); wipe(devQueued)
+    if ChannelID() and LeaveChannelByName then pcall(LeaveChannelByName, DEV_CHANNEL) end
+end
+
+local function CollectorHello()
+    if not (DevOn() and Dev.IsCollector()) then return end
+    if InCombatLockdown and InCombatLockdown() then return end
+    local id = ChannelID()
+    if not id then JoinDev(); return end
+    pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id)
+end
+
+local function DevNote()
+    if not DevOn() or Dev.IsCollector() or ns.db.devNoteShown then return end
+    ns.db.devNoteShown = true
+    ns:Print(L("dev_note"))
+end
+
+ns.SyncDev = Dev
+Dev.Build = BuildDump
+Dev.Send = DevSendNext
+Dev.Join = JoinDev
+Dev.Hello = CollectorHello
+Dev.State = function() return devTarget, devQ, devQueued end
+
+------------------------------------------------------------------------
 -- boot
 ------------------------------------------------------------------------
 local frame = CreateFrame("Frame")
@@ -832,10 +1055,14 @@ ns:On("LOGIN", function()
     C_Timer.NewTicker(TRICKLE_EVERY, TrickleOne)
     C_Timer.NewTicker(SEND_EVERY, SendRestoreNext)
     for _, d in ipairs(HELLO_DELAYS) do C_Timer.After(d, function() pcall(SayHello) end) end
+    C_Timer.NewTicker(DEV_EVERY, function() pcall(DevSendNext) end)
+    C_Timer.After(15, function() pcall(JoinDev); pcall(DevNote) end)
+    C_Timer.After(25, function() pcall(CollectorHello) end)
+    C_Timer.NewTicker(COLLECTOR_HELLO, function() pcall(CollectorHello) end)
 end)
 
 function Sync:Toggle()
     ns.db.settings.sync = not ns.db.settings.sync
-    if not ns.db.settings.sync then wipe(queue); wipe(queued) end
+    if not ns.db.settings.sync then wipe(queue); wipe(queued); pcall(Dev.Leave) end
     return ns.db.settings.sync
 end
