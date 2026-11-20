@@ -766,6 +766,8 @@ SlashCmdList.FARMATLAS = function(msg)
             local unlocked = ns:ToggleBannerEdit()
             ns:Print(unlocked and L("tb_unlocked") or L("tb_locked"))
         end
+    elseif cmd == "gyujtes" and ns.SyncDev and ns.SyncDev.IsCollector() then
+        ns.SyncDev.Status()
     elseif cmd == "news" then
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then

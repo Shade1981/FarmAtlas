@@ -820,7 +820,7 @@ local function OnAddonMessage(prefix, msg, channel, sender)
         if f[1] == "CH" then Dev.OnCollector(sender, short) end
         return
     end
-    if channel == "WHISPER" and Dev.IsCollector() then Dev.Got(short) end
+    if channel == "WHISPER" and Dev.IsCollector() then Dev.Got(short, f[1]) end
     -- restore traffic has its own limits (only after our hello, capped per sender)
     if f[1] == "XC" or f[1] == "XM" or f[1] == "XK" or f[1] == "XR" then
         HandleRestore(f, channel, short)
@@ -975,11 +975,62 @@ end
 
 -- the collector: who sent something this session
 local devGot, devGotN = {}, 0
-function Dev.Got(short)
+-- per sender this session: messages by kind, first / last arrival (only for the collector)
+local KIND_HU = { C = "farmhely", M = "drop", K = "ölésszám", R = "receptforrás", P = "halraj", O = "roncs", Q = "roncsfogás", T = "tréner" }
+local devStats, helloSent, helloLast = {}, 0, nil
+function Dev.Got(short, kind)
+    local st = devStats[short]
+    if not st then
+        st = { n = 0, kinds = {}, first = GetTime() }
+        devStats[short] = st
+    end
+    st.n = st.n + 1
+    st.last = GetTime()
+    st.done = nil
+    if kind then st.kinds[kind] = (st.kinds[kind] or 0) + 1 end
     if devGot[short] then return end
     devGot[short] = true
     devGotN = devGotN + 1
     if devGotN <= 30 then ns:Print(L("dev_got", short)) end
+end
+
+local function KindText(st)
+    local parts = {}
+    for k, label in pairs(KIND_HU) do
+        if st.kinds[k] then parts[#parts + 1] = st.kinds[k] .. " " .. label end
+    end
+    table.sort(parts)
+    return table.concat(parts, ", ")
+end
+
+-- a sender went quiet: their package is in
+local function CheckDone()
+    if not Dev.IsCollector() then return end
+    local now = GetTime()
+    for name, st in pairs(devStats) do
+        if not st.done and st.last and now - st.last > 30 then
+            st.done = true
+            ns:Print(("|cff3fc7ebGyűjtés:|r %s csomagja megjött: %d üzenet (%s)."):format(name, st.n, KindText(st)))
+        end
+    end
+end
+
+-- /farm gyujtes (only on the collector character)
+function Dev.Status()
+    local id = GetChannelName and tonumber(ns.Plain(GetChannelName(DEV_CHANNEL)))
+    ns:Print(("|cff3fc7ebGyűjtés:|r csatorna %s, jelzés kiküldve %d alkalommal%s."):format(
+        (id and id > 0) and "|cff33ff33rendben|r" or "|cffff4444nincs bent|r", helloSent,
+        helloLast and (", utoljára " .. math.floor(GetTime() - helloLast) .. " mp-e") or ""))
+    local names = {}
+    for name in pairs(devStats) do names[#names + 1] = name end
+    table.sort(names)
+    if #names == 0 then ns:Print("Ebben a munkamenetben még senki nem küldött adatot."); return end
+    local now = GetTime()
+    for _, name in ipairs(names) do
+        local st = devStats[name]
+        ns:Print(("  %s: %d üzenet, %s - %s"):format(name, st.n, KindText(st),
+            st.done and "kész" or ("most is jön (" .. math.floor(now - st.last) .. " mp-e)")))
+    end
 end
 
 -- hide our "joined channel" lines; the channel itself never prints anything
@@ -1054,7 +1105,9 @@ local function CollectorHello()
     local id = ChannelID()
     if not id then JoinDev(); return end
     MarkSent(PROTO .. SEP .. "CH")
-    pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id)
+    if pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id) then
+        helloSent, helloLast = helloSent + 1, GetTime()
+    end
 end
 
 local function DevNote()
@@ -1093,6 +1146,7 @@ ns:On("LOGIN", function()
     C_Timer.After(15, function() pcall(JoinDev); pcall(DevNote) end)
     C_Timer.After(25, function() pcall(CollectorHello) end)
     C_Timer.NewTicker(COLLECTOR_HELLO, function() pcall(CollectorHello) end)
+    C_Timer.NewTicker(10, function() pcall(CheckDone) end)
 end)
 
 function Sync:Toggle()

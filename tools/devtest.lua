@@ -127,3 +127,15 @@ C.SyncDev.Join(); RunTimers(); C.SyncDev.Hello()
 Fire(c1, c2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH", "CHANNEL", "Shade Hun")
 check(not C.SyncDev.IsCollector(), "Shade Hun not collector")
 print("DEV ERRORS:", E)
+-- collector status
+ME = "Shade"; PRINTS = {}
+A.SyncDev.Status()
+local st = table.concat(PRINTS, "\n")
+check(st:find("Buddy") and st:find("farmhely"), "status lists Buddy", st)
+NOW = NOW + 100; PRINTS = {}
+for _, fn in ipairs(TICKERS or {}) do pcall(fn) end
+local done = table.concat(PRINTS, "\n")
+check(done:find("csomagja megj"), "done line", done)
+SlashCmdList.FARMATLAS("gyujtes")
+print("STATUS DEMO:\n" .. table.concat(PRINTS, "\n"))
+print("DEV2 ERRORS:", E)
