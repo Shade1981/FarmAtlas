@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.5.1"
+ns.version = "1.6.0"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -48,6 +48,7 @@ ns.CAT_COLORS = {
     firstaid = { 1.00, 0.40, 0.40 },
     alchemy  = { 0.35, 0.90, 0.85 },
     blacksmithing = { 0.70, 0.72, 0.78 },
+    enchanting = { 0.66, 0.45, 1.00 },
     engineering = { 0.95, 0.80, 0.30 },
     learned  = { 0.80, 0.55, 1.00 },
 }

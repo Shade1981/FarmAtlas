@@ -5,6 +5,48 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.6.0", date = "2026-11-20",
+      en = {
+        "New: Enchanting 1-300 guide - 12 professions now. Every trainer filtered by the rank they really teach (Annora in Uldaman is the only Artisan trainer), Mote of Magic and formula vendors on the map.",
+        "New: every guide step shows exactly what it needs - e.g. Tailoring 1-30: 60 Linen Cloth (30 Bolts of Linen Cloth), with how many you already have. Once you know the recipe, the amounts come from your own profession window.",
+        "Fixed: fishing schools are now recorded in WoW Forever. Move the mouse onto a school once (before or while casting) - the catches there are saved as a school spot, shown on the map, and you get the school alert when you come back near it.",
+        "New: fishable wreckage, debris and oil spills are recorded too - move the mouse onto one (or have it under the mouse while you cast) and its spot appears on the world map with what you caught there (Settings > Map & minimap).",
+        "New: louder bite while fishing - music and ambience are turned down and effects up while you fish, your own volumes come back 20 seconds after your last cast (Settings > Map & minimap).",
+        "Guild and group members now also share fishing schools, wreckage / debris spots and trainer positions (older versions simply ignore them). Restoring after a reinstall no longer stops after 15 minutes while data is still coming.",
+      },
+      hu = {
+        "Új: Enchanting 1-300 útmutató - már 12 szakma. Minden tréner a valóban tanított rangja szerint szűrve (Artisant csak Annora tanít, Uldamanban), a Mote of Magic- és formula-árusok a térképen.",
+        "Új: minden útmutató-lépésnél pontosan látod, mi kell hozzá - pl. Tailoring 1-30: 60 Linen Cloth (30 Bolt of Linen Cloth), és hogy mennyi van már nálad. Ha már ismered a receptet, a mennyiségek a saját szakmaablakodból jönnek.",
+        "Javítva: a halrajok mostantól rögzülnek a WoW Forever-ben. Húzd rá egyszer az egeret a rajra (dobás előtt vagy közben) - az ott fogott halak halraj-helyként mentődnek, megjelennek a térképen, és visszatérve kapsz halraj-jelzést.",
+        "Új: a horgászható roncsok, uszadék és olajfoltok is rögzülnek - húzd rá az egeret (vagy legyen alatta dobáskor), és a helye megjelenik a világtérképen, azzal együtt, mit fogtál belőle (Beállítások > Térkép és minimap).",
+        "Új: hangosabb kapás - horgászás közben a zene és a környezeti hangok halkabbak, az effektek hangosabbak; a saját hangerőid 20 másodperccel az utolsó dobás után visszaállnak (Beállítások > Térkép és minimap).",
+        "A guild- és partytársak mostantól a halrajokat, a roncs/uszadék-helyeket és a trénerhelyeket is megosztják (a régebbi verziók egyszerűen figyelmen kívül hagyják). Újratelepítés utáni visszatöltésnél nem szakad meg 15 perc után, amíg érkeznek az adatok.",
+      },
+      fr = {
+        "Nouveau : guide Enchantement 1-300 - 12 métiers maintenant. Chaque entraîneur filtré selon le rang qu'il enseigne vraiment (Annora à Uldaman est la seule à enseigner Artisan), vendeurs de Mote of Magic et de formules sur la carte.",
+        "Nouveau : chaque étape des guides indique exactement ce qu'il faut - p. ex. Couture 1-30 : 60 Linen Cloth (30 Bolt of Linen Cloth), avec ce que vous avez déjà. Une fois la recette connue, les quantités viennent de votre fenêtre de métier.",
+        "Corrigé : les bancs de poissons sont maintenant enregistrés dans WoW Forever. Passez une fois la souris sur le banc (avant ou pendant le lancer) - les prises y sont enregistrées comme emplacement de banc, affichées sur la carte, avec l'alerte quand vous revenez près.",
+        "Nouveau : épaves, débris et nappes d'huile pêchables sont aussi enregistrés - passez la souris dessus (ou gardez-la dessus en lançant) et l'endroit apparaît sur la carte du monde avec ce que vous y avez pris (Options > Carte et minicarte).",
+        "Nouveau : touche plus audible - pendant la pêche, la musique et l'ambiance baissent et les effets montent ; vos volumes reviennent 20 secondes après votre dernier lancer (Options > Carte et minicarte).",
+        "Les membres de guilde et de groupe partagent aussi les bancs de poissons, épaves / débris et positions des entraîneurs (les anciennes versions les ignorent). La restauration après réinstallation ne s'arrête plus après 15 minutes tant que des données arrivent.",
+      },
+      de = {
+        "Neu: Verzauberkunst-Leitfaden 1-300 - jetzt 12 Berufe. Jeder Lehrer nach dem Rang gefiltert, den er wirklich lehrt (Annora in Uldaman ist die einzige Fachmann-Lehrerin), Mote-of-Magic- und Formelhändler auf der Karte.",
+        "Neu: jeder Leitfaden-Schritt zeigt genau, was er braucht - z. B. Schneiderei 1-30: 60 Linen Cloth (30 Bolt of Linen Cloth), mit dem, was du schon hast. Kennst du das Rezept, kommen die Mengen aus deinem Berufsfenster.",
+        "Behoben: Fischschwärme werden in WoW Forever jetzt gespeichert. Fahre einmal mit der Maus auf den Schwarm (vor oder während des Wurfs) - die Fänge dort werden als Schwarmplatz gespeichert, auf der Karte gezeigt, und in der Nähe kommt der Schwarm-Hinweis.",
+        "Neu: angelbare Wracks, Treibgut und Ölteppiche werden auch gespeichert - fahre mit der Maus darauf (oder lass sie beim Wurf darauf) und der Platz erscheint auf der Weltkarte mit deinem Fang dort (Einstellungen > Karte & Minikarte).",
+        "Neu: lauterer Biss - beim Angeln werden Musik und Umgebung leiser und Effekte lauter; deine Lautstärken kommen 20 Sekunden nach dem letzten Wurf zurück (Einstellungen > Karte & Minikarte).",
+        "Gilden- und Gruppenmitglieder teilen jetzt auch Fischschwärme, Wrack-/Treibgutplätze und Lehrerpositionen (ältere Versionen ignorieren sie). Die Wiederherstellung nach einer Neuinstallation bricht nicht mehr nach 15 Minuten ab, solange Daten kommen.",
+      },
+      es = {
+        "Nuevo: guía de Encantamiento 1-300 - ya 12 profesiones. Cada instructor filtrado por el rango que realmente enseña (Annora en Uldaman es la única instructora de Artesano), vendedores de Mote of Magic y de fórmulas en el mapa.",
+        "Nuevo: cada paso de las guías muestra exactamente lo que necesita - p. ej. Sastrería 1-30: 60 Linen Cloth (30 Bolt of Linen Cloth), con lo que ya tienes. Cuando conoces la receta, las cantidades vienen de tu ventana de profesión.",
+        "Corregido: los bancos de peces ahora se registran en WoW Forever. Pasa el ratón una vez sobre el banco (antes o durante el lanzamiento) - las capturas allí se guardan como lugar de banco, se muestran en el mapa y recibes el aviso al volver cerca.",
+        "Nuevo: también se registran restos, escombros y manchas de aceite pescables - pasa el ratón por encima (o tenlo encima al lanzar) y el lugar aparece en el mapa del mundo con lo que sacaste (Opciones > Mapa y minimapa).",
+        "Nuevo: picada más audible - al pescar, la música y el ambiente bajan y los efectos suben; tus volúmenes vuelven 20 segundos después del último lanzamiento (Opciones > Mapa y minimapa).",
+        "Los miembros de hermandad y grupo ahora también comparten bancos de peces, restos / escombros y posiciones de instructores (las versiones antiguas los ignoran). La restauración tras reinstalar ya no se corta a los 15 minutos mientras siguen llegando datos.",
+      },
+    },
     { v = "1.5.1", date = "2026-11-19",
       en = {
         "Fixed: fighting with the world map open could print \"ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()\" - during combat FarmAtlas no longer redraws map pins, it updates them right after the fight. Thanks to laykes for the report!",

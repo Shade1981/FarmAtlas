@@ -14,6 +14,11 @@
 --   M^key^npcID^n^lvl^name                  how often an NPC dropped the item
 --   K^npcID^n                               how many of that NPC were killed
 --   R^recipe^type^npc^mapID^x^y^fac^copper  where a recipe is sold / drops
+--   P^objID^fish,fish^mapID^ck,x,y,n;...   fishing school spots
+--   O^name^mapID^ck,x,y,n;...              fishable wreckage / debris spots
+--   Q^name^itemID:n,itemID:n...            what was fished from that object
+--   T^npc^mapID^x^y                        a profession trainer's position
+-- (older versions ignore P/O/Q/T, so they can be mixed freely)
 --
 -- Restore (fresh install / new computer): at login you say hello
 --   H^items^recipes^Name1,Name2           your own counts and your characters
@@ -40,13 +45,18 @@ local MAX_RECIPES_PER_PLAYER = 300
 local MAX_SOURCES_PER_RECIPE = 4
 local VALID_SRC = { vendor = true, drop = true }
 local HELLO_DELAYS = { 20, 300 }   -- seconds after login: say hello (twice, for late roster)
-local RESTORE_WINDOW = 900         -- restore messages are accepted this long after our hello
+local RESTORE_WINDOW = 900         -- a restore must start this long after our hello
+local RESTORE_IDLE = 120           -- ...and, once it runs, it stays open while messages keep coming
+local RESTORE_MAX = 3600           -- hard limit after our hello, however long a restore runs
 local MAX_RESTORE_MSGS = 3000      -- per restoring player and session
 local MAX_RESTORE_ITEMS = 1000
 
 local Sync = {}
 ns.Sync = Sync
 
+local MAX_POOLS_PER_PLAYER = 200
+local MAX_OBJS_PER_PLAYER = 100
+local MAX_TRAINERS_PER_PLAYER = 200
 local VALID_CAT = { cooking = true, skinning = true, fishing = true, mining = true, herbalism = true, learned = true }
 
 ------------------------------------------------------------------------
@@ -118,8 +128,16 @@ end
 ------------------------------------------------------------------------
 local queue, queued = {}, {}
 
+local capture, captureSeen = nil, nil   -- set while building a full dump
+local DevLive                           -- forward to the collector (defined below)
+
 local function Enqueue(id, msg)
     if #msg > MAX_LEN then return end
+    if capture then
+        if not captureSeen[id] then captureSeen[id] = true; capture[#capture + 1] = msg end
+        return
+    end
+    if DevLive then DevLive(id, msg) end
     if queued[id] then
         queued[id] = msg
     else
@@ -204,6 +222,70 @@ local function QueueRecipeSource(recipe, src)
     }, SEP))
 end
 
+local function CellParts(head, cells, idPrefix, onlyCell)
+    local parts, len, chunk = {}, #head, 0
+    local function flush()
+        if #parts == 0 then return end
+        chunk = chunk + 1
+        Enqueue(idPrefix .. ":" .. (onlyCell or chunk), head .. table.concat(parts, ";"))
+        wipe(parts); len = #head
+    end
+    for ck, c in pairs(cells) do
+        if not onlyCell or ck == onlyCell then
+            local s = ck .. "," .. Fmt(c.x) .. "," .. Fmt(c.y) .. "," .. math.floor(c.n or 1)
+            if len + #s + 1 > MAX_LEN then flush() end
+            parts[#parts + 1] = s
+            len = len + #s + 1
+        end
+    end
+    flush()
+end
+
+local function QueuePool(objID, mapID, onlyCell)
+    local p = ns.db.pools and ns.db.pools[objID]
+    local cells = p and p.zones and p.zones[mapID]
+    if not cells then return end
+    local fish = {}
+    for id in pairs(p.fish or {}) do
+        if #fish < 5 then fish[#fish + 1] = tostring(id) end
+    end
+    if #fish == 0 then return end
+    local head = table.concat({ "P", tostring(objID), table.concat(fish, ","), tostring(mapID) }, SEP) .. SEP
+    CellParts(head, cells, "P:" .. objID .. ":" .. mapID, onlyCell)
+end
+
+local function QueueFishObj(name, mapID, onlyCell)
+    local o = ns.db.fishObjects and ns.db.fishObjects[name]
+    if not o then return end
+    local clean = Cut(Clean(name), 40)
+    if mapID then
+        local cells = o.zones and o.zones[mapID]
+        if cells then CellParts(table.concat({ "O", clean, tostring(mapID) }, SEP) .. SEP, cells, "O:" .. name .. ":" .. mapID, onlyCell) end
+    end
+    local list = {}
+    for id, n in pairs(o.items or {}) do list[#list + 1] = { id = id, n = n } end
+    table.sort(list, function(a, b) return a.n > b.n end)
+    local parts = {}
+    for i = 1, math.min(8, #list) do parts[#parts + 1] = list[i].id .. ":" .. math.floor(list[i].n) end
+    if #parts > 0 then Enqueue("Q:" .. name, table.concat({ "Q", clean, table.concat(parts, ",") }, SEP)) end
+end
+
+local function QueueTrainer(npc)
+    local tp = ns.db.trainerPos and ns.db.trainerPos[npc]
+    if not (tp and tp.mapID and tp.x and tp.y) then return end
+    Enqueue("T:" .. npc, table.concat({ "T", Cut(Clean(npc), 40), tostring(tp.mapID), Fmt(tp.x), Fmt(tp.y) }, SEP))
+end
+
+ns:On("POOL_RECORDED", function(objID, mapID, cellKey)
+    if Enabled() then QueuePool(objID, mapID, cellKey) end
+end)
+ns:On("FISHOBJ_RECORDED", function(name, mapID, cellKey)
+    if Enabled() then QueueFishObj(name, mapID, cellKey) end
+end)
+ns:On("TRAINER_POS", function(npc)
+    if Enabled() then QueueTrainer(npc) end
+end)
+
 -- live: a recipe vendor or recipe drop you just saw
 ns:On("RECIPE_SOURCE_ADDED", function(recipe, src)
     if not Enabled() then return end
@@ -241,12 +323,26 @@ local function TrickleOne()
                 if VALID_SRC[src.type] then trickleKeys[#trickleKeys + 1] = { recipe = recipe }; break end
             end
         end
+        for objID in pairs(ns.db.pools or {}) do trickleKeys[#trickleKeys + 1] = { pool = objID } end
+        for name in pairs(ns.db.fishObjects or {}) do trickleKeys[#trickleKeys + 1] = { obj = name } end
+        for npc in pairs(ns.db.trainerPos or {}) do trickleKeys[#trickleKeys + 1] = { trainer = npc } end
         if #trickleKeys == 0 then return end
     end
     trickleIndex = trickleIndex + 1
     local key = trickleKeys[trickleIndex]
     if type(key) == "table" then
-        for _, src in ipairs(ns.db.recipeSources[key.recipe] or {}) do QueueRecipeSource(key.recipe, src) end
+        if key.recipe then
+            for _, src in ipairs(ns.db.recipeSources[key.recipe] or {}) do QueueRecipeSource(key.recipe, src) end
+        elseif key.pool then
+            local p = ns.db.pools and ns.db.pools[key.pool]
+            for mapID in pairs(p and p.zones or {}) do QueuePool(key.pool, mapID) end
+        elseif key.obj then
+            local o = ns.db.fishObjects and ns.db.fishObjects[key.obj]
+            for mapID in pairs(o and o.zones or {}) do QueueFishObj(key.obj, mapID) end
+            QueueFishObj(key.obj, nil)
+        elseif key.trainer then
+            QueueTrainer(key.trainer)
+        end
         return
     end
     local entry = ns.db.learned[key]
@@ -274,8 +370,10 @@ local function ScheduleRefresh()
     end)
 end
 
+local IsCollectorFn
 local function PlayerBucket(sender)
     local shared = ns.db.shared
+    local MAX_PLAYERS = (IsCollectorFn and IsCollectorFn()) and 5000 or MAX_PLAYERS
     local s = shared[sender]
     if not s then
         -- keep the store bounded: drop the player we heard from least recently
@@ -382,6 +480,96 @@ local function HandleR(s, f)
     list[#list + 1] = entry
 end
 
+local function ValidName(s)
+    return type(s) == "string" and #s >= 2 and #s <= 40 and s:match("^[%w%s%'%-%.:]+$") ~= nil
+end
+
+local function ReadCells(str, zone)
+    local n = 0
+    for part in str:gmatch("[^;]+") do
+        n = n + 1
+        if n > 25 then break end
+        local ck, x, y, cnt = part:match("^(%d+:%d+),([%d%.]+),([%d%.]+),(%d+)$")
+        x, y, cnt = tonumber(x), tonumber(y), tonumber(cnt)
+        if ck and x and y and cnt and x >= 0 and x <= 100 and y >= 0 and y <= 100 and cnt >= 1 and cnt <= 100000 then
+            zone[ns:CellKey(x, y)] = { x = x, y = y, n = cnt }   -- absolute value: replace
+        end
+    end
+end
+
+local function HandleP(s, f)
+    local objID, mapID = tonumber(f[2]), tonumber(f[4])
+    if not (objID and mapID and f[3] and f[5]) or objID < 1 or objID > 99999999 then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    s.pools = s.pools or {}
+    local p = s.pools[objID]
+    if not p then
+        if (s.nPools or 0) >= MAX_POOLS_PER_PLAYER then return end
+        p = { fish = {}, zones = {} }
+        s.pools[objID] = p
+        s.nPools = (s.nPools or 0) + 1
+    end
+    local nf = 0
+    for id in f[3]:gmatch("%d+") do
+        nf = nf + 1
+        if nf > 5 then break end
+        local fid = tonumber(id)
+        if fid and ns.Items[fid] and ns.Items[fid].cat == "fishing" then p.fish[fid] = true end
+    end
+    if not next(p.fish) then s.pools[objID] = nil; s.nPools = s.nPools - 1; return end
+    local zone = p.zones[mapID] or {}
+    ReadCells(f[5], zone)
+    if next(zone) then p.zones[mapID] = zone end
+end
+
+local function ObjBucket(s, name)
+    s.fishObjects = s.fishObjects or {}
+    local o = s.fishObjects[name]
+    if not o then
+        if (s.nObjs or 0) >= MAX_OBJS_PER_PLAYER then return end
+        o = { items = {}, zones = {} }
+        s.fishObjects[name] = o
+        s.nObjs = (s.nObjs or 0) + 1
+    end
+    return o
+end
+
+local function HandleO(s, f)
+    local name, mapID = f[2], tonumber(f[3])
+    if not (ValidName(name) and mapID and f[4]) then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    local o = ObjBucket(s, name)
+    if not o then return end
+    local zone = o.zones[mapID] or {}
+    ReadCells(f[4], zone)
+    if next(zone) then o.zones[mapID] = zone end
+end
+
+local function HandleQ(s, f)
+    local name = f[2]
+    if not (ValidName(name) and f[3]) then return end
+    local o = ObjBucket(s, name)
+    if not o then return end
+    local n = 0
+    for id, cnt in f[3]:gmatch("(%d+):(%d+)") do
+        n = n + 1
+        if n > 8 then break end
+        id, cnt = tonumber(id), tonumber(cnt)
+        if id and cnt and id >= 1 and id <= 9999999 and cnt >= 1 and cnt <= 100000 then o.items[id] = cnt end
+    end
+end
+
+local function HandleT(s, f)
+    local npc, mapID, x, y = f[2], tonumber(f[3]), tonumber(f[4]), tonumber(f[5])
+    if not (ValidName(npc) and mapID and x and y) or x < 0 or x > 100 or y < 0 or y > 100 then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    s.trainerPos = s.trainerPos or {}
+    if not s.trainerPos[npc] then
+        if (s.nTrainers or 0) >= MAX_TRAINERS_PER_PLAYER then return end
+        s.nTrainers = (s.nTrainers or 0) + 1
+    end
+    s.trainerPos[npc] = { mapID = mapID, x = x, y = y }
+end
 
 ------------------------------------------------------------------------
 -- restore: get your own finds back after a fresh install
@@ -567,9 +755,14 @@ local function RestoreR(f)
 end
 
 -- a restore message for us (whisper, shortly after our hello, bounded)
+local restoreLast = {}             -- [sender] = time of the last restore message
 local function HandleRestore(f, channel, short)
     if channel ~= "WHISPER" then return end
-    if not helloAt or GetTime() - helloAt > RESTORE_WINDOW then return end
+    if not helloAt then return end
+    local now, since = GetTime(), GetTime() - helloAt
+    local running = restoreLast[short] and now - restoreLast[short] <= RESTORE_IDLE
+    if since > RESTORE_MAX or (since > RESTORE_WINDOW and not running) then return end
+    restoreLast[short] = now
     restoreGot[short] = (restoreGot[short] or 0) + 1
     if restoreGot[short] > MAX_RESTORE_MSGS then return end
     local kind = f[1]
@@ -586,6 +779,8 @@ end
 ns.SyncRestore = { Hello = SayHello, HandleHello = HandleHello, HandleRestore = HandleRestore, Build = BuildRestore,
     Send = SendRestoreNext, Names = MyNames, State = function() return rq, rqTarget end }
 
+local Dev = {}
+
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
@@ -596,6 +791,12 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     local f = { strsplit(SEP, msg) }
     if f[1] ~= PROTO then return end
     table.remove(f, 1)
+    -- the shared data channel only carries the collector's "I am here"
+    if channel == "CHANNEL" then
+        if f[1] == "CH" then Dev.OnCollector(sender, short) end
+        return
+    end
+    if channel == "WHISPER" and Dev.IsCollector() then Dev.Got(short) end
     -- restore traffic has its own limits (only after our hello, capped per sender)
     if f[1] == "XC" or f[1] == "XM" or f[1] == "XK" or f[1] == "XR" then
         HandleRestore(f, channel, short)
@@ -615,6 +816,10 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if f[1] == "C" then HandleC(s, f)
     elseif f[1] == "M" then HandleM(s, f)
     elseif f[1] == "K" then HandleK(s, f)
+    elseif f[1] == "P" then HandleP(s, f)
+    elseif f[1] == "O" then HandleO(s, f)
+    elseif f[1] == "Q" then HandleQ(s, f)
+    elseif f[1] == "T" then HandleT(s, f)
     elseif f[1] == "R" then
         HandleR(s, f)
         if not recipePending then
@@ -625,6 +830,211 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     else return end
     ScheduleRefresh()
 end
+
+------------------------------------------------------------------------
+-- community collector: while the addon author's character is online, the
+-- other FarmAtlas users on the same realm send their finds to that one
+-- character (whisper), so they can ship with the next version for everyone.
+-- Only game data, never anything personal; can be switched off in Options.
+--   CH   on the hidden channel: "the collector is here" (only that character)
+-- after that the normal C / M / K / R / P / O / Q / T messages go to it.
+------------------------------------------------------------------------
+local COLLECTORS = { { name = "Shade", realm = "CAMWOWEU5Realm1PvE" } }
+local DEV_CHANNEL = "FarmAtlasData"
+local DEV_EVERY = 1.5          -- seconds between two messages to the collector
+local DEV_ACTIVE = 150         -- collector counts as online this long after its last "here"
+local DEV_REDUMP = 600         -- a full dump again only after the collector was away this long
+local COLLECTOR_HELLO = 60
+
+local function NoSpace(s) return (tostring(s or ""):gsub("%s", "")) end
+
+local function DevOn()
+    return Enabled() and ns.db.settings.devShare ~= false
+end
+
+function Dev.IsCollector()
+    local me = ns.Plain(UnitName("player"))
+    local realm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or "")
+    for _, c in ipairs(COLLECTORS) do
+        if me == c.name and realm == c.realm then return true end
+    end
+    return false
+end
+IsCollectorFn = Dev.IsCollector
+
+local function ValidCollector(sender, short)
+    local name, realm = tostring(sender):match("^([^%-]+)%-(.+)$")
+    name = name or short
+    realm = NoSpace(realm or (GetRealmName and ns.Plain(GetRealmName())) or "")
+    for _, c in ipairs(COLLECTORS) do
+        if name == c.name and realm == c.realm then return true end
+    end
+    return false
+end
+
+local devTarget, devSeen, devAway = nil, nil, true
+local devQ, devQueued = {}, {}
+
+local function DevActive()
+    return devTarget and devSeen and GetTime() - devSeen <= DEV_ACTIVE and DevOn()
+end
+
+DevLive = function(id, msg)
+    if not DevActive() then return end
+    if devQueued[id] then devQueued[id] = msg; return end
+    devQueued[id] = msg
+    devQ[#devQ + 1] = id
+end
+
+-- every own find, built with the same message builders as the group sync
+local function BuildDump()
+    capture, captureSeen = {}, {}
+    local ok = pcall(function()
+        for key, e in pairs(ns.db.learned) do
+            if e.own and e.zones and next(e.zones) then
+                for mapID in pairs(e.zones) do QueueCells(key, mapID) end
+                for npcID in pairs(e.mobs or {}) do QueueMob(key, npcID); QueueKill(npcID) end
+            end
+        end
+        for recipe, list in pairs(ns.db.recipeSources or {}) do
+            for _, src in ipairs(list) do if VALID_SRC[src.type] then QueueRecipeSource(recipe, src) end end
+        end
+        for objID, p in pairs(ns.db.pools or {}) do
+            for mapID in pairs(p.zones or {}) do QueuePool(objID, mapID) end
+        end
+        for name, o in pairs(ns.db.fishObjects or {}) do
+            for mapID in pairs(o.zones or {}) do QueueFishObj(name, mapID) end
+            QueueFishObj(name, nil)
+        end
+        for npc in pairs(ns.db.trainerPos or {}) do QueueTrainer(npc) end
+    end)
+    local out = capture
+    capture, captureSeen = nil, nil
+    return ok and out or {}
+end
+
+function Dev.OnCollector(sender, short)
+    if not DevOn() or Dev.IsCollector() then return end
+    if not ValidCollector(sender, short) then return end
+    local now = GetTime()
+    local away = devAway or not devSeen or now - devSeen > DEV_REDUMP
+    devTarget, devSeen, devAway = sender, now, false
+    if away then
+        local i = 0
+        for _, msg in ipairs(BuildDump()) do
+            i = i + 1
+            DevLive("dump" .. i, msg)
+        end
+    end
+end
+
+local function DevSendNext()
+    if #devQ == 0 then return end
+    if not DevActive() then wipe(devQ); wipe(devQueued); return end
+    if #queue > 0 then return end                       -- the group sync goes first
+    if InCombatLockdown and InCombatLockdown() then return end
+    if IsInInstance and IsInInstance() then return end
+    local id = table.remove(devQ, 1)
+    local msg = devQueued[id]
+    devQueued[id] = nil
+    if msg then pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. msg, "WHISPER", devTarget) end
+end
+
+-- the collector: who sent something this session
+local devGot, devGotN = {}, 0
+function Dev.Got(short)
+    if devGot[short] then return end
+    devGot[short] = true
+    devGotN = devGotN + 1
+    if devGotN <= 30 then ns:Print(L("dev_got", short)) end
+end
+
+-- hide our "joined channel" lines; the channel itself never prints anything
+local function NoticeFilter(_, _, _, _, _, _, _, _, _, _, chanName)
+    chanName = ns.Plain(chanName)
+    if chanName and tostring(chanName):find(DEV_CHANNEL, 1, true) then return true end
+    return false
+end
+-- the collector just logged off: hide "No player named ... is currently playing"
+local notFound = nil
+local function SystemFilter(_, _, text)
+    text = ns.Plain(text)
+    if not (text and devTarget) then return false end
+    if not notFound then
+        local fmt = ERR_CHAT_PLAYER_NOT_FOUND_S or "No player named '%s' is currently playing."
+        notFound = "^" .. fmt:gsub("([%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%s", "(.+)") .. "$"
+    end
+    local who = tostring(text):match(notFound)
+    if who and (who == devTarget or Ambiguate(devTarget, "none") == who or devTarget:find(who, 1, true) == 1) then
+        devSeen, devAway = nil, true
+        wipe(devQ); wipe(devQueued)
+        return true
+    end
+    return false
+end
+local filterAdded = false
+local function AddFilter()
+    if filterAdded then return end
+    local add = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
+    if add then
+        filterAdded = true
+        pcall(add, "CHAT_MSG_CHANNEL_NOTICE", NoticeFilter)
+        pcall(add, "CHAT_MSG_CHANNEL_NOTICE_USER", NoticeFilter)
+        pcall(add, "CHAT_MSG_SYSTEM", SystemFilter)
+    end
+end
+
+local function ChannelID()
+    local id = GetChannelName and GetChannelName(DEV_CHANNEL)
+    id = tonumber(ns.Plain(id))
+    return (id and id > 0) and id or nil
+end
+
+local function JoinDev()
+    if not DevOn() then return end
+    if ChannelID() then return end
+    AddFilter()
+    local join = JoinTemporaryChannel or JoinChannelByName
+    if not join then return end
+    pcall(join, DEV_CHANNEL)
+    C_Timer.After(2, function()
+        local n = NUM_CHAT_WINDOWS or 10
+        for i = 1, n do
+            local cf = _G["ChatFrame" .. i]
+            if cf then
+                if ChatFrame_RemoveChannel then pcall(ChatFrame_RemoveChannel, cf, DEV_CHANNEL)
+                elseif cf.RemoveChannel then pcall(cf.RemoveChannel, cf, DEV_CHANNEL) end
+            end
+        end
+    end)
+end
+
+function Dev.Leave()
+    devTarget, devSeen, devAway = nil, nil, true
+    wipe(devQ); wipe(devQueued)
+    if ChannelID() and LeaveChannelByName then pcall(LeaveChannelByName, DEV_CHANNEL) end
+end
+
+local function CollectorHello()
+    if not (DevOn() and Dev.IsCollector()) then return end
+    if InCombatLockdown and InCombatLockdown() then return end
+    local id = ChannelID()
+    if not id then JoinDev(); return end
+    pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id)
+end
+
+local function DevNote()
+    if not DevOn() or Dev.IsCollector() or ns.db.devNoteShown then return end
+    ns.db.devNoteShown = true
+    ns:Print(L("dev_note"))
+end
+
+ns.SyncDev = Dev
+Dev.Build = BuildDump
+Dev.Send = DevSendNext
+Dev.Join = JoinDev
+Dev.Hello = CollectorHello
+Dev.State = function() return devTarget, devQ, devQueued end
 
 ------------------------------------------------------------------------
 -- boot
@@ -645,10 +1055,14 @@ ns:On("LOGIN", function()
     C_Timer.NewTicker(TRICKLE_EVERY, TrickleOne)
     C_Timer.NewTicker(SEND_EVERY, SendRestoreNext)
     for _, d in ipairs(HELLO_DELAYS) do C_Timer.After(d, function() pcall(SayHello) end) end
+    C_Timer.NewTicker(DEV_EVERY, function() pcall(DevSendNext) end)
+    C_Timer.After(15, function() pcall(JoinDev); pcall(DevNote) end)
+    C_Timer.After(25, function() pcall(CollectorHello) end)
+    C_Timer.NewTicker(COLLECTOR_HELLO, function() pcall(CollectorHello) end)
 end)
 
 function Sync:Toggle()
     ns.db.settings.sync = not ns.db.settings.sync
-    if not ns.db.settings.sync then wipe(queue); wipe(queued) end
+    if not ns.db.settings.sync then wipe(queue); wipe(queued); pcall(Dev.Leave) end
     return ns.db.settings.sync
 end

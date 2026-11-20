@@ -226,10 +226,44 @@ function ns:RecordPool(objID, guid, itemID, mapID, x, y)
     if not z then z = {}; p.zones[mapID] = z end
     local key = cx .. ":" .. cy
     local c = z[key]
-    if not c then c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c end
+    if not c then
+        c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c
+        if ns.db.settings and ns.db.settings.poolAlert ~= false then
+            ns:Print(ns.L("pool_rec", ns:GetItemName(itemID) or "?"))
+        end
+    end
     c.n = c.n + 1
     c.last = time and time() or 0
     ns:Fire("LEARNED_CHANGED")
+    ns:Fire("POOL_RECORDED", objID, mapID, key)
+end
+
+-- Other fishable objects (Floating Wreckage, Floating Debris, Oil Spill...)
+-- db.fishObjects[name] = { items = { [itemID] = n }, zones = { [mapID] = { [cell] = { x, y, n, last } } } }
+-- Recognised from the world tooltip (see Learn.lua); shown as their own map pins.
+local objSeen = {}
+function ns:RecordFishObject(name, guid, itemID, mapID, x, y)
+    if not ns.db or type(name) ~= "string" or name == "" then return end
+    ns.db.fishObjects = ns.db.fishObjects or {}
+    local o = ns.db.fishObjects[name]
+    if not o then o = { items = {}, zones = {} }; ns.db.fishObjects[name] = o end
+    local fk = guid .. ":" .. itemID
+    if not objSeen[fk] then objSeen[fk] = true; o.items[itemID] = (o.items[itemID] or 0) + 1 end
+    if objSeen[guid] then return end      -- the same cast, second loot event
+    objSeen[guid] = true
+    local cx, cy = math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5)
+    local z = o.zones[mapID]
+    if not z then z = {}; o.zones[mapID] = z end
+    local key = cx .. ":" .. cy
+    local c = z[key]
+    if not c then
+        c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c
+        ns:Print(ns.L("fobj_rec", name))
+    end
+    c.n = c.n + 1
+    c.last = time and time() or 0
+    ns:Fire("LEARNED_CHANGED")
+    ns:Fire("FISHOBJ_RECORDED", name, mapID, key)
 end
 
 -- known school spots of a fish: your own (db.pools) + the installed node addons
@@ -237,7 +271,11 @@ local function PoolPoints(itemID, out)
     local known = {}
     for _, id in ipairs(ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID] or {}) do known[id] = true end
     -- your own schools, then the community's (Data\Community.lua)
-    for _, pools in ipairs({ ns.db and ns.db.pools or {}, ns.Community and ns.Community.pools or {} }) do
+    local sources = { ns.db and ns.db.pools or {}, ns.Community and ns.Community.pools or {} }
+    for _, s in pairs(ns.db and ns.db.shared or {}) do
+        if type(s) == "table" and s.pools then sources[#sources + 1] = s.pools end
+    end
+    for _, pools in ipairs(sources) do
         for objID, p in pairs(pools) do
             if known[objID] or (p.fish and p.fish[itemID]) then
                 for mapID, cells in pairs(p.zones or {}) do
@@ -253,7 +291,13 @@ function ns:ExternalNodes(itemID)
     local base = baseExternal(self, itemID)
     local cat = ns.Items[itemID] and ns.Items[itemID].cat
     local cp = ns.Community and ns.Community.pools
-    if cat ~= "fishing" or not ((ns.db and ns.db.pools and next(ns.db.pools)) or (cp and next(cp))) then return base end
+    local any = (ns.db and ns.db.pools and next(ns.db.pools)) or (cp and next(cp))
+    if not any then
+        for _, s in pairs(ns.db and ns.db.shared or {}) do
+            if type(s) == "table" and s.pools and next(s.pools) then any = true; break end
+        end
+    end
+    if cat ~= "fishing" or not any then return base end
     local out = {}
     for mapID, list in pairs(base or {}) do
         local l = {}
@@ -313,4 +357,72 @@ end
 ns.CheckPools = CheckPools
 if C_Timer and C_Timer.NewTicker then
     C_Timer.NewTicker(2, function() pcall(CheckPools) end)
+end
+
+------------------------------------------------------------------------
+-- Louder bite while fishing: no addon can see the bobber splash, so while you
+-- fish, music and ambience are turned down and effects up; your own volumes
+-- come back ~20 s after your last cast. The saved volumes live in the
+-- SavedVariables, so a /reload or logout while fishing still restores them.
+------------------------------------------------------------------------
+do
+    local IDLE = 20
+    local MUSIC, AMB, SFX = "Sound_MusicVolume", "Sound_AmbienceVolume", "Sound_SFXVolume"
+    local BOOST = { [MUSIC] = "0", [AMB] = "0", [SFX] = "1" }
+    local GetCV = (C_CVar and C_CVar.GetCVar) or GetCVar
+    local SetCV = (C_CVar and C_CVar.SetCVar) or SetCVar
+    local lastCast, fishSpell = 0, nil
+
+    local function Restore()
+        local saved = ns.db and ns.db.fishSoundSaved
+        if not saved or not (GetCV and SetCV) then return end
+        for cvar, old in pairs(saved) do
+            -- only undo our own change: a volume you moved meanwhile stays yours
+            if tonumber(GetCV(cvar)) == tonumber(BOOST[cvar]) then pcall(SetCV, cvar, old) end
+        end
+        ns.db.fishSoundSaved = nil
+    end
+    ns.FishSoundRestore = Restore
+
+    local function Boost()
+        if not (GetCV and SetCV) or not ns.db then return end
+        local S = ns.db.settings
+        if not S or S.fishSound == false then return end
+        if not ns.db.fishSoundSaved then
+            local saved = {}
+            for cvar in pairs(BOOST) do
+                local v = GetCV(cvar)
+                if v == nil then return end
+                saved[cvar] = tostring(v)
+            end
+            ns.db.fishSoundSaved = saved
+            for cvar, v in pairs(BOOST) do pcall(SetCV, cvar, v) end
+            if not ns.db.fishSoundNoted then
+                ns.db.fishSoundNoted = true
+                ns:Print(L("fish_sound_note"))
+            end
+        end
+    end
+
+    local f = CreateFrame("Frame")
+    ns:SafeRegister(f, "UNIT_SPELLCAST_CHANNEL_START", "PLAYER_LOGIN", "PLAYER_LOGOUT")
+    f:SetScript("OnEvent", function(_, event, unit, _, spellID)
+        if event == "PLAYER_LOGIN" then pcall(Restore); return end      -- left over from a /reload
+        if event == "PLAYER_LOGOUT" then pcall(Restore); return end
+        if unit ~= "player" then return end
+        pcall(function()
+            local gsn = (C_Spell and C_Spell.GetSpellName) or GetSpellInfo
+            if not gsn then return end
+            fishSpell = fishSpell or ns.Plain(gsn(7620))
+            local name = spellID and ns.Plain(gsn(spellID))
+            if not (name and fishSpell and name == fishSpell) then return end
+            lastCast = GetTime()
+            Boost()
+        end)
+    end)
+    if C_Timer and C_Timer.NewTicker then
+        C_Timer.NewTicker(2, function()
+            if ns.db and ns.db.fishSoundSaved and GetTime() - lastCast > IDLE then pcall(Restore) end
+        end)
+    end
 end

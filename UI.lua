@@ -223,6 +223,7 @@ function UI:Build()
     header:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
 
     local logo = RoundIcon(header, 30)
+    self.logo = logo
     logo:SetPoint("LEFT", 16, -2)
     logo.icon:SetTexture("Interface\\Icons\\INV_Misc_Food_14")
     logo.ring:SetVertexColor(unpack(C.accent))
@@ -230,9 +231,11 @@ function UI:Build()
     local title = Font(header, "GameFontNormalLarge", 18)
     title:SetPoint("TOPLEFT", logo, "TOPRIGHT", 10, 2)
     title:SetText("|cff3fc7ebFarm|r|cffffd200Atlas|r")
+    self.title = title
     local byline = Font(header, "GameFontHighlightSmall", 10, unpack(C.muted))
     byline:SetPoint("BOTTOMLEFT", title, "BOTTOMRIGHT", 8, 2)
     byline:SetText("v" .. ns.version .. "  ·  by Shade")
+    self.byline = byline
     local sub = Font(header, "GameFontHighlightSmall", nil, unpack(C.muted))
     sub:SetPoint("BOTTOMLEFT", logo, "BOTTOMRIGHT", 10, 0)
     self.sub = sub
@@ -244,6 +247,7 @@ function UI:Build()
     close.x:SetPoint("CENTER")
     close.x:SetText("X")
     close:SetScript("OnClick", function() f:Hide() end)
+    self.closeButton = close
     close:SetScript("OnEnter", function(s) s.x:SetTextColor(1, 0.35, 0.35) end)
     close:SetScript("OnLeave", function(s) s.x:SetTextColor(unpack(C.muted)) end)
 
@@ -830,7 +834,15 @@ end
 local function GuideSub(r)
     local s = r.step
     if s.kind == "craft" then
-        local t = s.item .. (s.extra and (" + " .. s.extra) or "")
+        local mats = ns:GuideStepMats(s)
+        local t
+        if mats and s.count then
+            local parts = {}
+            for _, m in ipairs(mats) do parts[#parts + 1] = m.total .. " " .. ns:MatLabel(m.name) end
+            t = table.concat(parts, ", ")
+        else
+            t = s.item .. (s.extra and (" + " .. s.extra) or "")
+        end
         if s.count then t = t .. "  ·  " .. L("g_crafts", s.count) end
         return t
     elseif s.kind == "area" then
@@ -916,9 +928,23 @@ function UI:GuideTooltip(r)
     GameTooltip:AddLine(GuideTitle(r), 1, 0.82, 0)
     local note = ns.GuideNote(s)
     if s.kind == "craft" then
-        GameTooltip:AddLine(L("g_mats"), 1, 0.82, 0)
-        GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
-        if s.count then GameTooltip:AddLine("   " .. L("g_crafts", s.count), 0.8, 0.8, 0.8) end
+        local mats, exact = ns:GuideStepMats(s)
+        GameTooltip:AddLine(L("g_mats") .. (s.count and ("  |cffcccccc" .. L("g_crafts", s.count) .. "|r") or ""), 1, 0.82, 0)
+        if mats then
+            for _, m in ipairs(mats) do
+                local have = ns:HaveCount(m.name)
+                local right, r, g, b = "", 0.8, 0.8, 0.8
+                if have then
+                    right = L("g_have", have)
+                    if have >= (m.total or m.per or 1) then r, g, b = 0.4, 1, 0.4 else r, g, b = 1, 0.6, 0.25 end
+                end
+                GameTooltip:AddDoubleLine("   " .. (m.total and (m.total .. " x ") or "") .. ns:MatLabel(m.name) .. "  |cff999999(" .. L("g_each", m.per) .. ")|r",
+                    right, 1, 1, 1, r, g, b)
+            end
+            if exact then GameTooltip:AddLine("   " .. L("g_mats_exact"), 0.55, 0.59, 0.66, true) end
+        else
+            GameTooltip:AddLine("   " .. ns:MatLabel(s.item) .. (s.extra and (" + " .. s.extra) or ""), 1, 1, 1)
+        end
         local srcType, sources, srcNote = ns:RecipeSources(s.recipe)
         if s.trainer then
             srcType, sources = "trainer", {}
@@ -1052,6 +1078,44 @@ end
 ------------------------------------------------------------------------
 -- Detail pane
 ------------------------------------------------------------------------
+-- Put an item link into the chat input, in the chat type you are using
+-- (party, guild, whisper...): the open chat box, else the last one you typed
+-- in (it keeps its chat type), else the default one. The chat functions moved
+-- between client versions (ChatFrameUtil in the Midnight-based client,
+-- ChatEdit_* in older ones), so both are looked up.
+local function ChatFn(name)
+    local U = ChatFrameUtil
+    return (U and U[name]) or _G["ChatEdit_" .. name]
+end
+
+local function CallBox(name)
+    local fn = ChatFn(name)
+    if not fn then return end
+    local ok, eb = pcall(fn)
+    if ok and type(eb) == "table" and eb.Insert then return eb end
+end
+
+function UI:PutLinkInChat(link)
+    if type(link) ~= "string" then return false end
+    -- the search box keeps its focus after a click: a link sent while it has
+    -- focus would land in the search (shift-click helper), not in the chat
+    if self.search and self.search.ClearFocus then self.search:ClearFocus() end
+    local eb = CallBox("GetActiveWindow")
+    local active = eb ~= nil
+    eb = eb or CallBox("GetLastActiveWindow") or CallBox("ChooseBoxForSend")
+        or (DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox) or _G.ChatFrame1EditBox
+    if not eb then return false end
+    local ok = pcall(function()
+        if not active then
+            local activate = ChatFn("ActivateChat")
+            if activate then activate(eb) else eb:Show() end
+        end
+        eb:SetFocus()
+        eb:Insert(link)
+    end)
+    return ok and type(eb:GetText()) == "string" and eb:GetText():find(link, 1, true) ~= nil
+end
+
 function UI:BuildDetail(d)
     -- top block
     d.icon = RoundIcon(d, 46)
@@ -1104,8 +1168,15 @@ function UI:BuildDetail(d)
         if not id then return end
         local _, link = ns:ItemInfo(id)
         if link then
-            if ChatEdit_InsertLink and ChatEdit_InsertLink(link) then return end
-            ChatFrame_OpenChat(link)
+            UI:PutLinkInChat(link)
+        else
+            -- item not in the client cache yet: ask for it and try once more
+            local rid = ns:RealID(id)
+            if rid and C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, rid) end
+            C_Timer.After(0.5, function()
+                local _, l = ns:ItemInfo(id)
+                if l then UI:PutLinkInChat(l) end
+            end)
         end
     end)
 
@@ -1704,6 +1775,10 @@ end
 if ChatEdit_InsertLink then
     hooksecurefunc("ChatEdit_InsertLink", function(link) TypeLinkIntoSearch(link) end)
 end
+-- the Midnight-based client moved it into ChatFrameUtil
+if ChatFrameUtil and ChatFrameUtil.InsertLink then
+    hooksecurefunc(ChatFrameUtil, "InsertLink", function(link) TypeLinkIntoSearch(link) end)
+end
 -- chat links: Alt + click
 if SetItemRef then
     hooksecurefunc("SetItemRef", function(link, text)
@@ -1711,4 +1786,383 @@ if SetItemRef then
             OpenForLink(text or ("|H" .. link .. "|h[?]|h"))
         end
     end)
+end
+
+------------------------------------------------------------------------
+-- Fancy look (experimental, Settings > General > "Fancy look"): an ornate
+-- frame, a marble backdrop, the zone you stand in painted behind the header
+-- and the farm zone of the selected item behind its details. Only visuals:
+-- every widget keeps working the same; turning it off needs a /reload.
+------------------------------------------------------------------------
+do
+    local function Fancy() return not (ns.db and ns.db.settings and ns.db.settings.fancy == false) end
+
+    local function TryTexture(tex, path)
+        local ok, res = pcall(tex.SetTexture, tex, path)
+        return ok and res ~= false
+    end
+
+    -- a clipped window onto a zone's map art, centred on (cx, cy) (0..1)
+    local function MapArt(parent, level)
+        local clip = CreateFrame("Frame", nil, parent)
+        clip:SetClipsChildren(true)
+        clip:SetFrameLevel(level)
+        clip.canvas = CreateFrame("Frame", nil, clip)
+        clip.canvas:SetFrameLevel(level)
+        clip.tiles = {}
+        clip.shade = CreateFrame("Frame", nil, clip)
+        clip.shade:SetAllPoints()
+        clip.shade:SetFrameLevel(level + 1)
+        return clip
+    end
+
+    local function ShowMapArt(clip, mapID, cx, cy, zoom, alpha)
+        for _, t in ipairs(clip.tiles) do t:Hide() end
+        if not (mapID and C_Map and C_Map.GetMapArtLayers and C_Map.GetMapArtLayerTextures) then clip:Hide(); return false end
+        local ok, layers = pcall(C_Map.GetMapArtLayers, mapID)
+        local ok2, textures = pcall(C_Map.GetMapArtLayerTextures, mapID, 1)
+        local L1 = ok and layers and layers[1]
+        if not (L1 and ok2 and textures and #textures > 0 and L1.layerWidth > 0 and L1.tileWidth > 0) then clip:Hide(); return false end
+        local W, H = clip:GetWidth(), clip:GetHeight()
+        if not W or W < 10 or not H or H < 10 then clip:Hide(); return false end
+        local cols = math.ceil(L1.layerWidth / L1.tileWidth)
+        local rows = math.ceil(L1.layerHeight / L1.tileHeight)
+        local scale = math.max(W * (zoom or 1.6) / L1.layerWidth, H / L1.layerHeight)
+        local mw, mh = L1.layerWidth * scale, L1.layerHeight * scale
+        local ox = math.min(0, math.max(W - mw, W / 2 - (cx or 0.5) * mw))
+        local oy = math.min(0, math.max(H - mh, H / 2 - (cy or 0.5) * mh))
+        local cv = clip.canvas
+        cv:ClearAllPoints()
+        cv:SetPoint("TOPLEFT", clip, "TOPLEFT", ox, -oy)
+        cv:SetSize(mw, mh)
+        local tw, th = L1.tileWidth * scale, L1.tileHeight * scale
+        local i = 0
+        for r = 0, rows - 1 do
+            for c = 0, cols - 1 do
+                i = i + 1
+                local t = clip.tiles[i]
+                if not t then t = cv:CreateTexture(nil, "BACKGROUND"); clip.tiles[i] = t end
+                if textures[i] then
+                    t:SetTexture(textures[i])
+                    t:SetSize(tw, th)
+                    t:ClearAllPoints()
+                    t:SetPoint("TOPLEFT", cv, "TOPLEFT", c * tw, -r * th)
+                    t:SetAlpha(alpha or 0.5)
+                    t:Show()
+                end
+            end
+        end
+        clip:Show()
+        return true
+    end
+
+    local function Gradient(frame, layer, orient, from, to)
+        local t = frame:CreateTexture(nil, layer or "ARTWORK")
+        t:SetTexture(WHITE)
+        if t.SetGradient and CreateColor then
+            t:SetGradient(orient, CreateColor(unpack(from)), CreateColor(unpack(to)))
+        else
+            t:SetVertexColor(from[1], from[2], from[3], (from[4] + to[4]) / 2)
+        end
+        return t
+    end
+
+    -- move a widget into the layer above the art (keeps its anchors)
+    local function Lift(fg, w, base)
+        if not w then return end
+        if w.IsObjectType and w:IsObjectType("FontString") then w:SetParent(fg); return end
+        if w.SetParent then w:SetParent(fg) end
+        if w.SetFrameLevel then w:SetFrameLevel(base) end
+    end
+
+    local function PlayerSpot()
+        local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+        local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
+        local x, y = 0.5, 0.5
+        if pos then x, y = pos:GetXY() end
+        return mapID, x or 0.5, y or 0.5
+    end
+
+    local function ItemSpot(id)
+        local data = ns.Items[id]
+        if data and data.spots and data.spots[1] then
+            local s = UI:BestSpot(data)
+            local mapID = s and ns:ResolveZone(s.z)
+            if mapID then return mapID, (s.x or 50) / 100, (s.y or 50) / 100 end
+        end
+        local lz = ns.GetLearnedZones and ns:GetLearnedZones(id)[1]
+        if lz and lz.cells and lz.cells[1] then
+            local best = lz.cells[1]
+            for _, c in ipairs(lz.cells) do if (c.n or 0) > (best.n or 0) then best = c end end
+            return lz.mapID, best.x / 100, best.y / 100
+        end
+    end
+
+    local function SkinMain(self)
+        local f = self.frame
+        local base = f:GetFrameLevel()
+
+        -- marble backdrop + vignette
+        local marble = f:CreateTexture(nil, "BACKGROUND", nil, 1)
+        marble:SetPoint("TOPLEFT", 1, -1)
+        marble:SetPoint("BOTTOMRIGHT", -1, 1)
+        if TryTexture(marble, "Interface\\FrameGeneral\\UI-Background-Marble") then
+            marble:SetHorizTile(true); marble:SetVertTile(true)
+            marble:SetVertexColor(0.35, 0.42, 0.55, 0.35)
+        else
+            marble:Hide()
+        end
+        local vig = Gradient(f, "BACKGROUND", "VERTICAL", { 0, 0, 0, 0.55 }, { 0, 0, 0, 0 })
+        vig:SetPoint("BOTTOMLEFT", 1, 1); vig:SetPoint("BOTTOMRIGHT", -1, 1); vig:SetHeight(140)
+
+        -- ornate gold frame around the window
+        local border = CreateFrame("Frame", nil, f, "BackdropTemplate")
+        border:SetPoint("TOPLEFT", -6, 6)
+        border:SetPoint("BOTTOMRIGHT", 6, -6)
+        border:SetFrameLevel(base + 30)
+        border:EnableMouse(false)
+        local okB = pcall(border.SetBackdrop, border, { edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Gold-Border", edgeSize = 26 })
+        if not okB then border:Hide() end
+
+        -- the zone you are in, painted behind the header
+        local header = self.title and self.title:GetParent()
+        if header then
+            local hb = header:GetFrameLevel()
+            local art = MapArt(header, hb + 1)
+            art:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+            art:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
+            art:SetHeight(56)
+            local fade = Gradient(art.shade, "ARTWORK", "HORIZONTAL", { 0.03, 0.035, 0.05, 0.95 }, { 0.03, 0.035, 0.05, 0.35 })
+            fade:SetAllPoints()
+            local low = Gradient(art.shade, "OVERLAY", "VERTICAL", { 0.047, 0.055, 0.070, 1 }, { 0.047, 0.055, 0.070, 0 })
+            low:SetPoint("BOTTOMLEFT"); low:SetPoint("BOTTOMRIGHT"); low:SetHeight(18)
+            local line = art.shade:CreateTexture(nil, "OVERLAY")
+            line:SetTexture(WHITE); line:SetVertexColor(1, 0.82, 0, 0.35)
+            line:SetPoint("BOTTOMLEFT"); line:SetPoint("BOTTOMRIGHT"); line:SetHeight(1)
+            local fg = CreateFrame("Frame", nil, header)
+            fg:SetAllPoints(header)
+            fg:SetFrameLevel(hb + 4)
+            for _, w in ipairs({ self.title, self.byline, self.sub, self.logo }) do Lift(fg, w, hb + 5) end
+            for _, b in ipairs({ self.closeButton, self.langButton, self.gearButton, self.goalsButton, self.bestButton }) do
+                if b and b.SetFrameLevel then b:SetFrameLevel(hb + 6) end
+            end
+            self.headerArt = art
+        end
+        if self.title then
+            pcall(self.title.SetFont, self.title, "Fonts\\MORPHEUS.TTF", 24, "OUTLINE")
+            self.title:SetShadowOffset(1, -1)
+            self.title:SetShadowColor(0, 0, 0, 1)
+        end
+        if self.logo then
+            local glow = self.logo:CreateTexture(nil, "OVERLAY")
+            glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+            glow:SetBlendMode("ADD")
+            glow:SetVertexColor(0.25, 0.78, 0.92, 0.8)
+            glow:SetPoint("CENTER")
+            glow:SetSize(58, 58)
+        end
+
+        -- the farm zone of the selected item, painted behind its details
+        local d = self.detail
+        if d then
+            local db = d:GetFrameLevel()
+            local art = MapArt(d, db + 1)
+            art:SetPoint("TOPLEFT", d, "TOPLEFT", 1, -1)
+            art:SetPoint("TOPRIGHT", d, "TOPRIGHT", -1, -1)
+            art:SetPoint("BOTTOM", d.sep, "TOP", 0, 2)
+            local fade = Gradient(art.shade, "ARTWORK", "HORIZONTAL", { 0.06, 0.07, 0.09, 0.97 }, { 0.06, 0.07, 0.09, 0.30 })
+            fade:SetAllPoints()
+            local low = Gradient(art.shade, "OVERLAY", "VERTICAL", { 0.078, 0.088, 0.108, 1 }, { 0.078, 0.088, 0.108, 0 })
+            low:SetPoint("BOTTOMLEFT"); low:SetPoint("BOTTOMRIGHT"); low:SetHeight(26)
+            art.zone = art.shade:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            art.zone:SetPoint("BOTTOMRIGHT", -10, 8)
+            art.zone:SetTextColor(1, 0.82, 0, 0.9)
+            pcall(art.zone.SetFont, art.zone, "Fonts\\MORPHEUS.TTF", 13, "OUTLINE")
+            art:Hide()
+            local fg = CreateFrame("Frame", nil, d)
+            fg:SetAllPoints(d)
+            fg:SetFrameLevel(db + 4)
+            for _, w in ipairs({ d.name, d.badge, d.inv, d.uses, d.goalLabel, d.welcome }) do Lift(fg, w) end
+            for _, w in ipairs({ d.icon, d.goalBtn, d.goalEdit, d.track, d.open, d.link }) do Lift(fg, w, db + 5) end
+            -- bigger, glowing item icon
+            if d.icon then
+                d.icon.glow = d.icon:CreateTexture(nil, "OVERLAY")
+                d.icon.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+                d.icon.glow:SetBlendMode("ADD")
+                d.icon.glow:SetPoint("CENTER")
+                d.icon.glow:SetSize(88, 88)
+            end
+            if d.name then
+                local path, _, flags = d.name:GetFont()
+                pcall(d.name.SetFont, d.name, path, 18, flags)
+                d.name:SetShadowOffset(1, -1)
+            end
+            self.detailArt = art
+        end
+
+        f:HookScript("OnShow", function()
+            if self.headerArt then
+                local m, x, y = PlayerSpot()
+                ShowMapArt(self.headerArt, m, x, y, 1.15, 0.55)
+            end
+        end)
+    end
+
+    --------------------------------------------------------------------
+    -- Profession themes: every profession (Atlas filters, Recipes, Guide
+    -- tabs) gets its own colour wash and a still life of its own icons in
+    -- the corner, plus its name in the header - you always see which tab
+    -- you are on. Overlay only (no mouse), so nothing under it changes.
+    --------------------------------------------------------------------
+    local THEMES = {
+        cooking        = { "Interface\\Icons\\INV_Misc_Food_15", "Interface\\Icons\\Spell_Fire_Fire", "Interface\\Icons\\INV_Misc_Food_14", "Interface\\Icons\\INV_Misc_Food_19" },
+        fishing        = { "Interface\\Icons\\Trade_Fishing", "Interface\\Icons\\INV_Misc_Fish_02", "Interface\\Icons\\INV_Misc_Fish_14", "Interface\\Icons\\INV_Misc_Fish_09" },
+        skinning       = { "Interface\\Icons\\INV_Misc_Pelt_Wolf_01", "Interface\\Icons\\INV_Misc_LeatherScrap_02", "Interface\\Icons\\INV_Misc_Pelt_Bear_01", "Interface\\Icons\\INV_Weapon_ShortBlade_01" },
+        mining         = { "Interface\\Icons\\Trade_Mining", "Interface\\Icons\\INV_Ore_Copper_01", "Interface\\Icons\\INV_Ore_Iron_01", "Interface\\Icons\\INV_Ingot_03" },
+        herbalism      = { "Interface\\Icons\\Trade_Herbalism", "Interface\\Icons\\INV_Misc_Flower_02", "Interface\\Icons\\INV_Misc_Herb_07", "Interface\\Icons\\INV_Misc_Herb_01" },
+        alchemy        = { "Interface\\Icons\\Trade_Alchemy", "Interface\\Icons\\INV_Potion_51", "Interface\\Icons\\INV_Potion_11", "Interface\\Icons\\INV_Potion_76" },
+        blacksmithing  = { "Interface\\Icons\\Trade_BlackSmithing", "Interface\\Icons\\INV_Hammer_20", "Interface\\Icons\\INV_Ingot_05", "Interface\\Icons\\INV_Stone_GrindingStone_01" },
+        engineering    = { "Interface\\Icons\\Trade_Engineering", "Interface\\Icons\\INV_Gizmo_01", "Interface\\Icons\\INV_Misc_Gear_01", "Interface\\Icons\\INV_Misc_Bomb_08" },
+        enchanting     = { "Interface\\Icons\\Trade_Engraving", "Interface\\Icons\\INV_Enchant_DustArcane", "Interface\\Icons\\INV_Enchant_EssenceMagicLarge", "Interface\\Icons\\INV_Enchant_ShardBrilliantLarge" },
+        leatherworking = { "Interface\\Icons\\Trade_LeatherWorking", "Interface\\Icons\\INV_Misc_LeatherScrap_03", "Interface\\Icons\\INV_Misc_Pelt_Bear_03", "Interface\\Icons\\INV_Chest_Leather_09" },
+        tailoring      = { "Interface\\Icons\\Trade_Tailoring", "Interface\\Icons\\INV_Fabric_Linen_01", "Interface\\Icons\\INV_Fabric_Silk_01", "Interface\\Icons\\INV_Misc_Bag_09" },
+        firstaid       = { "Interface\\Icons\\Spell_Holy_SealOfSacrifice", "Interface\\Icons\\INV_Misc_Bandage_15", "Interface\\Icons\\INV_Misc_Bandage_12", "Interface\\Icons\\INV_Potion_51" },
+    }
+
+    local function ThemeKey(self)
+        local sec = ns:SectionOf(self.cat)
+        if sec == "guide" then return ns.db and ns.db.settings.guideProf or "cooking" end
+        if sec == "recipes" then return "cooking" end
+        if sec == "atlas" and self.cat ~= "all" then return self.cat end
+    end
+
+    local function BuildTheme(self)
+        local f = self.frame
+        local th = CreateFrame("Frame", nil, f)
+        th:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -56)
+        th:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+        th:SetFrameLevel(f:GetFrameLevel() + 25)
+        th:EnableMouse(false)
+        -- colour wash rising from the bottom
+        th.wash = th:CreateTexture(nil, "BACKGROUND")
+        th.wash:SetTexture(WHITE)
+        th.wash:SetPoint("BOTTOMLEFT"); th.wash:SetPoint("BOTTOMRIGHT")
+        th.wash:SetHeight(170)
+        th.wash:SetBlendMode("ADD")
+        -- thin profession-coloured line under the header
+        th.line = th:CreateTexture(nil, "ARTWORK")
+        th.line:SetTexture(WHITE)
+        th.line:SetPoint("TOPLEFT"); th.line:SetPoint("TOPRIGHT"); th.line:SetHeight(2)
+        -- still life in the bottom-right corner
+        th.icons = {}
+        local spots = { { 230, -18, 2, 0.11 }, { 84, -230, 116, 0.09 }, { 70, -150, 6, 0.08 }, { 60, -56, 196, 0.07 } }
+        for i, sp in ipairs(spots) do
+            local tx = th:CreateTexture(nil, "ARTWORK")
+            tx:SetSize(sp[1], sp[1])
+            tx:SetPoint("BOTTOMRIGHT", th, "BOTTOMRIGHT", sp[2], sp[3] + 40)
+            tx:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            tx:SetAlpha(sp[4])
+            th.icons[i] = tx
+        end
+        -- the profession's own illustration (Media/Themes/<key>.tga), glowing
+        -- over the panel (additive: its dark parts vanish, its lights shine)
+        th.art = th:CreateTexture(nil, "OVERLAY")
+        th.art:SetSize(520, 260)
+        th.art:SetPoint("BOTTOMRIGHT", th, "BOTTOMRIGHT", -6, 38)
+        th.art:SetBlendMode("ADD")
+        th.art:SetAlpha(0.62)
+        th:Hide()
+        self.theme = th
+        -- the profession's name and icon in the header
+        local header = self.title and self.title:GetParent()
+        if header then
+            local badge = CreateFrame("Frame", nil, header)
+            badge:SetSize(200, 24)
+            if self.bestButton then badge:SetPoint("RIGHT", self.bestButton, "LEFT", -14, 0)
+            else badge:SetPoint("CENTER", header, "CENTER", 40, -2) end
+            badge:SetFrameLevel(header:GetFrameLevel() + 6)
+            badge.icon = badge:CreateTexture(nil, "OVERLAY")
+            badge.icon:SetSize(22, 22)
+            badge.icon:SetPoint("RIGHT", badge, "RIGHT", 0, 0)
+            badge.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            badge.text = badge:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+            badge.text:SetPoint("RIGHT", badge.icon, "LEFT", -6, 0)
+            badge.text:SetJustifyH("RIGHT")
+            pcall(badge.text.SetFont, badge.text, "Fonts\\MORPHEUS.TTF", 17, "OUTLINE")
+            badge:Hide()
+            self.themeBadge = badge
+        end
+    end
+
+    function UI:ApplyTheme()
+        local th = self.theme
+        if not th then return end
+        local key = ThemeKey(self)
+        local icons = key and THEMES[key]
+        if not icons then
+            th:Hide()
+            if self.themeBadge then self.themeBadge:Hide() end
+            return
+        end
+        local c = ns.CAT_COLORS[key] or ns.CAT_COLORS.learned or { 1, 1, 1 }
+        if th.wash.SetGradient and CreateColor then
+            th.wash:SetGradient("VERTICAL", CreateColor(c[1], c[2], c[3], 0.16), CreateColor(c[1], c[2], c[3], 0))
+        else
+            th.wash:SetVertexColor(c[1], c[2], c[3], 0.08)
+        end
+        th.line:SetVertexColor(c[1], c[2], c[3], 0.7)
+        local hasArt = TryTexture(th.art, "Interface\\AddOns\\FarmAtlas\\Media\\Themes\\" .. key)
+        th.art:SetShown(hasArt)
+        for i, tx in ipairs(th.icons) do
+            tx:SetTexture(icons[i] or icons[1])
+            tx:SetShown(not hasArt)          -- the icon still life only if the picture is missing
+        end
+        th:Show()
+        local badge = self.themeBadge
+        if badge then
+            badge.icon:SetTexture(ns.Guides[key] and ns.Guides[key].icon or icons[1])
+            badge.text:SetText(L("cat_" .. key))
+            badge.text:SetTextColor(c[1], c[2], c[3])
+            badge:Show()
+        end
+    end
+
+    local origChips = UI.RefreshChips
+    function UI:RefreshChips(...)
+        origChips(self, ...)
+        if self.theme then pcall(self.ApplyTheme, self) end
+    end
+
+    local origBuild = UI.Build
+    function UI:Build()
+        local first = not self.frame
+        origBuild(self)
+        if first and self.frame and Fancy() then
+            local ok, err = pcall(SkinMain, self)
+            if not ok and ns.Print then ns:Print("Fancy look: " .. tostring(err)) end
+            ok, err = pcall(BuildTheme, self)
+            if not ok and ns.Print then ns:Print("Fancy look: " .. tostring(err)) end
+            pcall(self.ApplyTheme, self)
+        end
+    end
+
+    local origDetail = UI.RefreshDetail
+    function UI:RefreshDetail()
+        origDetail(self)
+        local art, d = self.detailArt, self.detail
+        if not (art and d) then return end
+        pcall(function()
+            local id = self.selected
+            if id == nil then art:Hide(); return end
+            local mapID, x, y = ItemSpot(id)
+            if not mapID or not ShowMapArt(art, mapID, x, y, 1.9, 0.6) then art:Hide(); return end
+            local info = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
+            art.zone:SetText(info and info.name or "")
+            if d.icon and d.icon.glow then
+                local _, quality = ns:GetItemName(id)
+                local qc = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
+                if qc then d.icon.glow:SetVertexColor(qc.r, qc.g, qc.b, 0.9) else d.icon.glow:SetVertexColor(1, 1, 1, 0.6) end
+            end
+        end)
+    end
 end

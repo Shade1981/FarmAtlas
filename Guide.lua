@@ -4,7 +4,7 @@ local L = ns.L
 
 local PROF_NAMES = { cooking = "Cooking", fishing = "Fishing", skinning = "Skinning", leatherworking = "Leatherworking",
     firstaid = "First Aid", alchemy = "Alchemy", tailoring = "Tailoring", herbalism = "Herbalism", mining = "Mining",
-    blacksmithing = "Blacksmithing", engineering = "Engineering" }
+    blacksmithing = "Blacksmithing", engineering = "Engineering", enchanting = "Enchanting" }
 
 -- highest skill of each rank: a trainer must reach it to teach that rank
 local RANK_CAP = { Apprentice = 75, Journeyman = 150, Expert = 225, Artisan = 300 }
@@ -76,11 +76,48 @@ function ns:RecordTrainerPos(npc, mapID, x, y)
     if not (npc and mapID and x and y and self.db) then return end
     self.db.trainerPos = self.db.trainerPos or {}
     self.db.trainerPos[npc] = { mapID = mapID, x = x, y = y }
+    ns:Fire("TRAINER_POS", npc)
 end
 
 -- Trainers for a profession, filtered to your faction (neutral = both),
 -- with coordinates where known. Your current zone first.
 -- need: only trainers who can train up to this skill (t.max; nil max = no limit)
+-- materials of a craft step: per craft and in total (per craft x crafts).
+-- Your profession window's exact reagents (scanned) win over the built-in list.
+function ns:GuideStepMats(s)
+    if not (s and s.kind == "craft" and s.recipe) then return end
+    local base = (ns.GuideMats and ns.GuideMats[s.recipe])
+        or (ns.RecipeInfo and ns.RecipeInfo[s.recipe] and ns.RecipeInfo[s.recipe].mats)
+    local scanned = self.db and self.db.recipeReagents and self.db.recipeReagents[s.recipe]
+    local list, exact = {}, false
+    if scanned and next(scanned) then
+        exact = true
+        local seen = {}
+        for _, m in ipairs(base or {}) do
+            if scanned[m[1]] then list[#list + 1] = { name = m[1], per = scanned[m[1]] }; seen[m[1]] = true end
+        end
+        local rest = {}
+        for n, q in pairs(scanned) do if not seen[n] then rest[#rest + 1] = { name = n, per = q } end end
+        table.sort(rest, function(x, y) return x.name < y.name end)
+        for _, m in ipairs(rest) do list[#list + 1] = m end
+    elseif base then
+        for _, m in ipairs(base) do list[#list + 1] = { name = m[1], per = m[2] } end
+    else
+        return
+    end
+    -- no craft count: only the per-craft amounts are known (total stays nil)
+    for _, m in ipairs(list) do m.total = s.count and (tonumber(m.per) or 1) * s.count or nil end
+    return list, exact
+end
+
+-- how many of a material you have (bags + bank), nil if the client cannot tell
+function ns:HaveCount(name)
+    local fn = (C_Item and C_Item.GetItemCount) or GetItemCount
+    if not fn or not name then return end
+    local ok, n = pcall(fn, name, true)
+    if ok and type(n) == "number" then return n end
+end
+
 function ns:GuideTrainers(prof, list, need)
     local g = self.Guides[prof]
     if not g then return {} end
@@ -100,6 +137,11 @@ function ns:GuideTrainers(prof, list, need)
                 local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID, max = t.max }
                 local learned = (self.db and self.db.trainerPos and self.db.trainerPos[t.npc])
                     or (ns.Community and ns.Community.trainerPos and ns.Community.trainerPos[t.npc])
+                if not learned then
+                    for _, sh in pairs(self.db and self.db.shared or {}) do
+                        if type(sh) == "table" and sh.trainerPos and sh.trainerPos[t.npc] then learned = sh.trainerPos[t.npc]; break end
+                    end
+                end
                 if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
                 if not e.x then
                     -- the same NPC may have coordinates in the recipe data

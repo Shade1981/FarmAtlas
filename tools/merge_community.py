@@ -96,7 +96,7 @@ def load_community(path):
     if not path or not os.path.exists(path): return None
     src = open(path, encoding='utf-8', errors='replace').read()
     out = {}
-    for name in ('', '.recipes', '.pools', '.trainerPos'):
+    for name in ('', '.recipes', '.pools', '.trainerPos', '.fishObjects'):
         m = re.search(r'ns\.Community' + re.escape(name) + r'\s*=\s*', src)
         if m:
             rest = src[m.end():]
@@ -162,7 +162,7 @@ def merge(files):
             take_player(store, origin, s.get('items'), s.get('kills'))
 
     # recipe sources (trainer / vendor / drop), fishing schools, trainer positions
-    recipes, pools, tpos = {}, {}, {}
+    recipes, pools, tpos, fobjs = {}, {}, {}, {}
     def add_src(recipe, s):
         if not isinstance(s, dict) or not recipe: return
         typ, npc = s.get('type'), s.get('npc')
@@ -208,7 +208,52 @@ def merge(files):
             if isinstance(tp, dict):
                 try: tpos[str(npc)] = {'mapID': int(tp['mapID']), 'x': round(float(tp['x']), 1), 'y': round(float(tp['y']), 1)}
                 except (KeyError, TypeError, ValueError): pass
-    merge.extra = (recipes, pools, tpos)
+        def add_obj(name, ob, own):
+            if not isinstance(ob, dict) or not isinstance(name, str) or not (2 <= len(name) <= 40): return
+            o = fobjs.setdefault(name, {'items': {}, 'zones': {}})
+            for iid, n in (ob.get('items') or {}).items():
+                try: iid, n = int(iid), int(n)
+                except (TypeError, ValueError): continue
+                o['items'][iid] = o['items'].get(iid, 0) + n if own else max(o['items'].get(iid, 0), n)
+            for mapID, cells in (ob.get('zones') or {}).items():
+                try: z = o['zones'].setdefault(int(mapID), {})
+                except (TypeError, ValueError): continue
+                for c in (cells or {}).values():
+                    if not isinstance(c, dict): continue
+                    try: x, y, n = float(c.get('x')), float(c.get('y')), int(c.get('n') or 1)
+                    except (TypeError, ValueError): continue
+                    ck = '%d:%d' % (round(x), round(y))
+                    oc = z.get(ck)
+                    if not oc: z[ck] = {'x': round(x, 1), 'y': round(y, 1), 'n': n}
+                    elif own: oc['n'] += n
+                    else: oc['n'] = max(oc['n'], n)
+        for name, ob in (db.get('fishObjects') or {}).items(): add_obj(name, ob, True)
+        # what guild / group members sent you (by maximum: their own file may come too)
+        for sender, sp in (db.get('shared') or {}).items():
+            if not isinstance(sp, dict): continue
+            for name, ob in (sp.get('fishObjects') or {}).items(): add_obj(name, ob, False)
+            for npc, tp in (sp.get('trainerPos') or {}).items():
+                if isinstance(tp, dict) and str(npc) not in tpos:
+                    try: tpos[str(npc)] = {'mapID': int(tp['mapID']), 'x': round(float(tp['x']), 1), 'y': round(float(tp['y']), 1)}
+                    except (KeyError, TypeError, ValueError): pass
+            for objID, pl in (sp.get('pools') or {}).items():
+                try: objID = int(objID)
+                except (TypeError, ValueError): continue
+                if not isinstance(pl, dict): continue
+                o = pools.setdefault(objID, {'fish': {}, 'zones': {}})
+                for fid in (pl.get('fish') or {}):
+                    try: o['fish'].setdefault(int(fid), 1)
+                    except (TypeError, ValueError): pass
+                for mapID, cells in (pl.get('zones') or {}).items():
+                    z = o['zones'].setdefault(int(mapID), {})
+                    for c in (cells or {}).values():
+                        if not isinstance(c, dict): continue
+                        try: x, y, n = float(c.get('x')), float(c.get('y')), int(c.get('n') or 1)
+                        except (TypeError, ValueError): continue
+                        ck = '%d:%d' % (round(x), round(y))
+                        oc = z.get(ck)
+                        if not oc or n > oc['n']: z[ck] = {'x': round(x, 1), 'y': round(y, 1), 'n': n}
+    merge.extra = (recipes, pools, tpos, fobjs)
 
     items, kills = {}, {}
     for p in store.values():
@@ -254,7 +299,7 @@ def merge(files):
                 o = out['mobs'].get(npcID)
                 if not o or int(m['n']) > o['n']:
                     out['mobs'][npcID] = {'n': int(m['n']), 'lvl': m.get('lvl'), 'name': m.get('name')}
-        recipes, pools, tpos = merge.extra
+        recipes, pools, tpos, fobjs = merge.extra
         for r, lst in (base.get('.recipes') or {}).items():
             for e in lst.values() if isinstance(lst, dict) else lst:
                 have = recipes.setdefault(r, [])
@@ -272,6 +317,15 @@ def merge(files):
                     if not oc or c['n'] > oc['n']: z[ck] = {'x': c['x'], 'y': c['y'], 'n': int(c['n'])}
         for npc, tp in (base.get('.trainerPos') or {}).items():
             tpos.setdefault(npc, {'mapID': int(tp['mapID']), 'x': tp['x'], 'y': tp['y']})
+        for name, ob in (base.get('.fishObjects') or {}).items():
+            o = fobjs.setdefault(name, {'items': {}, 'zones': {}})
+            for iid, n in (ob.get('items') or {}).items():
+                iid = key_norm(iid); o['items'][iid] = max(o['items'].get(iid, 0), int(n))
+            for mapID, cells in (ob.get('zones') or {}).items():
+                z = o['zones'].setdefault(key_norm(mapID), {})
+                for ck, c in cells.items():
+                    oc = z.get(ck)
+                    if not oc or c['n'] > oc['n']: z[ck] = {'x': c['x'], 'y': c['y'], 'n': int(c['n'])}
     # drop empty items
     items = {k: v for k, v in items.items() if v['zones'] or v['mobs']}
     return items, kills, players
@@ -308,7 +362,7 @@ def write(items, kills, players, out):
             L.append('    [%d] = { n = %d%s },' % (npcID, m['n'], extra))
         L.append('  } },')
     L.append('} }')
-    recipes, pools, tpos = getattr(merge, 'extra', ({}, {}, {}))
+    recipes, pools, tpos, fobjs = getattr(merge, 'extra', ({}, {}, {}, {}))
     L.append('-- where recipes are taught / sold / dropped, as players saw it')
     L.append('ns.Community.recipes = {')
     for r in sorted(recipes):
@@ -337,6 +391,17 @@ def write(items, kills, players, out):
         tp = tpos[npc]
         L.append('  [%s] = { mapID = %d, x = %s, y = %s },' % (lua_str(npc), tp['mapID'], tp['x'], tp['y']))
     L.append('}')
+    L.append('-- fishable wreckage / debris players fished from')
+    L.append('ns.Community.fishObjects = {')
+    for name in sorted(fobjs):
+        ob = fobjs[name]
+        its = ', '.join('[%d] = %d' % (k, v) for k, v in sorted(ob['items'].items()))
+        zs = []
+        for mapID in sorted(ob['zones']):
+            cells = ', '.join('[%s] = { x = %s, y = %s, n = %d }' % (lua_str(ck), c['x'], c['y'], c['n']) for ck, c in sorted(ob['zones'][mapID].items()))
+            zs.append('[%d] = { %s }' % (mapID, cells))
+        L.append('  [%s] = { items = { %s }, zones = { %s } },' % (lua_str(name), its, ', '.join(zs)))
+    L.append('}')
     open(out, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
 
 if __name__ == '__main__':
@@ -348,5 +413,5 @@ if __name__ == '__main__':
     merge.base = a.base or a.out
     items, kills, players = merge(a.files)
     write(items, kills, players, a.out)
-    r, pl, tp = getattr(merge, 'extra', ({}, {}, {}))
-    print('players: %d  items: %d  npcs with kill counts: %d  recipes: %d  schools: %d  trainers: %d  -> %s' % (players, len(items), len(kills), len(r), len(pl), len(tp), a.out))
+    r, pl, tp, fo = getattr(merge, 'extra', ({}, {}, {}, {}))
+    print('players: %d  items: %d  npcs with kill counts: %d  recipes: %d  schools: %d  trainers: %d  fishable objects: %d  -> %s' % (players, len(items), len(kills), len(r), len(pl), len(tp), len(fo), a.out))

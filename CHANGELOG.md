@@ -1,3 +1,15 @@
+# FarmAtlas 1.6.0 - The Complete Atlas
+
+- New: every crafting guide step lists its exact materials in total (per craft x crafts) and how many you have; reagents per craft from the metabot.gg and seemeta.com recipe tables (both read from the Forever client), cross-checked with the wow-professions.com totals. Your own profession window's reagents win once you know the recipe
+- New: Enchanting 1-300 guide (12 professions now). Route from wow-professions.com Forever, cross-checked with method.gg and rankedboost.com - only steps at least two of them agree on. Trainers filtered by the rank they really teach (in-game titles); Annora (Uldaman) is the only Artisan trainer. Positions, Mote of Magic and formula vendors from the Questie Forever database
+- Fixed: fishing schools were never recorded in WoW Forever - the client reports the bobber as the loot source even for a school. Schools are now recognised from the world tooltip ("Oily Blackmouth School"): after you move the mouse onto a school once, the catches nearby (45 s, renewed by every catch) are saved as a school spot, shown on the map and used by the school alert. A chat line tells you when a new school spot is recorded
+- New: fishable wreckage, debris and oil spills are recorded too - recognised from the tooltip (English names, or any object under the mouse while you cast). Each spot is shown on the world map with what you caught there. Settings > Map & minimap
+- Sync: fishing schools (P), fishable wreckage spots and catches (O/Q) and trainer positions (T) are shared with guild / group members too; older versions ignore the new messages. The release's community data now also carries wreckage spots
+- Restore after a reinstall: a restore that is still running stays open past the first 15 minutes (closes after 2 minutes of silence, at most 1 hour)
+- Fixed: shift-clicking an item link into the FarmAtlas search box works with the Midnight-based chat (ChatFrameUtil)
+- Community data: 4 players, 56 items, 51 NPCs with kill counts, 5 recipe sources, 2 fishing schools, 3 trainer positions
+- New: louder bite while fishing - music and ambience are turned down and effects up while you fish; your own volumes come back 20 seconds after your last cast, also after a /reload or logout. Settings > Map & minimap
+
 # FarmAtlas 1.5.1
 
 - Fixed: fighting with the world map open could print "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()" - during combat FarmAtlas no longer acquires or releases map pins (that tainted the map canvas and Blizzard's own pins were then blocked); it hides its pins if you switch maps in combat and redraws them right after the fight. Switching the map from FarmAtlas during combat waits until the fight is over. Thanks to laykes for the report
