@@ -128,6 +128,27 @@ end
 ------------------------------------------------------------------------
 local queue, queued = {}, {}
 
+------------------------------------------------------------------------
+-- newer version seen on another player: tell the player once per session
+------------------------------------------------------------------------
+local function VerNum(v)
+    local a, b, c = tostring(v or ""):match("^(%d+)%.(%d+)%.(%d+)$")
+    if not a then return nil end
+    a, b, c = tonumber(a), tonumber(b), tonumber(c)
+    if a > 99 or b > 99 or c > 99 then return nil end
+    return a * 10000 + b * 100 + c
+end
+local updateTold = false
+local function SeenVersion(v)
+    if updateTold or not v then return end
+    local theirs, mine = VerNum(v), VerNum(ns.version)
+    if not (theirs and mine) or theirs <= mine then return end
+    if theirs >= mine + 20000 then return end          -- more than one major ahead: not believable
+    updateTold = true
+    C_Timer.After(5, function() ns:Print(L("update_avail", v, ns.version or "?")) end)
+end
+ns.SyncSeenVersion = SeenVersion
+
 local recentSent = {}                   -- [full message] = time we sent it (echo detection)
 local selfFull = nil                    -- our name as others see it (WoW Forever: "First Last")
 local sentCount = 0
@@ -621,7 +642,7 @@ local function SayHello()
     local items, recipes = OwnCounts()
     local names = {}
     for _, n in ipairs(MyNames()) do names[#names + 1] = Clean(n) end
-    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ",") }, SEP)
+    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ","), tostring(ns.version or "") }, SEP)
     if #msg > MAX_LEN then return end
     helloAt = GetTime()
     MarkSent(PROTO .. SEP .. msg)
@@ -674,6 +695,7 @@ end
 
 -- someone said hello: if we hold more of their own finds than they have, send them back
 local function HandleHello(f, channel, sender, short)
+    SeenVersion(f[5])
     local theirItems, theirRecipes = tonumber(f[2]) or 0, tonumber(f[3]) or 0
     if rqTarget then return end                      -- one restore at a time
     for name in (f[4] or ""):gmatch("[^,]+") do
@@ -794,6 +816,7 @@ ns.SyncRestore = { Hello = SayHello, HandleHello = HandleHello, HandleRestore = 
     Send = SendRestoreNext, Names = MyNames, State = function() return rq, rqTarget end }
 
 local Dev = {}
+local ValidCollectorFn
 
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
@@ -817,7 +840,10 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     table.remove(f, 1)
     -- the shared data channel only carries the collector's "I am here"
     if channel == "CHANNEL" then
-        if f[1] == "CH" then Dev.OnCollector(sender, short) end
+        if f[1] == "CH" then
+            if ValidCollectorFn and ValidCollectorFn(sender, short) then SeenVersion(f[2]) end
+            Dev.OnCollector(sender, short)
+        end
         return
     end
     if channel == "WHISPER" and Dev.IsCollector() then Dev.Got(short, f[1]) end
@@ -904,6 +930,7 @@ local function ValidCollector(sender, short)
     end
     return Check(sender) or Check(short)
 end
+ValidCollectorFn = ValidCollector
 
 local devTarget, devSeen, devAway = nil, nil, true
 local devQ, devQueued = {}, {}
@@ -1104,8 +1131,9 @@ local function CollectorHello()
     if InCombatLockdown and InCombatLockdown() then return end
     local id = ChannelID()
     if not id then JoinDev(); return end
-    MarkSent(PROTO .. SEP .. "CH")
-    if pcall(C_ChatInfo.SendAddonMessage, PREFIX, PROTO .. SEP .. "CH", "CHANNEL", id) then
+    local msg = PROTO .. SEP .. "CH" .. SEP .. tostring(ns.version or "")
+    MarkSent(msg)
+    if pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "CHANNEL", id) then
         helloSent, helloLast = helloSent + 1, GetTime()
     end
 end

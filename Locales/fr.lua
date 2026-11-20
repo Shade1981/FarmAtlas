@@ -128,6 +128,7 @@ ns.Locales.fr = {
     op_devshare_hint = "Tant que l'auteur de l'addon est connecté sur votre royaume, vos découvertes (zones de farm, butins, sources de recettes, coins de pêche, entraîneurs) sont envoyées à ce seul personnage, pour être incluses dans la prochaine version pour tous. Uniquement des données de jeu, rien de personnel",
     dev_note = "FarmAtlas : pour aider la base communautaire, vos découvertes (données de jeu uniquement) sont envoyées au personnage de l'auteur de l'addon quand il est connecté sur votre royaume. Désactivable dans les options.",
     dev_got = "FarmAtlas : données communautaires reçues de %s.",
+    update_avail = "Une version plus récente de FarmAtlas (%s) est sortie - vous avez la %s. Mettez-la à jour dans l'application CurseForge, puis relancez le jeu.",
     fobj_rec      = "Lieu de pêche %s enregistré - il apparaîtra sur la carte",
     fobj_tip      = "Objet pêchable - vous avez pêché ici %d fois. Pris ici :",
     op_fancy      = "Apparence ornée (expérimental)",

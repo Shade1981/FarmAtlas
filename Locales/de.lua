@@ -128,6 +128,7 @@ ns.Locales.de = {
     op_devshare_hint = "Solange der Addon-Autor auf deinem Realm online ist, werden deine Funde (Farmorte, Beute, Rezeptquellen, Angelplätze, Lehrer) nur an diesen Charakter gesendet, damit sie in der nächsten Version für alle enthalten sind. Nur Spieldaten, nichts Persönliches",
     dev_note = "FarmAtlas: Zur Unterstützung der Community-Datenbank werden deine Funde (nur Spieldaten) an den Charakter des Addon-Autors gesendet, solange er auf deinem Realm online ist. In den Optionen abschaltbar.",
     dev_got = "FarmAtlas: Community-Daten kommen von %s.",
+    update_avail = "Eine neuere FarmAtlas-Version (%s) ist da - du hast %s. Aktualisiere sie in der CurseForge-App und starte das Spiel neu.",
     fobj_rec      = "Angelplatz %s gespeichert - er wird auf der Karte angezeigt",
     fobj_tip      = "Angelbares Objekt - du hast hier %d-mal geangelt. Hier gefangen:",
     op_fancy      = "Verziertes Aussehen (experimentell)",
