@@ -76,6 +76,7 @@ function ns:RecordTrainerPos(npc, mapID, x, y)
     if not (npc and mapID and x and y and self.db) then return end
     self.db.trainerPos = self.db.trainerPos or {}
     self.db.trainerPos[npc] = { mapID = mapID, x = x, y = y }
+    ns:Fire("TRAINER_POS", npc)
 end
 
 -- Trainers for a profession, filtered to your faction (neutral = both),
@@ -136,6 +137,11 @@ function ns:GuideTrainers(prof, list, need)
                 local e = { npc = t.npc, zone = t.zone, x = t.x, y = t.y, note = t.note, faction = t.faction, mapID = t.mapID, max = t.max }
                 local learned = (self.db and self.db.trainerPos and self.db.trainerPos[t.npc])
                     or (ns.Community and ns.Community.trainerPos and ns.Community.trainerPos[t.npc])
+                if not learned then
+                    for _, sh in pairs(self.db and self.db.shared or {}) do
+                        if type(sh) == "table" and sh.trainerPos and sh.trainerPos[t.npc] then learned = sh.trainerPos[t.npc]; break end
+                    end
+                end
                 if learned then e.mapID, e.x, e.y, e.learned = learned.mapID, learned.x, learned.y, true end
                 if not e.x then
                     -- the same NPC may have coordinates in the recipe data

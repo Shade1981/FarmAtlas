@@ -14,6 +14,11 @@
 --   M^key^npcID^n^lvl^name                  how often an NPC dropped the item
 --   K^npcID^n                               how many of that NPC were killed
 --   R^recipe^type^npc^mapID^x^y^fac^copper  where a recipe is sold / drops
+--   P^objID^fish,fish^mapID^ck,x,y,n;...   fishing school spots
+--   O^name^mapID^ck,x,y,n;...              fishable wreckage / debris spots
+--   Q^name^itemID:n,itemID:n...            what was fished from that object
+--   T^npc^mapID^x^y                        a profession trainer's position
+-- (older versions ignore P/O/Q/T, so they can be mixed freely)
 --
 -- Restore (fresh install / new computer): at login you say hello
 --   H^items^recipes^Name1,Name2           your own counts and your characters
@@ -40,13 +45,18 @@ local MAX_RECIPES_PER_PLAYER = 300
 local MAX_SOURCES_PER_RECIPE = 4
 local VALID_SRC = { vendor = true, drop = true }
 local HELLO_DELAYS = { 20, 300 }   -- seconds after login: say hello (twice, for late roster)
-local RESTORE_WINDOW = 900         -- restore messages are accepted this long after our hello
+local RESTORE_WINDOW = 900         -- a restore must start this long after our hello
+local RESTORE_IDLE = 120           -- ...and, once it runs, it stays open while messages keep coming
+local RESTORE_MAX = 3600           -- hard limit after our hello, however long a restore runs
 local MAX_RESTORE_MSGS = 3000      -- per restoring player and session
 local MAX_RESTORE_ITEMS = 1000
 
 local Sync = {}
 ns.Sync = Sync
 
+local MAX_POOLS_PER_PLAYER = 200
+local MAX_OBJS_PER_PLAYER = 100
+local MAX_TRAINERS_PER_PLAYER = 200
 local VALID_CAT = { cooking = true, skinning = true, fishing = true, mining = true, herbalism = true, learned = true }
 
 ------------------------------------------------------------------------
@@ -204,6 +214,70 @@ local function QueueRecipeSource(recipe, src)
     }, SEP))
 end
 
+local function CellParts(head, cells, idPrefix, onlyCell)
+    local parts, len, chunk = {}, #head, 0
+    local function flush()
+        if #parts == 0 then return end
+        chunk = chunk + 1
+        Enqueue(idPrefix .. ":" .. (onlyCell or chunk), head .. table.concat(parts, ";"))
+        wipe(parts); len = #head
+    end
+    for ck, c in pairs(cells) do
+        if not onlyCell or ck == onlyCell then
+            local s = ck .. "," .. Fmt(c.x) .. "," .. Fmt(c.y) .. "," .. math.floor(c.n or 1)
+            if len + #s + 1 > MAX_LEN then flush() end
+            parts[#parts + 1] = s
+            len = len + #s + 1
+        end
+    end
+    flush()
+end
+
+local function QueuePool(objID, mapID, onlyCell)
+    local p = ns.db.pools and ns.db.pools[objID]
+    local cells = p and p.zones and p.zones[mapID]
+    if not cells then return end
+    local fish = {}
+    for id in pairs(p.fish or {}) do
+        if #fish < 5 then fish[#fish + 1] = tostring(id) end
+    end
+    if #fish == 0 then return end
+    local head = table.concat({ "P", tostring(objID), table.concat(fish, ","), tostring(mapID) }, SEP) .. SEP
+    CellParts(head, cells, "P:" .. objID .. ":" .. mapID, onlyCell)
+end
+
+local function QueueFishObj(name, mapID, onlyCell)
+    local o = ns.db.fishObjects and ns.db.fishObjects[name]
+    if not o then return end
+    local clean = Cut(Clean(name), 40)
+    if mapID then
+        local cells = o.zones and o.zones[mapID]
+        if cells then CellParts(table.concat({ "O", clean, tostring(mapID) }, SEP) .. SEP, cells, "O:" .. name .. ":" .. mapID, onlyCell) end
+    end
+    local list = {}
+    for id, n in pairs(o.items or {}) do list[#list + 1] = { id = id, n = n } end
+    table.sort(list, function(a, b) return a.n > b.n end)
+    local parts = {}
+    for i = 1, math.min(8, #list) do parts[#parts + 1] = list[i].id .. ":" .. math.floor(list[i].n) end
+    if #parts > 0 then Enqueue("Q:" .. name, table.concat({ "Q", clean, table.concat(parts, ",") }, SEP)) end
+end
+
+local function QueueTrainer(npc)
+    local tp = ns.db.trainerPos and ns.db.trainerPos[npc]
+    if not (tp and tp.mapID and tp.x and tp.y) then return end
+    Enqueue("T:" .. npc, table.concat({ "T", Cut(Clean(npc), 40), tostring(tp.mapID), Fmt(tp.x), Fmt(tp.y) }, SEP))
+end
+
+ns:On("POOL_RECORDED", function(objID, mapID, cellKey)
+    if Enabled() then QueuePool(objID, mapID, cellKey) end
+end)
+ns:On("FISHOBJ_RECORDED", function(name, mapID, cellKey)
+    if Enabled() then QueueFishObj(name, mapID, cellKey) end
+end)
+ns:On("TRAINER_POS", function(npc)
+    if Enabled() then QueueTrainer(npc) end
+end)
+
 -- live: a recipe vendor or recipe drop you just saw
 ns:On("RECIPE_SOURCE_ADDED", function(recipe, src)
     if not Enabled() then return end
@@ -241,12 +315,26 @@ local function TrickleOne()
                 if VALID_SRC[src.type] then trickleKeys[#trickleKeys + 1] = { recipe = recipe }; break end
             end
         end
+        for objID in pairs(ns.db.pools or {}) do trickleKeys[#trickleKeys + 1] = { pool = objID } end
+        for name in pairs(ns.db.fishObjects or {}) do trickleKeys[#trickleKeys + 1] = { obj = name } end
+        for npc in pairs(ns.db.trainerPos or {}) do trickleKeys[#trickleKeys + 1] = { trainer = npc } end
         if #trickleKeys == 0 then return end
     end
     trickleIndex = trickleIndex + 1
     local key = trickleKeys[trickleIndex]
     if type(key) == "table" then
-        for _, src in ipairs(ns.db.recipeSources[key.recipe] or {}) do QueueRecipeSource(key.recipe, src) end
+        if key.recipe then
+            for _, src in ipairs(ns.db.recipeSources[key.recipe] or {}) do QueueRecipeSource(key.recipe, src) end
+        elseif key.pool then
+            local p = ns.db.pools and ns.db.pools[key.pool]
+            for mapID in pairs(p and p.zones or {}) do QueuePool(key.pool, mapID) end
+        elseif key.obj then
+            local o = ns.db.fishObjects and ns.db.fishObjects[key.obj]
+            for mapID in pairs(o and o.zones or {}) do QueueFishObj(key.obj, mapID) end
+            QueueFishObj(key.obj, nil)
+        elseif key.trainer then
+            QueueTrainer(key.trainer)
+        end
         return
     end
     local entry = ns.db.learned[key]
@@ -382,6 +470,96 @@ local function HandleR(s, f)
     list[#list + 1] = entry
 end
 
+local function ValidName(s)
+    return type(s) == "string" and #s >= 2 and #s <= 40 and s:match("^[%w%s%'%-%.:]+$") ~= nil
+end
+
+local function ReadCells(str, zone)
+    local n = 0
+    for part in str:gmatch("[^;]+") do
+        n = n + 1
+        if n > 25 then break end
+        local ck, x, y, cnt = part:match("^(%d+:%d+),([%d%.]+),([%d%.]+),(%d+)$")
+        x, y, cnt = tonumber(x), tonumber(y), tonumber(cnt)
+        if ck and x and y and cnt and x >= 0 and x <= 100 and y >= 0 and y <= 100 and cnt >= 1 and cnt <= 100000 then
+            zone[ns:CellKey(x, y)] = { x = x, y = y, n = cnt }   -- absolute value: replace
+        end
+    end
+end
+
+local function HandleP(s, f)
+    local objID, mapID = tonumber(f[2]), tonumber(f[4])
+    if not (objID and mapID and f[3] and f[5]) or objID < 1 or objID > 99999999 then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    s.pools = s.pools or {}
+    local p = s.pools[objID]
+    if not p then
+        if (s.nPools or 0) >= MAX_POOLS_PER_PLAYER then return end
+        p = { fish = {}, zones = {} }
+        s.pools[objID] = p
+        s.nPools = (s.nPools or 0) + 1
+    end
+    local nf = 0
+    for id in f[3]:gmatch("%d+") do
+        nf = nf + 1
+        if nf > 5 then break end
+        local fid = tonumber(id)
+        if fid and ns.Items[fid] and ns.Items[fid].cat == "fishing" then p.fish[fid] = true end
+    end
+    if not next(p.fish) then s.pools[objID] = nil; s.nPools = s.nPools - 1; return end
+    local zone = p.zones[mapID] or {}
+    ReadCells(f[5], zone)
+    if next(zone) then p.zones[mapID] = zone end
+end
+
+local function ObjBucket(s, name)
+    s.fishObjects = s.fishObjects or {}
+    local o = s.fishObjects[name]
+    if not o then
+        if (s.nObjs or 0) >= MAX_OBJS_PER_PLAYER then return end
+        o = { items = {}, zones = {} }
+        s.fishObjects[name] = o
+        s.nObjs = (s.nObjs or 0) + 1
+    end
+    return o
+end
+
+local function HandleO(s, f)
+    local name, mapID = f[2], tonumber(f[3])
+    if not (ValidName(name) and mapID and f[4]) then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    local o = ObjBucket(s, name)
+    if not o then return end
+    local zone = o.zones[mapID] or {}
+    ReadCells(f[4], zone)
+    if next(zone) then o.zones[mapID] = zone end
+end
+
+local function HandleQ(s, f)
+    local name = f[2]
+    if not (ValidName(name) and f[3]) then return end
+    local o = ObjBucket(s, name)
+    if not o then return end
+    local n = 0
+    for id, cnt in f[3]:gmatch("(%d+):(%d+)") do
+        n = n + 1
+        if n > 8 then break end
+        id, cnt = tonumber(id), tonumber(cnt)
+        if id and cnt and id >= 1 and id <= 9999999 and cnt >= 1 and cnt <= 100000 then o.items[id] = cnt end
+    end
+end
+
+local function HandleT(s, f)
+    local npc, mapID, x, y = f[2], tonumber(f[3]), tonumber(f[4]), tonumber(f[5])
+    if not (ValidName(npc) and mapID and x and y) or x < 0 or x > 100 or y < 0 or y > 100 then return end
+    if not (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) then return end
+    s.trainerPos = s.trainerPos or {}
+    if not s.trainerPos[npc] then
+        if (s.nTrainers or 0) >= MAX_TRAINERS_PER_PLAYER then return end
+        s.nTrainers = (s.nTrainers or 0) + 1
+    end
+    s.trainerPos[npc] = { mapID = mapID, x = x, y = y }
+end
 
 ------------------------------------------------------------------------
 -- restore: get your own finds back after a fresh install
@@ -567,9 +745,14 @@ local function RestoreR(f)
 end
 
 -- a restore message for us (whisper, shortly after our hello, bounded)
+local restoreLast = {}             -- [sender] = time of the last restore message
 local function HandleRestore(f, channel, short)
     if channel ~= "WHISPER" then return end
-    if not helloAt or GetTime() - helloAt > RESTORE_WINDOW then return end
+    if not helloAt then return end
+    local now, since = GetTime(), GetTime() - helloAt
+    local running = restoreLast[short] and now - restoreLast[short] <= RESTORE_IDLE
+    if since > RESTORE_MAX or (since > RESTORE_WINDOW and not running) then return end
+    restoreLast[short] = now
     restoreGot[short] = (restoreGot[short] or 0) + 1
     if restoreGot[short] > MAX_RESTORE_MSGS then return end
     local kind = f[1]
@@ -615,6 +798,10 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if f[1] == "C" then HandleC(s, f)
     elseif f[1] == "M" then HandleM(s, f)
     elseif f[1] == "K" then HandleK(s, f)
+    elseif f[1] == "P" then HandleP(s, f)
+    elseif f[1] == "O" then HandleO(s, f)
+    elseif f[1] == "Q" then HandleQ(s, f)
+    elseif f[1] == "T" then HandleT(s, f)
     elseif f[1] == "R" then
         HandleR(s, f)
         if not recipePending then

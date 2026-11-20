@@ -235,6 +235,7 @@ function ns:RecordPool(objID, guid, itemID, mapID, x, y)
     c.n = c.n + 1
     c.last = time and time() or 0
     ns:Fire("LEARNED_CHANGED")
+    ns:Fire("POOL_RECORDED", objID, mapID, key)
 end
 
 -- Other fishable objects (Floating Wreckage, Floating Debris, Oil Spill...)
@@ -262,6 +263,7 @@ function ns:RecordFishObject(name, guid, itemID, mapID, x, y)
     c.n = c.n + 1
     c.last = time and time() or 0
     ns:Fire("LEARNED_CHANGED")
+    ns:Fire("FISHOBJ_RECORDED", name, mapID, key)
 end
 
 -- known school spots of a fish: your own (db.pools) + the installed node addons
@@ -269,7 +271,11 @@ local function PoolPoints(itemID, out)
     local known = {}
     for _, id in ipairs(ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID] or {}) do known[id] = true end
     -- your own schools, then the community's (Data\Community.lua)
-    for _, pools in ipairs({ ns.db and ns.db.pools or {}, ns.Community and ns.Community.pools or {} }) do
+    local sources = { ns.db and ns.db.pools or {}, ns.Community and ns.Community.pools or {} }
+    for _, s in pairs(ns.db and ns.db.shared or {}) do
+        if type(s) == "table" and s.pools then sources[#sources + 1] = s.pools end
+    end
+    for _, pools in ipairs(sources) do
         for objID, p in pairs(pools) do
             if known[objID] or (p.fish and p.fish[itemID]) then
                 for mapID, cells in pairs(p.zones or {}) do
@@ -285,7 +291,13 @@ function ns:ExternalNodes(itemID)
     local base = baseExternal(self, itemID)
     local cat = ns.Items[itemID] and ns.Items[itemID].cat
     local cp = ns.Community and ns.Community.pools
-    if cat ~= "fishing" or not ((ns.db and ns.db.pools and next(ns.db.pools)) or (cp and next(cp))) then return base end
+    local any = (ns.db and ns.db.pools and next(ns.db.pools)) or (cp and next(cp))
+    if not any then
+        for _, s in pairs(ns.db and ns.db.shared or {}) do
+            if type(s) == "table" and s.pools and next(s.pools) then any = true; break end
+        end
+    end
+    if cat ~= "fishing" or not any then return base end
     local out = {}
     for mapID, list in pairs(base or {}) do
         local l = {}

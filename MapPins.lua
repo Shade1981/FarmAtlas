@@ -467,19 +467,31 @@ function Provider:RefreshAllData()
         end
     end
     -- fishable objects you fished from (wreckage, debris...): zone map only
-    if ns.db.fishObjects and ns.db.settings.showFishObjects ~= false then
+    if ns.db.settings.showFishObjects ~= false then
         local cc = ns.CAT_COLORS.fishing or ns.CAT_COLORS.learned
-        for name, o in pairs(ns.db.fishObjects) do
+        -- yours, the community's and your guild/group's; one pin per spot
+        local sources = { ns.db.fishObjects or {}, ns.Community and ns.Community.fishObjects or {} }
+        for _, s in pairs(ns.db.shared or {}) do
+            if type(s) == "table" and s.fishObjects then sources[#sources + 1] = s.fishObjects end
+        end
+        local drawn = {}
+        for _, objs in ipairs(sources) do
+        for name, o in pairs(objs) do
             local cells = o.zones and o.zones[mapID]
             if cells then
                 local top, topN = nil, 0
                 for id, n in pairs(o.items or {}) do if n > topN then top, topN = id, n end end
                 for _, c in pairs(cells) do
+                  local spot = name .. "@" .. math.floor(c.x + 0.5) .. ":" .. math.floor(c.y + 0.5)
+                  if not drawn[spot] then
+                    drawn[spot] = true
                     map:AcquirePin(ICON_TEMPLATE, { fishObj = name, items = o.items, n = c.n,
                         icon = top and ns:GetItemIcon(top) or "Interface\\Icons\\INV_Misc_QuestionMark",
                         x = c.x / 100, y = c.y / 100, small = 16, cr = cc[1], cg = cc[2], cb = cc[3] })
+                  end
                 end
             end
+        end
         end
     end
     -- profession trainers (Guide tab: click a profession header to switch them)

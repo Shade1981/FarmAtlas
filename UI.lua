@@ -1775,6 +1775,10 @@ end
 if ChatEdit_InsertLink then
     hooksecurefunc("ChatEdit_InsertLink", function(link) TypeLinkIntoSearch(link) end)
 end
+-- the Midnight-based client moved it into ChatFrameUtil
+if ChatFrameUtil and ChatFrameUtil.InsertLink then
+    hooksecurefunc(ChatFrameUtil, "InsertLink", function(link) TypeLinkIntoSearch(link) end)
+end
 -- chat links: Alt + click
 if SetItemRef then
     hooksecurefunc("SetItemRef", function(link, text)
