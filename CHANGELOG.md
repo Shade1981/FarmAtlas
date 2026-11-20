@@ -1,3 +1,8 @@
+# FarmAtlas 1.5.2
+
+- Fixed: fishing schools were never recorded in WoW Forever - the client reports the bobber as the loot source even for a school. Schools are now recognised from the world tooltip ("Oily Blackmouth School"): after you move the mouse onto a school once, the catches nearby (45 s, renewed by every catch) are saved as a school spot, shown on the map and used by the school alert. A chat line tells you when a new school spot is recorded
+- New: louder bite while fishing - music and ambience are turned down and effects up while you fish; your own volumes come back 20 seconds after your last cast, also after a /reload or logout. Settings > Map & minimap
+
 # FarmAtlas 1.5.1
 
 - Fixed: fighting with the world map open could print "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()" - during combat FarmAtlas no longer acquires or releases map pins (that tainted the map canvas and Blizzard's own pins were then blocked); it hides its pins if you switch maps in combat and redraws them right after the fight. Switching the map from FarmAtlas during combat waits until the fight is over. Thanks to laykes for the report
