@@ -73,6 +73,8 @@ local function Pages()
             { "check", "t_learn", function() return S().learn end, function(v) S().learn = v end, "op_learn_hint" },
             { "check", "t_tooltip", function() return S().tooltip end, function(v) S().tooltip = v end, "op_tooltip_hint" },
             { "check", "op_news", function() return S().newsPopup end, function(v) S().newsPopup = v end },
+            { "check", "op_fancy", function() return S().fancy ~= false end,
+                function(v) S().fancy = v; ns:Print(L("op_fancy_reload")) end, "op_fancy_hint" },
             { "head", "op_sync" },
             { "check", "op_sync_on", function() return S().sync end,
                 function(v) if ns.Sync and v ~= S().sync then ns.Sync:Toggle() else S().sync = v end end, "op_sync_hint" },
