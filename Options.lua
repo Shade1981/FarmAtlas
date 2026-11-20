@@ -87,6 +87,8 @@ local function Pages()
             { "stepper", "op_nodesize", function() return S().nodeIconSize or 14 end,
                 function(v) S().nodeIconSize = v; fire() end, 8, 28, 2, function(v) return v .. " px" end },
             { "check", "op_poolalert", function() return S().poolAlert ~= false end, function(v) S().poolAlert = v end, "op_poolalert_hint" },
+            { "check", "op_fishobj", function() return S().showFishObjects ~= false end,
+                function(v) S().showFishObjects = v; fire() end, "op_fishobj_hint" },
             { "check", "op_fishsound", function() return S().fishSound ~= false end,
                 function(v) S().fishSound = v; if not v and ns.FishSoundRestore then pcall(ns.FishSoundRestore) end end, "op_fishsound_hint" },
             { "stepper", "op_nodehide", function() return S().nodeHideRange or 15 end,

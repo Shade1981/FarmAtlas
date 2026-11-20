@@ -222,6 +222,8 @@ local function OnEvent(_, event, ...)
                 -- the school is known from its tooltip (see SchoolHint below)
                 local key = ns:SchoolKeyForCatch(itemID, mapID, x, y)
                 if key and ns.RecordPool then ns:RecordPool(key, guid, itemID, mapID, x, y) end
+                local obj = ns.FishObjectForCatch and ns:FishObjectForCatch(itemID, mapID, x, y)
+                if obj and ns.RecordFishObject then ns:RecordFishObject(obj, guid, itemID, mapID, x, y) end
             end
         end
         if itemID and ShouldRecord(itemID, isFishing, lootName) then
@@ -420,6 +422,11 @@ do
     local HINT_DIST = 1.5     -- map percent you may move away from where the hint was made
     local hint                -- { t, mapID, x, y } (x, y in percent)
     local fishWords           -- { lower-case word } from the names of the fishing items
+    local nodeWords           -- { [word] = true } from herb / ore names (world objects too)
+    -- fishable objects that are not fish schools (enUS client words); any other
+    -- language is still caught when the mouse is on the object while you cast
+    local OBJECT_WORDS = { wreckage = true, debris = true, spill = true, flotsam = true,
+        driftwood = true, floating = true }
 
     local function SplitWords(name)
         local out = {}
@@ -450,8 +457,8 @@ do
                 if #w >= 4 and not other[w] then list[#list + 1] = w; break end
             end
         end
-        if ready then fishWords = list end   -- item names not cached yet: try again later
-        return list
+        if ready then fishWords = list; nodeWords = other end   -- names not cached yet: try again later
+        return list, other
     end
 
     local function NamesAFish(text)
@@ -476,16 +483,35 @@ do
     end
 
     -- the tooltip of a world object (no unit) that names a fish = a school
-    local function CheckTooltip()
+    local bobberName
+    local function IsObjectName(text, atCast)
+        if type(text) ~= "string" or text == "" or text == bobberName then return false end
+        local _, other = Words()
+        local words = SplitWords(text)
+        for _, w in ipairs(words) do
+            if (nodeWords or other)[w] then return false end   -- a herb / ore node
+        end
+        if atCast then return true end                          -- mouse on it while casting
+        for _, w in ipairs(words) do
+            if OBJECT_WORDS[w] then return true end
+        end
+        return false
+    end
+
+    -- the tooltip of a world object (no unit): a fish school, or another fishable object
+    local function CheckTooltip(atCast)
         if not (GameTooltip and GameTooltip:IsShown()) then return end
         local owner = GameTooltip:GetOwner()
         if owner ~= UIParent and owner ~= WorldFrame then return end
         if GameTooltip.GetUnit and ns.Plain((GameTooltip:GetUnit())) ~= nil then return end
         local fs = _G.GameTooltipTextLeft1
         local text = fs and ns.Plain(fs:GetText())
-        if not NamesAFish(text) then return end
+        local kind
+        if NamesAFish(text) then kind = "school"
+        elseif IsObjectName(text, atCast) then kind = "object" end
+        if not kind then return end
         local mapID, x, y = PlayerPos()
-        if mapID then hint = { t = GetTime(), mapID = mapID, x = x, y = y } end
+        if mapID then hint = { t = GetTime(), mapID = mapID, x = x, y = y, kind = kind, name = text } end
     end
 
     if GameTooltip and GameTooltip.HookScript then
@@ -503,21 +529,42 @@ do
             if not gsn then return end
             fishSpell = fishSpell or ns.Plain(gsn(7620))
             local name = spellID and ns.Plain(gsn(spellID))
-            if name and fishSpell and name == fishSpell then CheckTooltip() end
+            if name and fishSpell and name == fishSpell then
+                local soft = ns.Plain(UnitName("softinteract"))
+                if type(soft) == "string" and soft ~= "" and not bobberName then
+                    local g = ns.Plain(UnitGUID("softinteract"))
+                    if type(g) == "string" and g:find("%-35591%-") then bobberName = soft end
+                end
+                CheckTooltip(true)
+            end
         end)
     end)
 
-    -- key of the school a catch came from, or nil (open water)
-    function ns:SchoolKeyForCatch(itemID, mapID, x, y)
-        if not hint or not itemID or not mapID or not x then return end
+    -- the hint still valid for a catch here? (renews it)
+    local function LiveHint(mapID, x, y)
+        if not hint or not mapID or not x then return end
         if GetTime() - hint.t > HINT_TIME or hint.mapID ~= mapID then hint = nil; return end
         local px, py = x * 100, y * 100
         if math.abs(px - hint.x) > HINT_DIST or math.abs(py - hint.y) > HINT_DIST then hint = nil; return end
-        hint.t = GetTime()                                    -- still fishing the same school
+        hint.t = GetTime()                                    -- still fishing the same spot
+        return hint
+    end
+
+    -- key of the school a catch came from, or nil (open water)
+    function ns:SchoolKeyForCatch(itemID, mapID, x, y)
+        if not itemID or not hint or hint.kind == "object" then return end
+        if not LiveHint(mapID, x, y) then return end
         local it = ns.Items and ns.Items[itemID]
-        if not (it and it.cat == "fishing") then return end   -- trunks, junk from wreckage
+        if not (it and it.cat == "fishing") then return end   -- trunks, junk
         local ids = ns.NODE_OBJECTS and ns.NODE_OBJECTS[itemID]
         return (ids and ids[1]) or (9000000 + itemID)
+    end
+
+    -- name of the fishable object (wreckage, debris...) a catch came from, or nil
+    function ns:FishObjectForCatch(itemID, mapID, x, y)
+        if not itemID or not hint or hint.kind ~= "object" then return end
+        local h = LiveHint(mapID, x, y)
+        return h and h.name
     end
 
     -- test hook

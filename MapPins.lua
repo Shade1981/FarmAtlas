@@ -274,6 +274,18 @@ function FarmAtlasIconPinMixin:OnMouseEnter()
         tip:Show()
         return
     end
+    if info.fishObj then
+        tip:AddLine(info.fishObj, 1, 0.82, 0)
+        tip:AddLine(L("fobj_tip", info.n or 1), 0.55, 0.8, 1, true)
+        local list = {}
+        for id, n in pairs(info.items or {}) do list[#list + 1] = { id = id, n = n } end
+        table.sort(list, function(a, b) return a.n > b.n end)
+        for i = 1, math.min(8, #list) do
+            tip:AddDoubleLine(ns:GetItemColoredName(list[i].id) or ("item " .. list[i].id), "x" .. list[i].n, 1, 1, 1, 0.8, 0.8, 0.8)
+        end
+        tip:Show()
+        return
+    end
     if info.guideArea then
         local a = info.guideArea
         tip:AddLine(L("g_area_title"), 1, 0.82, 0)
@@ -452,6 +464,22 @@ function Provider:RefreshAllData()
         if x then
             map:AcquirePin(ICON_TEMPLATE, { waypoint = true, icon = "Interface\\Icons\\INV_Scroll_03",
                 x = x, y = y, cr = 1, cg = 0.82, cb = 0, label = wp.label, sub = wp.sub })
+        end
+    end
+    -- fishable objects you fished from (wreckage, debris...): zone map only
+    if ns.db.fishObjects and ns.db.settings.showFishObjects ~= false then
+        local cc = ns.CAT_COLORS.fishing or ns.CAT_COLORS.learned
+        for name, o in pairs(ns.db.fishObjects) do
+            local cells = o.zones and o.zones[mapID]
+            if cells then
+                local top, topN = nil, 0
+                for id, n in pairs(o.items or {}) do if n > topN then top, topN = id, n end end
+                for _, c in pairs(cells) do
+                    map:AcquirePin(ICON_TEMPLATE, { fishObj = name, items = o.items, n = c.n,
+                        icon = top and ns:GetItemIcon(top) or "Interface\\Icons\\INV_Misc_QuestionMark",
+                        x = c.x / 100, y = c.y / 100, small = 16, cr = cc[1], cg = cc[2], cb = cc[3] })
+                end
+            end
         end
     end
     -- profession trainers (Guide tab: click a profession header to switch them)

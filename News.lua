@@ -5,25 +5,30 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
-    { v = "1.5.2", date = "2026-11-20",
+    { v = "1.6.0", date = "2026-11-20",
       en = {
         "Fixed: fishing schools are now recorded in WoW Forever. Move the mouse onto a school once (before or while casting) - the catches there are saved as a school spot, shown on the map, and you get the school alert when you come back near it.",
+        "New: fishable wreckage, debris and oil spills are recorded too - move the mouse onto one (or have it under the mouse while you cast) and its spot appears on the world map with what you caught there (Settings > Map & minimap).",
         "New: louder bite while fishing - music and ambience are turned down and effects up while you fish, your own volumes come back 20 seconds after your last cast (Settings > Map & minimap).",
       },
       hu = {
         "Javítva: a halrajok mostantól rögzülnek a WoW Forever-ben. Húzd rá egyszer az egeret a rajra (dobás előtt vagy közben) - az ott fogott halak halraj-helyként mentődnek, megjelennek a térképen, és visszatérve kapsz halraj-jelzést.",
+        "Új: a horgászható roncsok, uszadék és olajfoltok is rögzülnek - húzd rá az egeret (vagy legyen alatta dobáskor), és a helye megjelenik a világtérképen, azzal együtt, mit fogtál belőle (Beállítások > Térkép és minimap).",
         "Új: hangosabb kapás - horgászás közben a zene és a környezeti hangok halkabbak, az effektek hangosabbak; a saját hangerőid 20 másodperccel az utolsó dobás után visszaállnak (Beállítások > Térkép és minimap).",
       },
       fr = {
         "Corrigé : les bancs de poissons sont maintenant enregistrés dans WoW Forever. Passez une fois la souris sur le banc (avant ou pendant le lancer) - les prises y sont enregistrées comme emplacement de banc, affichées sur la carte, avec l'alerte quand vous revenez près.",
+        "Nouveau : épaves, débris et nappes d'huile pêchables sont aussi enregistrés - passez la souris dessus (ou gardez-la dessus en lançant) et l'endroit apparaît sur la carte du monde avec ce que vous y avez pris (Options > Carte et minicarte).",
         "Nouveau : touche plus audible - pendant la pêche, la musique et l'ambiance baissent et les effets montent ; vos volumes reviennent 20 secondes après votre dernier lancer (Options > Carte et minicarte).",
       },
       de = {
         "Behoben: Fischschwärme werden in WoW Forever jetzt gespeichert. Fahre einmal mit der Maus auf den Schwarm (vor oder während des Wurfs) - die Fänge dort werden als Schwarmplatz gespeichert, auf der Karte gezeigt, und in der Nähe kommt der Schwarm-Hinweis.",
+        "Neu: angelbare Wracks, Treibgut und Ölteppiche werden auch gespeichert - fahre mit der Maus darauf (oder lass sie beim Wurf darauf) und der Platz erscheint auf der Weltkarte mit deinem Fang dort (Einstellungen > Karte & Minikarte).",
         "Neu: lauterer Biss - beim Angeln werden Musik und Umgebung leiser und Effekte lauter; deine Lautstärken kommen 20 Sekunden nach dem letzten Wurf zurück (Einstellungen > Karte & Minikarte).",
       },
       es = {
         "Corregido: los bancos de peces ahora se registran en WoW Forever. Pasa el ratón una vez sobre el banco (antes o durante el lanzamiento) - las capturas allí se guardan como lugar de banco, se muestran en el mapa y recibes el aviso al volver cerca.",
+        "Nuevo: también se registran restos, escombros y manchas de aceite pescables - pasa el ratón por encima (o tenlo encima al lanzar) y el lugar aparece en el mapa del mundo con lo que sacaste (Opciones > Mapa y minimapa).",
         "Nuevo: picada más audible - al pescar, la música y el ambiente bajan y los efectos suben; tus volúmenes vuelven 20 segundos después del último lanzamiento (Opciones > Mapa y minimapa).",
       },
     },

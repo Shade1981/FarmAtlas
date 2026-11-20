@@ -237,6 +237,33 @@ function ns:RecordPool(objID, guid, itemID, mapID, x, y)
     ns:Fire("LEARNED_CHANGED")
 end
 
+-- Other fishable objects (Floating Wreckage, Floating Debris, Oil Spill...)
+-- db.fishObjects[name] = { items = { [itemID] = n }, zones = { [mapID] = { [cell] = { x, y, n, last } } } }
+-- Recognised from the world tooltip (see Learn.lua); shown as their own map pins.
+local objSeen = {}
+function ns:RecordFishObject(name, guid, itemID, mapID, x, y)
+    if not ns.db or type(name) ~= "string" or name == "" then return end
+    ns.db.fishObjects = ns.db.fishObjects or {}
+    local o = ns.db.fishObjects[name]
+    if not o then o = { items = {}, zones = {} }; ns.db.fishObjects[name] = o end
+    local fk = guid .. ":" .. itemID
+    if not objSeen[fk] then objSeen[fk] = true; o.items[itemID] = (o.items[itemID] or 0) + 1 end
+    if objSeen[guid] then return end      -- the same cast, second loot event
+    objSeen[guid] = true
+    local cx, cy = math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5)
+    local z = o.zones[mapID]
+    if not z then z = {}; o.zones[mapID] = z end
+    local key = cx .. ":" .. cy
+    local c = z[key]
+    if not c then
+        c = { x = x * 100, y = y * 100, n = 0 }; z[key] = c
+        ns:Print(ns.L("fobj_rec", name))
+    end
+    c.n = c.n + 1
+    c.last = time and time() or 0
+    ns:Fire("LEARNED_CHANGED")
+end
+
 -- known school spots of a fish: your own (db.pools) + the installed node addons
 local function PoolPoints(itemID, out)
     local known = {}

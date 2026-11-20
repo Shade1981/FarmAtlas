@@ -1,6 +1,7 @@
-# FarmAtlas 1.5.2
+# FarmAtlas 1.6.0
 
 - Fixed: fishing schools were never recorded in WoW Forever - the client reports the bobber as the loot source even for a school. Schools are now recognised from the world tooltip ("Oily Blackmouth School"): after you move the mouse onto a school once, the catches nearby (45 s, renewed by every catch) are saved as a school spot, shown on the map and used by the school alert. A chat line tells you when a new school spot is recorded
+- New: fishable wreckage, debris and oil spills are recorded too - recognised from the tooltip (English names, or any object under the mouse while you cast). Each spot is shown on the world map with what you caught there. Settings > Map & minimap
 - New: louder bite while fishing - music and ambience are turned down and effects up while you fish; your own volumes come back 20 seconds after your last cast, also after a /reload or logout. Settings > Map & minimap
 
 # FarmAtlas 1.5.1
