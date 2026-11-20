@@ -1052,6 +1052,63 @@ end
 ------------------------------------------------------------------------
 -- Detail pane
 ------------------------------------------------------------------------
+-- Put an item link into the chat input. The chat functions moved between
+-- client versions (ChatFrameUtil in the Midnight-based client, ChatEdit_* in
+-- older ones), so every way is tried until the link really is in a chat box.
+local function ActiveChatBox()
+    local U = ChatFrameUtil
+    local get = (U and U.GetActiveWindow) or ChatEdit_GetActiveWindow
+    local ok, eb = false, nil
+    if get then ok, eb = pcall(get) end
+    return ok and eb or nil
+end
+
+local function CanVerify()
+    local U = ChatFrameUtil
+    return (U and U.GetActiveWindow or ChatEdit_GetActiveWindow) ~= nil
+end
+
+local function HasLink(link)
+    local eb = ActiveChatBox()
+    local txt = eb and eb.GetText and eb:GetText()
+    return type(txt) == "string" and txt:find(link, 1, true) ~= nil
+end
+
+function UI:PutLinkInChat(link)
+    if type(link) ~= "string" then return false end
+    -- the search box keeps its focus after a click: a link sent while it has
+    -- focus would land in the search (shift-click helper), not in the chat
+    if self.search and self.search.ClearFocus then self.search:ClearFocus() end
+    local U = ChatFrameUtil
+    -- 1) a chat box is already open: insert at the cursor
+    -- (ipairs stops at a nil, so the candidates are listed with false, not nil)
+    for _, insert in ipairs({ U and U.InsertLink or false, ChatEdit_InsertLink or false }) do
+        if insert then
+            local ok, done = pcall(insert, link)
+            if HasLink(link) or (ok and done and not CanVerify()) then return true end
+        end
+    end
+    -- 2) open the chat box with the link in it
+    for _, open in ipairs({ U and U.OpenChat or false, ChatFrame_OpenChat or false }) do
+        if open then
+            local ok = pcall(open, link)
+            if HasLink(link) or (ok and not CanVerify()) then return true end
+        end
+    end
+    -- 3) last resort: the default chat frame's input box
+    local eb = (DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox) or _G.ChatFrame1EditBox
+    if eb then
+        pcall(function()
+            local activate = (U and U.ActivateChat) or ChatEdit_ActivateChat
+            if activate then activate(eb) else eb:Show() end
+            eb:SetFocus()
+            eb:Insert(link)
+        end)
+        if eb.GetText and type(eb:GetText()) == "string" and eb:GetText():find(link, 1, true) then return true end
+    end
+    return false
+end
+
 function UI:BuildDetail(d)
     -- top block
     d.icon = RoundIcon(d, 46)
@@ -1104,8 +1161,15 @@ function UI:BuildDetail(d)
         if not id then return end
         local _, link = ns:ItemInfo(id)
         if link then
-            if ChatEdit_InsertLink and ChatEdit_InsertLink(link) then return end
-            ChatFrame_OpenChat(link)
+            UI:PutLinkInChat(link)
+        else
+            -- item not in the client cache yet: ask for it and try once more
+            local rid = ns:RealID(id)
+            if rid and C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, rid) end
+            C_Timer.After(0.5, function()
+                local _, l = ns:ItemInfo(id)
+                if l then UI:PutLinkInChat(l) end
+            end)
         end
     end)
 
