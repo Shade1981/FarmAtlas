@@ -2060,23 +2060,13 @@ do
             tx:SetAlpha(sp[4])
             th.icons[i] = tx
         end
-        -- the profession's own painting (Media/Themes/<key>.tga) painted on
-        -- the details panel itself, under its cards - like the zone map art
-        local d = self.detail
-        if d then
-            th.art = d:CreateTexture(nil, "BACKGROUND", nil, 7)
-            th.art:SetPoint("BOTTOMLEFT", d, "BOTTOMLEFT", 1, 1)
-            th.art:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -1, 1)
-            th.art:SetHeight(300)
-            th.art:SetAlpha(0.6)
-            th.art:Hide()
-        end
-        -- and its banner across the header, instead of the zone map
-        if self.headerArt then
-            th.banner = self.headerArt.shade:CreateTexture(nil, "BACKGROUND")
-            th.banner:SetAllPoints(self.headerArt)
-            th.banner:Hide()
-        end
+        -- the profession's own illustration (Media/Themes/<key>.tga), glowing
+        -- over the panel (additive: its dark parts vanish, its lights shine)
+        th.art = th:CreateTexture(nil, "OVERLAY")
+        th.art:SetSize(520, 260)
+        th.art:SetPoint("BOTTOMRIGHT", th, "BOTTOMRIGHT", -6, 38)
+        th.art:SetBlendMode("ADD")
+        th.art:SetAlpha(0.62)
         th:Hide()
         self.theme = th
         -- the profession's name and icon in the header
@@ -2107,8 +2097,6 @@ do
         local icons = key and THEMES[key]
         if not icons then
             th:Hide()
-            if th.art then th.art:Hide() end
-            if th.banner then th.banner:Hide() end
             if self.themeBadge then self.themeBadge:Hide() end
             return
         end
@@ -2119,10 +2107,8 @@ do
             th.wash:SetVertexColor(c[1], c[2], c[3], 0.08)
         end
         th.line:SetVertexColor(c[1], c[2], c[3], 0.7)
-        local media = "Interface\\AddOns\\FarmAtlas\\Media\\Themes\\"
-        local hasArt = th.art and TryTexture(th.art, media .. key) or false
-        if th.art then th.art:SetShown(hasArt) end
-        if th.banner then th.banner:SetShown(TryTexture(th.banner, media .. "banner_" .. key)) end
+        local hasArt = TryTexture(th.art, "Interface\\AddOns\\FarmAtlas\\Media\\Themes\\" .. key)
+        th.art:SetShown(hasArt)
         for i, tx in ipairs(th.icons) do
             tx:SetTexture(icons[i] or icons[1])
             tx:SetShown(not hasArt)          -- the icon still life only if the picture is missing
