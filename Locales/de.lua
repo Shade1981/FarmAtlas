@@ -260,6 +260,7 @@ ns.Locales.de = {
     cat_leatherworking = "Lederverarbeitung",
     cat_blacksmithing = "Schmiedekunst",
     cat_engineering = "Ingenieurskunst",
+    cat_enchanting = "Verzauberkunst",
     cat_tailoring = "Schneiderei",
     cat_firstaid = "Erste Hilfe",
     cat_alchemy = "Alchemie",

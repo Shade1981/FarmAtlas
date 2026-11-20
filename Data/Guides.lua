@@ -652,6 +652,69 @@ ns.Guides = {
         },
     },
     ------------------------------------------------------------------
+    -- Enchanting: route from wow-professions.com Forever, cross-checked with
+    -- method.gg and rankedboost.com (Nov 2026). Only steps that at least two of
+    -- them agree on are used; where they differ the cheaper trainer recipe is
+    -- kept and the other one given as a note. Trainer ranks from the trainers'
+    -- in-game titles (Journeyman Enchanter = 75, Expert = 150, Artisan = 225);
+    -- Annora (Uldaman) is the only Artisan (300) trainer. Positions, formula
+    -- and Mote of Magic vendors from the Questie Forever database (item vendor
+    -- lists). Vanessa Sellers and Melanie Sable: higher ranks not confirmed.
+    enchanting = {
+        icon = "Interface\\Icons\\Trade_Engraving",
+        ranked = true,
+        trainers = {
+            T("Jhag", "Orgrimmar", "H", "The Drag  1-75", 1454, 53.5, 38.5, 75),
+            T("Godan", "Orgrimmar", "H", "The Drag  1-150", 1454, 53.9, 38.7, 150),
+            T("Pa'zula", "Durotar", "H", "Sen'jin Village  1-75", 1411, 56.7, 73.7, 75),
+            T("Malcomb Wynn", "Undercity", "H", "The Magic Quarter  1-75", 1458, 62.5, 60.4, 75),
+            T("Lavinia Crowe", "Undercity", "H", "The Magic Quarter  1-150", 1458, 62.5, 61.8, 150),
+            T("Vance Undergloom", "Tirisfal Glades", "H", "Brill, upstairs in the inn  1-75", 1420, 61.8, 51.6, 75),
+            T("Mot Dawnstrider", "Thunder Bluff", "H", "Middle Rise  1-75", 1456, 44.6, 38.5, 75),
+            T("Teg Dawnstrider", "Thunder Bluff", "H", "Middle Rise  1-150", 1456, 44.9, 37.5, 150),
+            T("Hgarth", "Stonetalon Mountains", "H", "Sun Rock Retreat, on the cliff  1-225", 1442, 49.2, 57.2, 225),
+            T("Betty Quin", "Stormwind City", "A", "Mage Quarter  1-75", 1453, 53.0, 73.7, 75),
+            T("Lucan Cordell", "Stormwind City", "A", "Mage Quarter  1-150", 1453, 52.9, 74.5, 150),
+            T("Thonys Pillarstone", "Ironforge", "A", "The Great Forge  1-75", 1455, 60.3, 45.4, 75),
+            T("Gimble Thistlefuzz", "Ironforge", "A", "The Great Forge  1-150", 1455, 59.8, 45.5, 150),
+            T("Lalina Summermoon", "Darnassus", "A", "Craftsmen's Terrace  1-75", 1457, 58.8, 12.7, 75),
+            T("Taladan", "Darnassus", "A", "Craftsmen's Terrace  1-150", 1457, 58.4, 13.1, 150),
+            T("Alanna Raveneye", "Teldrassil", "A", "Oracle Glade  1-75", 1438, 36.7, 34.2, 75),
+            T("Xylinnia Starshine", "Feralas", "A", "Feathermoon Stronghold  1-150", 1444, 31.6, 44.2, 150),
+            T("Kitta Firewind", "Elwynn Forest", "A", "Tower of Azora, top floor  1-225", 1429, 64.9, 70.7, 225),
+            T("Vanessa Sellers", "Alterac Mountains", "A", "Dalaran  1-75 (higher ranks not confirmed)", 1416, 16.8, 62.3, 75),
+            T("Eaysaa Brightgust", "Zephras Isle", "N", "Valanaar  1-75", 2521, 59.2, 76.4, 75),
+            T("Nasalanna Windsinger", "Zephras Isle", "N", "Shen'dar Village  1-75", 2521, 43.2, 43.1, 75),
+            T("Melanie Sable", "Riverglades", "N", "1-150 (Expert not confirmed)", 2548, 66.2, 83.4, 150),
+            T("Annora", "Badlands", "N", "Inside Uldaman (back entrance) - the only 1-300 trainer", 1418, 65.3, 42.6, 300),
+        },
+        steps = {
+            { kind = "train", at = 1, rank = "Apprentice", note = N("Copper Rod and Mote of Magic: Enchanting Supplies vendors (Mote of Magic is sold only there - Brill and Zephras Isle have one in the starting zones)", "Copper Rod és Mote of Magic: Enchanting Supplies árusok (a Mote of Magicet csak ők árulják - kezdőzónában Brillben és a Zephras Isle-on van ilyen)", "Copper Rod et Mote of Magic : vendeurs de fournitures d'enchantement (la Mote of Magic n'est vendue que là - Brill et Zephras Isle en ont un dans les zones de départ)", "Copper Rod und Mote of Magic: Verzauberkunst-Händler (Mote of Magic gibt es nur dort - Brill und Zephras Isle haben einen in den Startgebieten)", "Copper Rod y Mote of Magic: vendedores de suministros de encantamiento (la Mote of Magic solo se vende allí - Brill y Zephras Isle tienen uno en las zonas iniciales)") },
+            { kind = "craft", from = 1, to = 2, recipe = "Runed Copper Rod", item = "Copper Rod", extra = "Mote of Magic", count = 1, trainer = true, note = N("Make only one - you need it for every enchant", "Csak egyet készíts - minden enchanthoz kell", "Une seule - il faut pour chaque enchantement", "Nur einen - du brauchst ihn für jede Verzauberung", "Solo una - la necesitas para cada encantamiento") },
+            { kind = "craft", from = 2, to = 20, recipe = "Enchant Bracer - Inferior Stamina", item = "Mote of Magic", count = 18, trainer = true },
+            { kind = "craft", from = 20, to = 75, recipe = "Enchant Chest - Inferior Stamina", item = "Strange Dust", count = 57, trainer = true, note = N("Disenchant green items for Strange Dust. Train Journeyman at 50", "Zöld tárgyak bontásából (Disenchant) jön a Strange Dust. 50-nél tanuld meg a Journeymant", "Désenchantez des objets verts pour la Strange Dust. Apprenez Compagnon à 50", "Zerlege grüne Gegenstände für Strange Dust. Lerne Geselle bei 50", "Desencanta objetos verdes para Strange Dust. Aprende Oficial a 50") },
+            { kind = "train", at = 50, rank = "Journeyman", note = N("Needs character level 10. Only the 1-150 trainers and up teach it", "10-es karakterszint kell. Csak az 1-150-es és feletti trénerek tanítják", "Niveau 10 requis. Seuls les entraîneurs 1-150 et plus l'enseignent", "Stufe 10 nötig. Nur die Lehrer ab 1-150 bringen es bei", "Requiere nivel 10. Solo lo enseñan los instructores 1-150 o superiores") },
+            { kind = "craft", from = 75, to = 105, recipe = "Enchant Bracer - Minor Stamina", item = "Strange Dust", count = 30, trainer = true, note = N("2 Strange Dust each", "Darabonként 2 Strange Dust", "2 Strange Dust chacun", "Je 2 Strange Dust", "2 Strange Dust cada uno") },
+            { kind = "craft", from = 105, to = 106, recipe = "Runed Silver Rod", item = "Silver Rod", extra = "Strange Dust, Lesser Magic Essence, Shadowgem", count = 1, trainer = true, note = N("Make only one. Silver Rod: made by Blacksmiths (Auction House). 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem", "Csak egyet készíts. Silver Rod: kovácsok készítik (aukciósház). 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem", "Une seule. Silver Rod : faite par les forgerons (hôtel des ventes). 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem", "Nur einen. Silver Rod: von Schmieden (Auktionshaus). 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem", "Solo una. Silver Rod: la hacen los herreros (casa de subastas). 3 Strange Dust, 4 Lesser Magic Essence, 1 Shadowgem") },
+            { kind = "craft", from = 106, to = 130, recipe = "Enchant Shield - Minor Stamina", item = "Lesser Astral Essence", extra = "Strange Dust", count = 25, trainer = true, note = N("If Lesser Astral Essence is expensive: Enchant Cloak - Minor Protection (2 Strange Dust each) instead. Train Expert at 125", "Ha drága a Lesser Astral Essence: helyette Enchant Cloak - Minor Protection (darabonként 2 Strange Dust). 125-nél tanuld meg az Expertet", "Si la Lesser Astral Essence est chère : Enchant Cloak - Minor Protection (2 Strange Dust chacun). Apprenez Expert à 125", "Wenn Lesser Astral Essence teuer ist: stattdessen Enchant Cloak - Minor Protection (je 2 Strange Dust). Lerne Experte bei 125", "Si la Lesser Astral Essence es cara: Enchant Cloak - Minor Protection (2 Strange Dust cada uno). Aprende Experto a 125") },
+            { kind = "train", at = 125, rank = "Expert", note = N("Needs character level 20 (50 silver). Only Hgarth (Stonetalon Mountains), Kitta Firewind (Elwynn Forest) and Annora teach it", "20-as karakterszint kell (50 ezüst). Csak Hgarth (Stonetalon Mountains), Kitta Firewind (Elwynn Forest) és Annora tanítja", "Niveau 20 requis (50 pa). Seuls Hgarth (Stonetalon Mountains), Kitta Firewind (Elwynn Forest) et Annora l'enseignent", "Stufe 20 nötig (50 Silber). Nur Hgarth (Stonetalon Mountains), Kitta Firewind (Elwynn Forest) und Annora bringen es bei", "Requiere nivel 20 (50 de plata). Solo lo enseñan Hgarth (Stonetalon Mountains), Kitta Firewind (Elwynn Forest) y Annora") },
+            { kind = "craft", from = 130, to = 155, recipe = "Enchant Bracer - Lesser Stamina", item = "Soul Dust", count = 25, trainer = true },
+            { kind = "craft", from = 155, to = 156, recipe = "Runed Golden Rod", item = "Golden Rod", extra = "Iridescent Pearl, Greater Astral Essence, Soul Dust", count = 1, trainer = true, note = N("Make only one. Golden Rod: made by Blacksmiths (Auction House)", "Csak egyet készíts. Golden Rod: kovácsok készítik (aukciósház)", "Une seule. Golden Rod : faite par les forgerons (hôtel des ventes)", "Nur einen. Golden Rod: von Schmieden (Auktionshaus)", "Solo una. Golden Rod: la hacen los herreros (casa de subastas)") },
+            { kind = "craft", from = 156, to = 180, recipe = "Enchant Boots - Lesser Agility", item = "Soul Dust", count = 25, trainer = true },
+            { kind = "craft", from = 180, to = 200, recipe = "Enchant Bracer - Strength", item = "Vision Dust", count = 20, trainer = true },
+            { kind = "craft", from = 200, to = 201, recipe = "Runed Truesilver Rod", item = "Truesilver Rod", extra = "Black Pearl, Greater Mystic Essence, Vision Dust", count = 1, trainer = true, note = N("Make only one. Truesilver Rod: made by Blacksmiths (Auction House). Train Artisan at 200", "Csak egyet készíts. Truesilver Rod: kovácsok készítik (aukciósház). 200-nál tanuld meg az Artisant", "Une seule. Truesilver Rod : faite par les forgerons (hôtel des ventes). Apprenez Artisan à 200", "Nur einen. Truesilver Rod: von Schmieden (Auktionshaus). Lerne Fachmann bei 200", "Solo una. Truesilver Rod: la hacen los herreros (casa de subastas). Aprende Artesano a 200") },
+            { kind = "train", at = 200, rank = "Artisan", note = N("Needs character level 35. Only Annora teaches it: inside Uldaman (Badlands), through the back entrance - she appears after the mobs around her are cleared. Bring a group", "35-ös karakterszint kell. Csak Annora tanítja: Uldamanban (Badlands), a hátsó bejáraton át - akkor jelenik meg, ha a körülötte lévő mobokat leölted. Csapattal menj", "Niveau 35 requis. Seule Annora l'enseigne : dans Uldaman (Badlands), par l'entrée arrière - elle apparaît une fois les monstres autour d'elle tués. Venez en groupe", "Stufe 35 nötig. Nur Annora bringt es bei: in Uldaman (Ödland), über den Hintereingang - sie erscheint, wenn die Gegner um sie herum besiegt sind. Nimm eine Gruppe mit", "Requiere nivel 35. Solo la enseña Annora: dentro de Uldaman (Tierras Inhóspitas), por la entrada trasera - aparece al limpiar los enemigos a su alrededor. Ve en grupo") },
+            { kind = "craft", from = 201, to = 225, recipe = "Enchant Cloak - Greater Defense", item = "Vision Dust", count = 24, trainer = true },
+            { kind = "craft", from = 225, to = 250, recipe = "Enchant Gloves - Agility", item = "Vision Dust", count = 35, trainer = true, cap = 225 },
+            { kind = "craft", from = 250, to = 270, recipe = "Lesser Mana Oil", item = "Dream Dust", extra = "Purple Lotus, Crystal Vial", count = 25,
+              npcs = { T("Kania", "Silithus", "N", "Cenarion Hold, upstairs in the inn - Formula: Lesser Mana Oil", 1451, 52.0, 39.7) },
+              note = N("Crystal Vial: Alchemy Supplies vendors (Mishta in Cenarion Hold too). No Purple Lotus? Enchant Bracer - Greater Strength (from Annora) instead", "Crystal Vial: alkímia-kellékárusok (Mishta is, Cenarion Hold). Nincs Purple Lotus? Helyette Enchant Bracer - Greater Strength (Annoránál)", "Crystal Vial : vendeurs de fournitures d'alchimie (Mishta aussi, Cenarion Hold). Pas de Purple Lotus ? Enchant Bracer - Greater Strength (chez Annora) à la place", "Crystal Vial: Alchemiebedarf-Händler (auch Mishta, Cenarion Hold). Kein Purple Lotus? Stattdessen Enchant Bracer - Greater Strength (bei Annora)", "Crystal Vial: vendedores de suministros de alquimia (también Mishta, Cenarion Hold). ¿Sin Purple Lotus? Enchant Bracer - Greater Strength (de Annora)") },
+            { kind = "craft", from = 270, to = 300, recipe = "Enchant Shield - Greater Stamina", item = "Dream Dust", count = 35,
+              npcs = { T("Daniel Bartlett", "Undercity", "H", "Trade Quarter - Formula: Enchant Shield - Greater Stamina", 1458, 64.0, 37.4), T("Mythrin'dir", "Darnassus", "A", "Craftsmen's Terrace - Formula: Enchant Shield - Greater Stamina", 1457, 61.0, 17.7) },
+              note = N("6 Dream Dust each. The Runed Arcanite Rod (Formula: Lorelae Wintersong, Moonglade) is needed for most 300 enchants", "Darabonként 6 Dream Dust. A legtöbb 300-as enchanthoz Runed Arcanite Rod kell (Formula: Lorelae Wintersong, Moonglade)", "6 Dream Dust chacun. La Runed Arcanite Rod (formule : Lorelae Wintersong, Reflet-de-Lune) est requise pour la plupart des enchantements 300", "Je 6 Dream Dust. Für die meisten 300er-Verzauberungen brauchst du die Runed Arcanite Rod (Formel: Lorelae Wintersong, Mondlichtung)", "6 Dream Dust cada uno. La Runed Arcanite Rod (fórmula: Lorelae Wintersong, Claro de la Luna) hace falta para casi todos los encantamientos de 300") },
+        },
+    },
+    ------------------------------------------------------------------
     -- Alchemy: route from wow-professions.com Forever, cross-checked with
     -- method.gg (same route to 230) and wowhead.com Forever (Nov 2026).
     -- Trainer ranks from the trainers' in-game titles (Journeyman Alchemist = 75,
@@ -760,4 +823,4 @@ ns.Guides = {
         },
     },
 }
-ns.GUIDE_ORDER = { "cooking", "fishing", "skinning", "mining", "herbalism", "blacksmithing", "engineering", "leatherworking", "tailoring", "firstaid", "alchemy" }
+ns.GUIDE_ORDER = { "cooking", "fishing", "skinning", "mining", "herbalism", "blacksmithing", "engineering", "enchanting", "leatherworking", "tailoring", "firstaid", "alchemy" }

@@ -260,6 +260,7 @@ ns.Locales.fr = {
     cat_leatherworking = "Travail du cuir",
     cat_blacksmithing = "Forge",
     cat_engineering = "Ingénierie",
+    cat_enchanting = "Enchantement",
     cat_tailoring = "Couture",
     cat_firstaid = "Secourisme",
     cat_alchemy = "Alchimie",

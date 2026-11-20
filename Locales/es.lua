@@ -260,6 +260,7 @@ ns.Locales.es = {
     cat_leatherworking = "Peletería",
     cat_blacksmithing = "Herrería",
     cat_engineering = "Ingeniería",
+    cat_enchanting = "Encantamiento",
     cat_tailoring = "Sastrería",
     cat_firstaid = "Primeros auxilios",
     cat_alchemy = "Alquimia",
