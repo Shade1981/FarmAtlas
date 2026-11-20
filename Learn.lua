@@ -399,3 +399,84 @@ function ns:ForgetLearned(itemID)
     if itemID then self.db.learned[itemID] = nil else wipe(self.db.learned); wipe(self.db.kills) end
     self:Fire("LEARNED_CHANGED")
 end
+
+------------------------------------------------------------------------
+-- TEMPORARY fishing diagnostics (dev build only, not released):
+-- remembers what the client reports while fishing, so school detection can
+-- be fixed for WoW Forever. Stored in db.fishDiag (last 40 lines).
+------------------------------------------------------------------------
+do
+    local P = ns.Plain
+    local fishName
+    local function Note(line)
+        if not ns.db then return end
+        ns.db.fishDiag = ns.db.fishDiag or {}
+        local t = ns.db.fishDiag
+        table.insert(t, date("%H:%M:%S") .. " " .. line)
+        while #t > 40 do table.remove(t, 1) end
+    end
+    local function S(v) v = P(v); return v == nil and "nil" or tostring(v) end
+    local function TipLine()
+        if not (GameTooltip and GameTooltip:IsShown()) then return "-" end
+        local fs = _G.GameTooltipTextLeft1
+        return fs and S(fs:GetText()) or "?"
+    end
+    -- what the tooltip shows when the mouse is on a world object (school?)
+    local lastTip
+    if GameTooltip and GameTooltip.HookScript then
+        GameTooltip:HookScript("OnShow", function(tip)
+            pcall(function()
+                local owner = tip:GetOwner()
+                local ownerName = owner and owner.GetName and P(owner:GetName()) or "?"
+                local fs = _G.GameTooltipTextLeft1
+                local txt = fs and S(fs:GetText()) or "?"
+                local hasUnit = tip.GetUnit and P((tip:GetUnit())) ~= nil
+                if hasUnit then return end
+                if ownerName ~= "UIParent" and ownerName ~= "WorldFrame" and ownerName ~= "?" then return end
+                local key = txt .. ownerName
+                if key == lastTip then return end
+                lastTip = key
+                local mapID = C_Map.GetBestMapForUnit("player")
+                local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
+                local x, y = 0, 0
+                if pos then x, y = pos:GetXY() end
+                Note(("TIP owner=%s text=%s l2=%s map=%s %.1f,%.1f"):format(ownerName, txt,
+                    _G.GameTooltipTextLeft2 and S(_G.GameTooltipTextLeft2:GetText()) or "-", tostring(mapID), (x or 0) * 100, (y or 0) * 100))
+            end)
+        end)
+        GameTooltip:HookScript("OnHide", function() lastTip = nil end)
+    end
+    local d = CreateFrame("Frame")
+    ns:SafeRegister(d, "UNIT_SPELLCAST_SENT", "UNIT_SPELLCAST_CHANNEL_START", "LOOT_READY")
+    d:SetScript("OnEvent", function(_, event, ...)
+        local ok, err = pcall(function(...)
+            if not fishName then
+                local gsi = C_Spell and C_Spell.GetSpellName or GetSpellInfo
+                fishName = gsi and gsi(7620)
+            end
+            if event == "LOOT_READY" then
+                if not (IsFishingLoot and IsFishingLoot()) then return end
+                for slot = 1, GetNumLootItems() do
+                    local link = P(GetLootSlotLink(slot))
+                    local id = link and tostring(link):match("item:(%d+)")
+                    local src = { GetLootSourceInfo(slot) }
+                    local parts = {}
+                    for i = 1, #src do parts[#parts + 1] = S(src[i]) end
+                    Note("LOOT item=" .. tostring(id) .. " src=" .. table.concat(parts, ","))
+                end
+                return
+            end
+            local unit, a2, a3, a4 = ...
+            if unit ~= "player" then return end
+            local spellID = (event == "UNIT_SPELLCAST_SENT") and a4 or a3
+            local gsn = C_Spell and C_Spell.GetSpellName or GetSpellInfo
+            local name = spellID and gsn and gsn(spellID)
+            if not (name and fishName and P(name) == P(fishName)) then return end
+            Note(event .. " target=" .. S(event == "UNIT_SPELLCAST_SENT" and a2 or nil)
+                .. " tip=" .. TipLine()
+                .. " soft=" .. S(UnitName("softinteract")) .. "/" .. S(UnitGUID("softinteract"))
+                .. " mo=" .. S(UnitName("mouseover")) .. "/" .. S(UnitGUID("mouseover")))
+        end, ...)
+        if not ok then Note("ERR " .. tostring(err)) end
+    end)
+end
