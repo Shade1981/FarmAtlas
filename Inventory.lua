@@ -15,8 +15,30 @@ local function SlotCount(bag, slot)
     return count or 0
 end
 
+-- WoW Forever: characters can share a first name ("Shade Hun", "Shade Tide"), and
+-- UnitName gives only the first name, so the key also carries the character's GUID.
+local charKeyCache
 function ns:CharKey()
-    return (GetRealmName() or "?") .. "-" .. (UnitName("player") or "?")
+    if charKeyCache then return charKeyCache end
+    local realm, name = GetRealmName() or "?", UnitName("player") or "?"
+    local guid = UnitGUID and ns.Plain(UnitGUID("player"))
+    if type(guid) ~= "string" or guid == "" then return realm .. "-" .. name end
+    local key = realm .. "-" .. name .. "@" .. guid
+    local chars = self.db and self.db.chars
+    if chars and not chars[key] then
+        -- one time: take over the old name-only entry, if no other character did
+        local old = chars[realm .. "-" .. name]
+        if old then
+            chars[key] = old
+            chars[realm .. "-" .. name] = nil
+        end
+    end
+    if chars then
+        chars[key] = chars[key] or { bags = {}, bank = {}, recipes = {}, goals = {} }
+        chars[key].name = name
+    end
+    charKeyCache = key
+    return key
 end
 
 function ns:CharData(key)
@@ -104,7 +126,7 @@ function ns:GetCounts(key)
             bags, bank = b, k
         elseif b + k > 0 then
             alts = alts + b + k
-            altList[#altList + 1] = { name = charKey:match("%-(.+)$") or charKey, n = b + k, class = c.class }
+            altList[#altList + 1] = { name = c.name or (charKey:match("%-([^@]+)") or charKey), n = b + k, class = c.class }
         end
     end
     table.sort(altList, function(a, b) return a.n > b.n end)

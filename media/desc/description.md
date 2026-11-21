@@ -12,6 +12,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ## New in 1.6.2
 
+- Fixed: characters sharing a first name overwrote each other's known recipes and bags - open each profession once more after updating.
 - Fixed: with a rotating minimap the FarmAtlas icons, areas and trainers pointed the wrong way.
 - Better sync between guild and group members.
 - More community data: 10 players, 122 items, 257 NPCs with kill counts, 34 trainer positions, 4 fishing schools.

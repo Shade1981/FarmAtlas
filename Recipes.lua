@@ -469,7 +469,7 @@ function ns:RecipeKnown(recipe)
     for charKey, c in pairs(self.db.chars) do
         if c.recipes and c.recipes[recipe] then
             if charKey == me then mine = true
-            else alts[#alts + 1] = charKey:match("%-(.+)$") or charKey end
+            else alts[#alts + 1] = c.name or charKey:match("%-([^@]+)") or charKey end
         end
     end
     return mine, alts

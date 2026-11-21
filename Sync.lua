@@ -619,8 +619,9 @@ local function MyNames()
     local out, seen = {}, {}
     local me = ns.Plain(UnitName("player"))
     if me then out[1] = me; seen[me] = true end
-    for key in pairs(ns.db.chars or {}) do
-        local r, n = tostring(key):match("^(.-)%-([^%-]+)$")
+    for key, c in pairs(ns.db.chars or {}) do
+        local r, n = tostring(key):match("^(.-)%-([^@]+)")
+        if type(c) == "table" and c.name then n = c.name end
         if n and r == realm and not seen[n] and #out < 10 then out[#out + 1] = n; seen[n] = true end
     end
     return out
