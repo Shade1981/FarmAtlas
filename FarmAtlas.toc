@@ -11,6 +11,7 @@
 ## Category: Professions
 ## X-Category: Professions
 ## X-License: MIT
+## OptionalDeps: ProfessionDB
 
 Core.lua
 Locale.lua
@@ -38,11 +39,13 @@ Inventory.lua
 Prices.lua
 Recipes.lua
 Guide.lua
+Professions.lua
 Goals.lua
 BestFarm.lua
 MapPins.lua
 MapPins.xml
 UI.lua
+ProfUI.lua
 Options.lua
 Tooltip.lua
 Minimap.lua

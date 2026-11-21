@@ -766,12 +766,59 @@ SlashCmdList.FARMATLAS = function(msg)
             local unlocked = ns:ToggleBannerEdit()
             ns:Print(unlocked and L("tb_unlocked") or L("tb_locked"))
         end
+    elseif cmd == "recipediag" then
+        -- one-off: what the profession window API gives on this client (saved, read after /reload)
+        local T = C_TradeSkillUI
+        local out = { t = time(), fns = {} }
+        for _, fn in ipairs({ "GetAllRecipeIDs", "GetRecipeInfo", "GetRecipeSchematic", "GetRecipeSourceText",
+            "GetBaseProfessionInfo", "GetChildProfessionInfo", "GetProfessionInfoBySkillLineID", "GetTradeSkillLineForRecipe",
+            "GetRecipeRequirements", "GetCategoryInfo", "GetRecipeItemLink", "GetRecipeLink", "GetFilteredRecipeIDs",
+            "IsRecipeProfessionLearned", "GetRecipeDescription", "GetSkillLineForGear" }) do
+            out.fns[fn] = T and T[fn] and true or false
+        end
+        local function dump(v, depth)
+            v = ns.Plain(v)
+            if type(v) ~= "table" then return tostring(v) end
+            if (depth or 0) > 2 then return "{...}" end
+            local t = {}
+            for k, x in pairs(v) do t[tostring(k)] = dump(x, (depth or 0) + 1) end
+            return t
+        end
+        if T and T.GetAllRecipeIDs then
+            local ok, ids = pcall(T.GetAllRecipeIDs)
+            ids = ok and ids or {}
+            out.total = #ids
+            local learned, unlearned, samples = 0, 0, {}
+            for _, id in ipairs(ids) do
+                local okI, info = pcall(T.GetRecipeInfo, id)
+                if okI and info then
+                    if info.learned then learned = learned + 1 else unlearned = unlearned + 1 end
+                    local want = (info.learned and learned <= 3) or (not info.learned and unlearned <= 3)
+                    if want then
+                        local s = { id = tostring(id), info = dump(info) }
+                        if T.GetRecipeSchematic then local o, x = pcall(T.GetRecipeSchematic, id, false); s.schem = o and dump(x) or "err" end
+                        if T.GetRecipeSourceText then local o, x = pcall(T.GetRecipeSourceText, id); s.source = o and tostring(ns.Plain(x)) or "err" end
+                        if T.GetRecipeRequirements then local o, x = pcall(T.GetRecipeRequirements, id); s.req = o and dump(x) or "err" end
+                        samples[#samples + 1] = s
+                    end
+                end
+            end
+            out.learned, out.unlearned, out.samples = learned, unlearned, samples
+            if T.GetBaseProfessionInfo then local o, x = pcall(T.GetBaseProfessionInfo); out.prof = o and dump(x) or "err" end
+        end
+        ns.db.diagRecipes = ns.db.diagRecipes or {}
+        local key = (type(out.prof) == "table" and out.prof.professionName) or tostring(out.total)
+        ns.db.diagRecipes[key] = out
+        self:Print(("recipediag %s: %s recipes, %s learned, %s not learned - saved, /reload to write"):format(
+            tostring(key), tostring(out.total), tostring(out.learned), tostring(out.unlearned)))
     elseif cmd == "gyujtes" and ns.SyncDev and ns.SyncDev.IsCollector() then
         ns.SyncDev.Status()
     elseif cmd == "news" then
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then
         if ns.Goals then ns.Goals:Toggle() end
+    elseif cmd == "prof" or cmd == "szakma" or cmd == "professions" then
+        if ns.ProfUI then ns.ProfUI:Toggle() end
     elseif cmd == "best" then
         if ns.BestFarm then ns.BestFarm:Toggle() end
     elseif cmd == "help" then
