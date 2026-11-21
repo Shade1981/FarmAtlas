@@ -36,6 +36,8 @@ local function SetBG(f, color, border)
 end
 
 local function Font(parent, size, r, g, b, template)
+    -- unpack() of a 4-part colour would land its alpha here: only a real template name counts
+    if type(template) ~= "string" then template = nil end
     local fs = parent:CreateFontString(nil, "OVERLAY", template or "GameFontHighlightSmall")
     if size then
         local path, _, flags = fs:GetFont()
@@ -196,17 +198,22 @@ local function ItemTooltip(owner, itemID)
     GameTooltip:Show()
 end
 
+local function Hex(c)
+    local function b(v) return math.floor(math.max(0, math.min(1, v or 0)) * 255 + 0.5) end
+    return ("%02x%02x%02x"):format(b(c[1]), b(c[2]), b(c[3]))
+end
+
 local function ColorName(e, skill)
     local col = P:Color(e, skill)
     local c = col and P.COLORS[col] or C.text
-    return ("|cff%02x%02x%02x%s|r"):format(c[1] * 255, c[2] * 255, c[3] * 255, e.name)
+    return "|cff" .. Hex(c) .. tostring(e.name) .. "|r"
 end
 
 local function Tiers(e)
     local d = e.diff
     if d and not e.unanchored then
         local c = P.COLORS
-        local function col(i, v) return ("|cff%02x%02x%02x%d|r"):format(c[i][1] * 255, c[i][2] * 255, c[i][3] * 255, v) end
+        local function col(i, v) return "|cff" .. Hex(c[i]) .. tostring(v) .. "|r" end
         return col(1, d[1]) .. "  " .. col(2, d[2]) .. "  " .. col(3, d[3]) .. "  " .. col(4, d[4])
     end
     local grey = (d and d[4]) or e.grey
@@ -223,7 +230,8 @@ end
 -- window
 ------------------------------------------------------------------------
 function UI:Build()
-    if self.frame then return end
+    if self.frame and self.built then return end
+    if self.frame then self.frame:Hide(); self.frame = nil end
     local f = CreateFrame("Frame", "FarmAtlasProfFrame", UIParent, "BackdropTemplate")
     self.frame = f
     f:SetSize(W, H)
@@ -329,8 +337,9 @@ function UI:Build()
     self:BuildFav(body)
     self:BuildList(body)
 
-    f:SetScript("OnShow", function() UI:Refresh() end)
+    f:SetScript("OnShow", function() UI:Safe(UI.Refresh) end)
     self.tab = "recipes"
+    self.built = true
 end
 
 ------------------------------------------------------------------------
@@ -961,12 +970,12 @@ function UI:SetProf(key, quiet)
     self.profID = P:ID(key)
     self.target = nil
     if not quiet then self.selected = nil end
-    self:Refresh()
+    self:Safe(self.Refresh)
 end
 
 function UI:SetTab(t)
     self.tab = t
-    self:Refresh()
+    self:Safe(self.Refresh)
 end
 
 function UI:DefaultProf()
@@ -1021,23 +1030,35 @@ function UI:Refresh()
     if not P:Lib() then note = L("pf_lib_missing")
     elseif #P:List(self.profID) == 0 then note = L("pf_scan_hint") end
     f.note:SetText(note)
-    if self.tab == "recipes" then self:FillRecipes()
-    elseif self.tab == "skillup" then self:FillSkillUp()
-    elseif self.tab == "profit" then self:FillProfit()
-    elseif self.tab == "fav" then self:FillFav()
-    elseif self.tab == "list" then self:FillList() end
+    local fill = ({ recipes = self.FillRecipes, skillup = self.FillSkillUp, profit = self.FillProfit,
+        fav = self.FillFav, list = self.FillList })[self.tab]
+    if fill then self:Safe(fill) end
+end
+
+-- a broken row must never leave an empty window without a word: say it once
+function UI:Safe(fn, ...)
+    local ok, err = xpcall(fn, function(e) return tostring(e) .. "\n" .. (debugstack and debugstack(2, 6, 0) or "") end, self, ...)
+    if not ok then
+        ns.db.profErr = ns.db.profErr or {}
+        local key = tostring(err):sub(1, 120)
+        if not ns.db.profErr[key] then
+            ns.db.profErr[key] = { t = time(), err = tostring(err):sub(1, 900) }
+            ns:Print("|cffff5959professions window error|r: " .. tostring(err):match("^[^\n]*"))
+        end
+    end
+    return ok
 end
 
 function UI:Toggle()
-    self:Build()
+    if not self:Safe(self.Build) then return end
     if self.frame:IsShown() then self.frame:Hide() else self.frame:Show() end
 end
 
 function UI:Open(key)
-    self:Build()
+    if not self:Safe(self.Build) then return end
     if key then self.prof = key; self.profID = P:ID(key) end
     self.frame:Show()
-    self:Refresh()
+    self:Safe(self.Refresh)
 end
 
 -- redraw at most twice a second when data changes
@@ -1045,7 +1066,7 @@ local pending = false
 local function Soon()
     if pending or not (UI.frame and UI.frame:IsShown()) then return end
     pending = true
-    C_Timer.After(0.5, function() pending = false; UI:Refresh() end)
+    C_Timer.After(0.5, function() pending = false; UI:Safe(UI.Refresh) end)
 end
 ns:On("PROF_CHANGED", Soon)
 ns:On("ITEM_INFO", Soon)
