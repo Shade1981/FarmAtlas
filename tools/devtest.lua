@@ -152,3 +152,38 @@ Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^H^1^0^Pal^1.8.0", "GUILD", "Pal")
 check(#PRINTS == 1, "only once per session")
 print(PRINTS[1])
 print("DEV2 ERRORS:", E)
+-- relay: Buddy has guild data from "Pál Kovács" and passes it on with the finder's name
+ME = "Buddy"
+dbB.settings.devShare = true
+dbB.shared["Pál Kovács"] = { seen = 1, nItems = 1, kills = { [3101] = 12 },
+  items = { [2447] = { zones = { [1411] = { [B:CellKey(10.2, 20.4)] = { x = 10.2, y = 20.4, n = 4 } } }, mobs = { [3101] = { n = 3, lvl = 6, name = "Bristleback" } } } },
+  trainerPos = { Kania = { mapID = 1451, x = 52.0, y = 39.7 } } }
+dbB.shared["Shade Tide"] = { seen = 1, nItems = 0, kills = { [9] = 99 }, items = {} }
+NOW = NOW + 5000
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^1.6.1", "CHANNEL", "Shade Tide")
+OUT = {}
+for i = 1, 400 do B.SyncDev.Send() end
+local F, own = 0, 0
+for _, o in ipairs(OUT) do if o.m:match("^1%^F%^") then F = F + 1; check(#o.m <= 255, "relay msg length", #o.m) else own = own + 1 end
+  check(not o.m:find("Shade Tide"), "collector's own data not relayed") end
+check(F >= 3 and own > 0, "relay sent", F, own)
+ME = "Shade"; PRINTS = {}
+dbA.shared["Pál Kovács"] = { seen = 1, nItems = 1, kills = { [3101] = 50 }, items = {} }
+for _, o in ipairs(OUT) do Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", o.m, "WHISPER", "Buddy") end
+local pk = dbA.shared["Pál Kovács"]
+check(pk and pk.items[2447] and next(pk.items[2447].zones[1411]) and pk.items[2447].mobs[3101], "relayed into finder's bucket")
+check(pk.kills[3101] == 50, "relayed older value does not lower", pk.kills[3101])
+check(pk.trainerPos and pk.trainerPos.Kania, "relayed trainer")
+-- relayed F from a non-collector is ignored
+ME = "Buddy"; local before = dbB.shared["Zed"]
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^F^Zed^K^3100^5", "WHISPER", "Evil")
+check(not dbB.shared["Zed"], "non-collector ignores F")
+-- live relay: Buddy gets a guild message while Shade is active -> forwarded
+OUT = {}
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3200^7", "GUILD", "Guildie")
+for i = 1, 400 do B.SyncDev.Send() end
+local live = false for _, o in ipairs(OUT) do if o.m == "1^F^Guildie^K^3200^7" then live = true end end
+check(live, "live relay")
+-- real db tables are back after a relay build
+check(dbB.learned[2447] and dbB.kills[3100] == 7, "own tables restored")
+print("RELAY ERRORS:", E)

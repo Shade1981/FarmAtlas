@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.6.1"
+ns.version = "1.6.2"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}

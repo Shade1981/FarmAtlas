@@ -818,6 +818,74 @@ ns.SyncRestore = { Hello = SayHello, HandleHello = HandleHello, HandleRestore = 
 local Dev = {}
 local ValidCollectorFn
 
+-- the collector: something another player's guild sent them, with the finder's name.
+-- Read into a scratch bucket, then kept per finder by the larger value, so a relayed
+-- older copy never lowers what the finder sent us directly.
+local function Bigger(a, b) return (b and b.n or 0) > (a and a.n or 0) end
+local function MergeCells(dst, src)
+    for ck, c in pairs(src or {}) do
+        if Bigger(dst[ck], c) then dst[ck] = { x = c.x, y = c.y, n = c.n } end
+    end
+end
+local function HandleForward(f, relay)
+    local origin = f[2]
+    if type(origin) ~= "string" or #origin < 2 or #origin > 48 or origin:find("[%c%^|]") or origin == relay then return end
+    if ValidCollectorFn and ValidCollectorFn(origin, origin) then return end
+    local inner = {}
+    for i = 3, #f do inner[#inner + 1] = f[i] end
+    local kind = inner[1]
+    local tmp = { items = {}, kills = {}, nItems = 0 }
+    if kind == "C" then HandleC(tmp, inner)
+    elseif kind == "M" then HandleM(tmp, inner)
+    elseif kind == "K" then HandleK(tmp, inner)
+    elseif kind == "P" then HandleP(tmp, inner)
+    elseif kind == "O" then HandleO(tmp, inner)
+    elseif kind == "Q" then HandleQ(tmp, inner)
+    elseif kind == "T" then HandleT(tmp, inner)
+    else return end
+    local s = PlayerBucket(origin)
+    for key, it in pairs(tmp.items) do
+        local d = ItemBucket(s, key)
+        if d then
+            for mapID, cells in pairs(it.zones) do
+                d.zones[mapID] = d.zones[mapID] or {}
+                MergeCells(d.zones[mapID], cells)
+            end
+            for npcID, m in pairs(it.mobs) do
+                if Bigger(d.mobs[npcID], m) then d.mobs[npcID] = m end
+            end
+        end
+    end
+    for npcID, n in pairs(tmp.kills) do
+        if n > (s.kills[npcID] or 0) then s.kills[npcID] = n end
+    end
+    for objID, p in pairs(tmp.pools or {}) do
+        s.pools = s.pools or {}
+        local d = s.pools[objID]
+        if not d and (s.nPools or 0) < MAX_POOLS_PER_PLAYER then
+            d = { fish = {}, zones = {} }; s.pools[objID] = d; s.nPools = (s.nPools or 0) + 1
+        end
+        if d then
+            for fid in pairs(p.fish) do d.fish[fid] = true end
+            for mapID, cells in pairs(p.zones) do d.zones[mapID] = d.zones[mapID] or {}; MergeCells(d.zones[mapID], cells) end
+        end
+    end
+    for name, o in pairs(tmp.fishObjects or {}) do
+        local d = ObjBucket(s, name)
+        if d then
+            for id, n in pairs(o.items) do if n > (d.items[id] or 0) then d.items[id] = n end end
+            for mapID, cells in pairs(o.zones) do d.zones[mapID] = d.zones[mapID] or {}; MergeCells(d.zones[mapID], cells) end
+        end
+    end
+    for npc, tp in pairs(tmp.trainerPos or {}) do
+        s.trainerPos = s.trainerPos or {}
+        if not s.trainerPos[npc] and (s.nTrainers or 0) < MAX_TRAINERS_PER_PLAYER then
+            s.nTrainers = (s.nTrainers or 0) + 1
+            s.trainerPos[npc] = tp
+        end
+    end
+end
+
 local function OnAddonMessage(prefix, msg, channel, sender)
     if prefix ~= PREFIX or not Enabled() or not sender then return end
     if channel == "GUILD" and not ns.db.settings.syncGuild then return end
@@ -860,6 +928,10 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     r.n = r.n + 1
     if r.n > RATE_PER_MIN then return end
 
+    if f[1] == "F" then
+        if channel == "WHISPER" and Dev.IsCollector() then HandleForward(f, short); ScheduleRefresh() end
+        return
+    end
     if f[1] == "H" then HandleHello(f, channel, sender, short); return end
     if f[1] == "S" then if f[2] then restoreSkip[f[2]] = GetTime() end; return end
     local s = PlayerBucket(short)
@@ -878,6 +950,14 @@ local function OnAddonMessage(prefix, msg, channel, sender)
         end
         return
     else return end
+    -- pass a guild / group mate's find on to the collector while it is online
+    if channel ~= "WHISPER" and DevLive then
+        local inner = msg:sub(#PROTO + #SEP + 1)
+        local name = Cut(Clean(short), 40)
+        if name ~= "" and #inner + #name + 3 <= MAX_LEN then
+            DevLive("F:" .. name .. ":" .. inner, "F" .. SEP .. name .. SEP .. inner)
+        end
+    end
     ScheduleRefresh()
 end
 
@@ -941,12 +1021,56 @@ end
 
 DevLive = function(id, msg)
     if not DevActive() then return end
+    if not devQueued[id] and #devQ >= 4000 then return end
     if devQueued[id] then devQueued[id] = msg; return end
     devQueued[id] = msg
     devQ[#devQ + 1] = id
 end
 
 -- every own find, built with the same message builders as the group sync
+-- what the guild / group sent us, passed on with its finder's name ("F^finder^...")
+local RELAY_ROOM = 50
+local function BuildRelay(out)
+    local db = ns.db
+    local saved = { db.learned, db.kills, db.pools, db.fishObjects, db.trainerPos }
+    local savedLen = MAX_LEN
+    MAX_LEN = savedLen - RELAY_ROOM
+    pcall(function()
+    for origin, b in pairs(db.shared or {}) do
+        local name = Cut(Clean(origin), 40)
+        if name ~= "" and not (ValidCollectorFn and ValidCollectorFn(origin, origin)) then
+            local fake = {}
+            for key, it in pairs(b.items or {}) do
+                local src = ns.Items[key] or saved[1][key]
+                fake[key] = { zones = it.zones or {}, mobs = it.mobs or {}, own = true, cat = src and src.cat }
+            end
+            db.learned, db.kills = fake, b.kills or {}
+            db.pools, db.fishObjects, db.trainerPos = b.pools or {}, b.fishObjects or {}, b.trainerPos or {}
+            capture, captureSeen = {}, {}
+            pcall(function()
+                for key, e in pairs(fake) do
+                    for mapID in pairs(e.zones) do QueueCells(key, mapID) end
+                    for npcID in pairs(e.mobs) do QueueMob(key, npcID) end
+                end
+                for npcID in pairs(db.kills) do QueueKill(npcID) end
+                for objID, p in pairs(db.pools) do
+                    for mapID in pairs(p.zones or {}) do QueuePool(objID, mapID) end
+                end
+                for oname, o in pairs(db.fishObjects) do
+                    for mapID in pairs(o.zones or {}) do QueueFishObj(oname, mapID) end
+                    QueueFishObj(oname, nil)
+                end
+                for npc in pairs(db.trainerPos) do QueueTrainer(npc) end
+            end)
+            for _, m in ipairs(capture) do out[#out + 1] = "F" .. SEP .. name .. SEP .. m end
+        end
+    end
+    end)
+    db.learned, db.kills, db.pools, db.fishObjects, db.trainerPos = saved[1], saved[2], saved[3], saved[4], saved[5]
+    MAX_LEN = savedLen
+    capture, captureSeen = nil, nil
+end
+
 local function BuildDump()
     capture, captureSeen = {}, {}
     local ok = pcall(function()
@@ -968,9 +1092,14 @@ local function BuildDump()
         end
         for npc in pairs(ns.db.trainerPos or {}) do QueueTrainer(npc) end
     end)
-    local out = capture
+    local out = ok and capture or {}
     capture, captureSeen = nil, nil
-    return ok and out or {}
+    local relayOk = pcall(BuildRelay, out)
+    if not relayOk then
+        -- never leave the real tables swapped out
+        capture, captureSeen = nil, nil
+    end
+    return out
 end
 
 function Dev.OnCollector(sender, short)
@@ -1003,7 +1132,7 @@ end
 -- the collector: who sent something this session
 local devGot, devGotN = {}, 0
 -- per sender this session: messages by kind, first / last arrival (only for the collector)
-local KIND_HU = { C = "farmhely", M = "drop", K = "ölésszám", R = "receptforrás", P = "halraj", O = "roncs", Q = "roncsfogás", T = "tréner" }
+local KIND_HU = { C = "farmhely", M = "drop", K = "ölésszám", R = "receptforrás", P = "halraj", O = "roncs", Q = "roncsfogás", T = "tréner", F = "guildtársaktól továbbított" }
 local devStats, helloSent, helloLast = {}, 0, nil
 function Dev.Got(short, kind)
     local st = devStats[short]

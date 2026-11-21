@@ -288,7 +288,8 @@ local function Update()
             if isInside and not s.dot then inside = inside or s end
             local sx, sy = -west * scale, north * scale
             if facing then
-                sx, sy = sx * cosF - sy * sinF, sx * sinF + sy * cosF
+                -- the map turns the other way than you: rotate by -facing
+                sx, sy = sx * cosF + sy * sinF, -sx * sinF + sy * cosF
             end
             local pd = math.sqrt(sx * sx + sy * sy)
             local rpx = s.wr * scale
@@ -341,7 +342,7 @@ local function Update()
                 for _, c in ipairs(s.cells) do
                     local cn, cwst = c[1] - pwx, c[2] - pwy
                     local cx, cy = -cwst * scale, cn * scale
-                    if facing then cx, cy = cx * cosF - cy * sinF, cx * sinF + cy * cosF end
+                    if facing then cx, cy = cx * cosF + cy * sinF, -cx * sinF + cy * cosF end
                     if math.sqrt(cx * cx + cy * cy) <= mapRadius - side * 0.5 then
                         n = n + 1
                         local t = p.cellTex[n]
@@ -353,7 +354,7 @@ local function Update()
                         t:ClearAllPoints()
                         t:SetPoint("CENTER", Minimap, "CENTER", cx, cy)
                         t:SetSize(side, side)
-                        if t.SetRotation then t:SetRotation(facing or 0) end
+                        if t.SetRotation then t:SetRotation(-(facing or 0)) end
                         t:SetVertexColor(s.cr, s.cg, s.cb, 1)
                         t:Show()
                     end
@@ -466,7 +467,7 @@ local function UpdateTrainers()
             local sx, sy = -west * scale, north * scale
             if facing then
                 local cf, sf = math.cos(facing), math.sin(facing)
-                sx, sy = sx * cf - sy * sf, sx * sf + sy * cf
+                sx, sy = sx * cf + sy * sf, -sx * sf + sy * cf
             end
             local pd = math.sqrt(sx * sx + sy * sy)
             if pd <= mapRadius - 6 then
