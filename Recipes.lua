@@ -149,6 +149,11 @@ local function ScanTradeSkillModern(isRetry)
         end
     end
     c.recipesScanned = time()
+    -- every recipe of this profession, known or not (Professions.lua)
+    if ns.Prof and profID then
+        local okP, errP = pcall(ns.Prof.OnScan, ns.Prof, profID, ids)
+        if not okP and ns.debug then ns:Print("prof scan: " .. tostring(errP)) end
+    end
     ReportScan(line, count)
     if changed then ns:Fire("RECIPES_CHANGED") end
     -- some reagent names were not cached yet: read again shortly

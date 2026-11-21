@@ -118,6 +118,15 @@ SENT_OUT = {}
 OUT = {}; A.SyncDev.Hello()
 Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", OUT[#OUT].m, "CHANNEL", "Shade Tide")
 check(A.SyncDev.IsCollector(), "Shade Tide still collector after echo")
+-- another "Shade ..." (same first name) sends the same CH text: must not be taken as our echo
+OUT = {}; A.SyncDev.Hello()
+local mine = OUT[#OUT].m
+local theirs = mine:gsub("%^[^%^]*$", "^424242")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", theirs, "CHANNEL", "Shade Hun")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^" .. tostring(A.version), "CHANNEL", "Shade Hun")
+check(A.SyncDev.IsCollector(), "other Shade's CH does not disable the collector")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^5", "GUILD", "Shade Walker")
+check(A.SyncDev.IsCollector(), "other Shade's data does not disable the collector")
 Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^5", "GUILD", "Shade Tide")
 check(not dbA.shared["Shade Tide"], "own echo not stored")
 -- the other character "Shade Hun": after its echo it is not a collector
@@ -144,11 +153,11 @@ Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^1.6.0", "CHANNEL", "Shade Tide
 check(#PRINTS == 0, "older version: no notice")
 Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^9.9.9", "CHANNEL", "Shade Tide"); RunTimers()
 check(#PRINTS == 0, "absurd version ignored")
-Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^1.7.0", "CHANNEL", "Faker"); RunTimers()
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^9.7.0", "CHANNEL", "Faker"); RunTimers()
 check(#PRINTS == 0, "faker version ignored")
-Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^1.7.0", "CHANNEL", "Shade Tide"); RunTimers()
-check(#PRINTS == 1 and PRINTS[1]:find("1.7.0"), "update notice", PRINTS[1])
-Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^H^1^0^Pal^1.8.0", "GUILD", "Pal"); RunTimers()
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^1.8.0", "CHANNEL", "Shade Tide"); RunTimers()
+check(#PRINTS == 1 and PRINTS[1]:find("1.8.0"), "update notice", PRINTS[1])
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^H^1^0^Pal^1.9.0", "GUILD", "Pal"); RunTimers()
 check(#PRINTS == 1, "only once per session")
 print(PRINTS[1])
 print("DEV2 ERRORS:", E)
@@ -187,3 +196,26 @@ check(live, "live relay")
 -- real db tables are back after a relay build
 check(dbB.learned[2447] and dbB.kills[3100] == 7, "own tables restored")
 print("RELAY ERRORS:", E)
+-- restore with WoW Forever full names: holder B keeps "Shade Tide"; hello from "Shade Tide" lists "Shade"
+ME = "Buddy"; OUT = {}
+dbB.shared["Shade Tide"] = { seen = 1, nItems = 5, nRecipes = 0, kills = { [3100] = 9 },
+  items = { [2447] = { zones = { [1411] = { [B:CellKey(30, 30)] = { x = 30, y = 30, n = 3 } } }, mobs = {} } } }
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^H^0^0^Shade^1.6.2", "GUILD", "Shade Tide")
+RunTimers(); for i = 1, 30 do for _, fn in ipairs(TICKERS or {}) do pcall(fn) end end
+local rs = false for _, o in ipairs(OUT) do if o.m:match("^1%^S%^") or o.m:match("^1%^X") then rs = true end end
+check(rs, "restore starts for full name", #OUT)
+print("RESTORE-NAME ERRORS:", E)
+-- realm name missing on this login: the collector is still recognised by its GUID realm
+local saveR, saveG = GetRealmName, UnitGUID
+GetRealmName = function() return "" end
+UnitGUID = function(u) return "Player-6855-001B5338" end
+dbA.lastRealm = nil
+ME = "Shade"
+-- a fresh selfFull-free client
+FarmAtlasDB = nil
+local D, d1, d2 = Load(); Fire(d1, d2, "ADDON_LOADED", "FarmAtlas"); Fire(d1, d2, "PLAYER_LOGIN")
+check(D.SyncDev.IsCollector(), "collector by GUID realm when the realm name is empty")
+UnitGUID = function(u) return "Player-1-001B5338" end
+check(not D.SyncDev.IsCollector(), "other realm id: not collector")
+GetRealmName, UnitGUID = saveR, saveG
+print("REALM ERRORS:", E)

@@ -290,8 +290,11 @@ function UI:Build()
     self.goalsButton = FlatButton(header, "", 70, 22)
     self.goalsButton:SetPoint("RIGHT", gear, "LEFT", -6, 0)
     self.goalsButton:SetScript("OnClick", function() if ns.Goals then ns.Goals:Toggle() end end)
+    self.profButton = FlatButton(header, "", 80, 22)
+    self.profButton:SetPoint("RIGHT", self.goalsButton, "LEFT", -6, 0)
+    self.profButton:SetScript("OnClick", function() if ns.ProfUI then ns.ProfUI:Toggle() end end)
     self.bestButton = FlatButton(header, "", 90, 22)
-    self.bestButton:SetPoint("RIGHT", self.goalsButton, "LEFT", -6, 0)
+    self.bestButton:SetPoint("RIGHT", self.profButton, "LEFT", -6, 0)
     self.bestButton:SetScript("OnClick", function() if ns.BestFarm then ns.BestFarm:Toggle() end end)
 
     -- Search ---------------------------------------------------------
@@ -1711,6 +1714,8 @@ function UI:ApplyLocale()
     if self.langButton then self.langButton.text:SetText(ns:Lang():upper()) end
     self.goalsButton.text:SetText(L("goals_btn"))
     Fit(self.goalsButton, 70)
+    self.profButton.text:SetText(L("pf_btn"))
+    Fit(self.profButton, 80)
     self.bestButton.text:SetText("|cffffd200" .. L("bf_btn") .. "|r")
     Fit(self.bestButton, 90)
     d.goalLabel:SetText(L("goal_label"))
@@ -1943,7 +1948,7 @@ do
             fg:SetAllPoints(header)
             fg:SetFrameLevel(hb + 4)
             for _, w in ipairs({ self.title, self.byline, self.sub, self.logo }) do Lift(fg, w, hb + 5) end
-            for _, b in ipairs({ self.closeButton, self.langButton, self.gearButton, self.goalsButton, self.bestButton }) do
+            for _, b in ipairs({ self.closeButton, self.langButton, self.gearButton, self.goalsButton, self.profButton, self.bestButton }) do
                 if b and b.SetFrameLevel then b:SetFrameLevel(hb + 6) end
             end
             self.headerArt = art

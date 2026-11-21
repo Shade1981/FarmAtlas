@@ -151,6 +151,10 @@ ns.SyncSeenVersion = SeenVersion
 
 local recentSent = {}                   -- [full message] = time we sent it (echo detection)
 local selfFull = nil                    -- our name as others see it (WoW Forever: "First Last")
+-- a random mark on our hello messages: only OUR message can come back with it.
+-- (Another player whose first name is also "Shade" sends the very same "CH" -
+-- without this mark his message looked like our own echo.)
+local NONCE = tostring(math.random(100000, 999999)) .. tostring(math.floor((time and time() or 0) % 100000))
 local sentCount = 0
 local function MarkSent(full)
     local now = GetTime()
@@ -190,7 +194,6 @@ local function SendNext()
     local msg = queued[id]
     queued[id] = nil
     if not msg then return end
-    MarkSent(PROTO .. SEP .. msg)
     for _, ch in ipairs(channels) do
         C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, ch)
     end
@@ -615,7 +618,7 @@ local restorePending = {}           -- [name] = true while we wait to start
 local rq, rqTarget = {}, nil        -- our outgoing restore queue (one target at a time)
 
 local function MyNames()
-    local realm = GetRealmName and ns.Plain(GetRealmName()) or nil
+    local realm = ns:RealmName()
     local out, seen = {}, {}
     local me = ns.Plain(UnitName("player"))
     if me then out[1] = me; seen[me] = true end
@@ -643,7 +646,7 @@ local function SayHello()
     local items, recipes = OwnCounts()
     local names = {}
     for _, n in ipairs(MyNames()) do names[#names + 1] = Clean(n) end
-    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ","), tostring(ns.version or "") }, SEP)
+    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ","), tostring(ns.version or ""), NONCE }, SEP)
     if #msg > MAX_LEN then return end
     helloAt = GetTime()
     MarkSent(PROTO .. SEP .. msg)
@@ -699,7 +702,13 @@ local function HandleHello(f, channel, sender, short)
     SeenVersion(f[5])
     local theirItems, theirRecipes = tonumber(f[2]) or 0, tonumber(f[3]) or 0
     if rqTarget then return end                      -- one restore at a time
+    -- WoW Forever: we keep their finds under the full name we saw ("Shade Tide"),
+    -- while their hello lists first names only - so check the sender's own name first
+    local cands, seenC = { short }, { [short] = true }
     for name in (f[4] or ""):gmatch("[^,]+") do
+        if not seenC[name] then seenC[name] = true; cands[#cands + 1] = name end
+    end
+    for _, name in ipairs(cands) do
         local s = ns.db.shared[name]
         local items = s and s.nItems or 0
         local recipes = s and s.nRecipes or 0
@@ -955,7 +964,8 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if channel ~= "WHISPER" and DevLive then
         local inner = msg:sub(#PROTO + #SEP + 1)
         local name = Cut(Clean(short), 40)
-        if name ~= "" and #inner + #name + 3 <= MAX_LEN then
+        if name ~= "" and #inner + #name + 3 <= MAX_LEN
+            and not (ValidCollectorFn and ValidCollectorFn(sender, short)) then
             DevLive("F:" .. name .. ":" .. inner, "F" .. SEP .. name .. SEP .. inner)
         end
     end
@@ -971,7 +981,7 @@ end
 -- after that the normal C / M / K / R / P / O / Q / T messages go to it.
 ------------------------------------------------------------------------
 -- full = the name other players see (WoW Forever: first and last name), lower case, no spaces
-local COLLECTORS = { { name = "Shade", full = "shadetide", realm = "CAMWOWEU5Realm1PvE" } }
+local COLLECTORS = { { name = "Shade", full = "shadetide", realm = "CAMWOWEU5Realm1PvE", realmID = 6855 } }
 local DEV_CHANNEL = "FarmAtlasData"
 local DEV_EVERY = 1.5          -- seconds between two messages to the collector
 local DEV_ACTIVE = 150         -- collector counts as online this long after its last "here"
@@ -984,11 +994,19 @@ local function DevOn()
     return Enabled() and ns.db.settings.devShare ~= false
 end
 
+-- the realm part of our GUID ("Player-6855-...") - always there, even when the
+-- realm name is not
+local function GuidRealm()
+    local g = UnitGUID and ns.Plain(UnitGUID("player"))
+    return type(g) == "string" and tonumber(g:match("^Player%-(%d+)%-")) or nil
+end
+
 function Dev.IsCollector()
     local me = ns.Plain(UnitName("player"))
-    local realm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or "")
+    local realm = NoSpace(ns:RealmName() or "")
+    local rid = GuidRealm()
     for _, c in ipairs(COLLECTORS) do
-        if me == c.name and realm == c.realm then
+        if me == c.name and (realm == c.realm or (rid and rid == c.realmID)) then
             -- once our full name is known, only the right character collects
             if selfFull and NoSpace(selfFull):lower():gsub("%-.*$", "") ~= c.full then return false end
             return true
@@ -998,8 +1016,14 @@ function Dev.IsCollector()
 end
 IsCollectorFn = Dev.IsCollector
 
+-- for /farm gyujtes on a "Shade" that is not the collector: why not
+function Dev.Why()
+    return ("name=%s realm=%s guidRealm=%s full=%s"):format(tostring(ns.Plain(UnitName("player"))),
+        tostring(ns:RealmName()), tostring(GuidRealm()), tostring(selfFull))
+end
+
 local function ValidCollector(sender, short)
-    local myRealm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or ""):lower()
+    local myRealm = NoSpace(ns:RealmName() or ""):lower()
     local function Check(s)
         s = NoSpace(s):lower()
         local name, realm = s:match("^([^%-]+)%-(.+)$")
@@ -1261,7 +1285,7 @@ local function CollectorHello()
     if InCombatLockdown and InCombatLockdown() then return end
     local id = ChannelID()
     if not id then JoinDev(); return end
-    local msg = PROTO .. SEP .. "CH" .. SEP .. tostring(ns.version or "")
+    local msg = PROTO .. SEP .. "CH" .. SEP .. tostring(ns.version or "") .. SEP .. NONCE
     MarkSent(msg)
     if pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "CHANNEL", id) then
         helloSent, helloLast = helloSent + 1, GetTime()

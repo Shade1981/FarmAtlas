@@ -17,3 +17,12 @@ if not (db.chars[kb] and db.chars[kb].recipes.Hun and not db.chars[kb].recipes.T
 if db.chars["Forever-Shade"] then E=E+1 print("old key left") end
 local mine, alts = B:RecipeKnown("Tide"); if mine or alts[1] ~= "Shade" then E=E+1 print("alts", mine, alts[1]) end
 print("CHAR ERRORS", E)
+-- entries written without a realm get merged into the right key
+FarmAtlasDB = { chars = { ["-Shade@Player-1-AAAA"] = { recipes = { Today = true }, recipesScanned = 200, bags = {}, bank = {}, goals = {} },
+  ["Forever-Shade"] = { recipes = { Old = true }, recipesScanned = 100, bags = {}, bank = {}, goals = {} } } }
+UnitGUID = function(u) return "Player-1-AAAA" end
+local Z = Load(); Z:CharData()
+local db2 = FarmAtlasDB
+local k = "Forever-Shade@Player-1-AAAA"
+if not (db2.chars[k] and db2.chars[k].recipes.Today and db2.chars[k].recipes.Old and not db2.chars["-Shade@Player-1-AAAA"]) then E = E + 1 print("merge empty-realm entry failed") end
+print("CHAR2 ERRORS", E)

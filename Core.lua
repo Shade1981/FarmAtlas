@@ -4,7 +4,7 @@
 local ADDON, ns = ...
 _G.FarmAtlas = ns
 
-ns.version = "1.6.2"
+ns.version = "1.7.0"
 ns.Items = {}        -- [itemID] = { name, cat, uses, tags, spots = { {z,x,y,r,mobs,lvl,note}, ... } }
 ns.Zones = {}        -- [zoneKey] = { name = "Durotar", id = 1411, min = 1, max = 10 }
 ns.callbacks = {}
@@ -592,6 +592,21 @@ function ns:OpenMapID(mapID)
     end
 end
 
+-- the realm name, robust: on some WoW Forever logins GetRealmName() comes back
+-- empty (or as a protected value) - then the normalized name, the player's full
+-- name, and at last the one seen before are used
+function ns:RealmName()
+    local function ok(v) v = ns.Plain(v); if type(v) == "string" and v ~= "" then return v end end
+    local r = GetRealmName and ok(GetRealmName())
+    if not r and GetNormalizedRealmName then r = ok(GetNormalizedRealmName()) end
+    if not r and UnitFullName then local _, rr = UnitFullName("player"); r = ok(rr) end
+    if r then
+        if self.db then self.db.lastRealm = r end
+        return r
+    end
+    return self.db and self.db.lastRealm or nil
+end
+
 function ns:Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff3fc7ebFarm|r|cffffd200Atlas|r: " .. tostring(msg))
 end
@@ -766,12 +781,18 @@ SlashCmdList.FARMATLAS = function(msg)
             local unlocked = ns:ToggleBannerEdit()
             ns:Print(unlocked and L("tb_unlocked") or L("tb_locked"))
         end
+    elseif cmd == "shots" and ns.SyncDev and ns.SyncDev.IsCollector() and ns.ProfUI then
+        ns.ProfUI:Shots()
     elseif cmd == "gyujtes" and ns.SyncDev and ns.SyncDev.IsCollector() then
         ns.SyncDev.Status()
+    elseif cmd == "gyujtes" and ns.SyncDev and ns.Plain(UnitName("player")) == "Shade" and ns.SyncDev.Why then
+        ns:Print("not collector: " .. ns.SyncDev.Why())
     elseif cmd == "news" then
         if ns.ShowNews then ns:ShowNews() end
     elseif cmd == "goals" then
         if ns.Goals then ns.Goals:Toggle() end
+    elseif cmd == "prof" or cmd == "szakma" or cmd == "professions" then
+        if ns.ProfUI then ns.ProfUI:Toggle() end
     elseif cmd == "best" then
         if ns.BestFarm then ns.BestFarm:Toggle() end
     elseif cmd == "help" then

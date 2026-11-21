@@ -10,6 +10,29 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 ---
 
+## New in 1.7.0 - Master Crafter
+
+**A complete professions window** - the "Professions" button at the top of FarmAtlas, or `/farm prof`.
+
+- **Every recipe of all 12 professions**, known or not: the skill to learn it, the orange / yellow / green / grey levels, where to learn it (trainer, vendor with its price - also Merchant's Favor - drop, quest), the reagents with how many you have, the cost of one craft and its auction house price. Alts who know it are listed too.
+
+![Every recipe with levels, sources and reagents](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v170-recipes.png)
+
+- **Skill-up planner:** the cheapest way from your skill to 75 / 150 / 225 / 300, point by point, with auction house and vendor prices and your own materials first. Recipes with a cooldown (camp items, transmutes, Mooncloth) are never planned.
+
+![Skill-up planner with costs and materials](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v170-skillup.png)
+
+- **Profit list** (what is worth crafting right now, 5% AH cut taken off), **favourites**, and a **shopping list** that adds up the missing materials and their cost.
+- **Farm it instead of buying it:** every material FarmAtlas knows how to farm has a **Farm** button that opens the atlas on it - where, from which mobs, with what drop chance.
+
+![Shopping list with missing materials](https://raw.githubusercontent.com/Shade1981/FarmAtlas/main/media/desc/v170-shopping.png)
+
+- Fixed: known recipes, bags and bank are kept per character again - also for characters with the same first name, or when the game does not tell the realm name.
+- Fixed: sync and restore in guild and group with WoW Forever's full names.
+- Community data: 12 players, 125 items, 276 NPCs with real kill counts, 37 trainer positions.
+
+*Skill levels and recipe sources come from [LibProfessionDB](https://www.curseforge.com/wow/addons/libprofessiondb) by Pimptasty (MIT) - the CurseForge app installs it together with FarmAtlas. Recipes and reagents are read from your own profession windows, so they always match the game.*
+
 ## New in 1.6.2
 
 - Fixed: characters sharing a first name overwrote each other's known recipes and bags - open each profession once more after updating.
@@ -156,6 +179,10 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 
 
 
+**Professions**
+
+- Every recipe of all 12 professions with learn skill, colour levels, sources, reagents and prices; skill-up planner, profit list, favourites and shopping list (`/farm prof`).
+
 **Goals**
 - Set how many you need (e.g. 20x Raptor Flesh). A progress bar counts your bags and bank, and you get an on-screen message and a sound when the goal is reached.
 
@@ -195,6 +222,7 @@ FarmAtlas is your farming and profession companion: where to farm it, what it is
 | `/farm` | open FarmAtlas (also: minimap button, world map button) |
 | `/farm boar` | open with a search |
 | `/farm goals` | farm goals window |
+| `/farm prof` | professions: every recipe, skill-up planner, profit, shopping list |
 | `/farm config` | settings |
 | `/farm trainers` | every trainer of a profession on the map |
 | `/farm banner` | move / resize the town banner |
@@ -222,6 +250,8 @@ Found a wrong spot or a bug? Leave a comment with a screenshot. For Lua errors, 
 # FarmAtlas (magyar)
 
 **Megmutatja, hol farmolhatsz húst, bőrt, pikkelyt, halat, ércet és gyógynövényt - a világtérképen és a minimapon.**
+
+**Újdonság az 1.7.0-ban (Master Crafter):** Szakmák ablak (fent a "Szakmák" gomb, vagy `/farm prof`) - mind a 12 szakma minden receptje szintekkel, forrásokkal, anyagokkal és árakkal; skill-up tervező a legolcsóbb úttal; haszon lista, kedvencek és bevásárlólista; minden farmolható anyagnál Farm gomb. Javítva: receptek és táska karakterenként azonos keresztnév vagy hiányzó realm név esetén is; szinkron a teljes WoW Forever nevekkel.
 
 **Javítás az 1.5.1-ben:** nyitott térképpel harcolva már nem jelenik meg az "ADDON_ACTION_BLOCKED: Button:SetPassThroughButtons()" hiba - a térképjelölők a harc után frissülnek.
 

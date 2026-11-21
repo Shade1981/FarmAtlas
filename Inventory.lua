@@ -20,9 +20,13 @@ end
 local charKeyCache
 function ns:CharKey()
     if charKeyCache then return charKeyCache end
-    local realm, name = GetRealmName() or "?", UnitName("player") or "?"
+    local realm = ns:RealmName()
+    local name = ns.Plain(UnitName("player")) or "?"
     local guid = UnitGUID and ns.Plain(UnitGUID("player"))
-    if type(guid) ~= "string" or guid == "" then return realm .. "-" .. name end
+    if not realm or type(guid) ~= "string" or guid == "" then
+        -- not known yet this early: a temporary key, nothing is moved or cached
+        return (realm or "?") .. "-" .. name .. (type(guid) == "string" and ("@" .. guid) or "")
+    end
     local key = realm .. "-" .. name .. "@" .. guid
     local chars = self.db and self.db.chars
     if chars and not chars[key] then
@@ -34,10 +38,25 @@ function ns:CharKey()
         end
     end
     if chars then
+        -- entries written while the realm name was missing ("-Name@GUID", "?-Name@GUID")
+        for _, bad in ipairs({ "-" .. name .. "@" .. guid, "?-" .. name .. "@" .. guid }) do
+            local b = chars[bad]
+            if b and b ~= chars[key] then
+                local cur = chars[key]
+                if not cur or (b.recipesScanned or 0) >= (cur.recipesScanned or 0) then
+                    -- the newer one wins; recipes known in either are kept
+                    if cur then for r, l in pairs(cur.recipes or {}) do b.recipes = b.recipes or {}; if b.recipes[r] == nil then b.recipes[r] = l end end end
+                    chars[key] = b
+                end
+                chars[bad] = nil
+            end
+        end
+    end
+    if chars then
         chars[key] = chars[key] or { bags = {}, bank = {}, recipes = {}, goals = {} }
         chars[key].name = name
+        charKeyCache = key          -- only once the saved data is there (migration done)
     end
-    charKeyCache = key
     return key
 end
 
