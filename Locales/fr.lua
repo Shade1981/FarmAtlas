@@ -184,6 +184,7 @@ ns.Locales.fr = {
     pf_list_total = "Composants manquants : %s",
     pf_cooldown = "A un temps de recharge - pas utilisée pour monter",
     pf_lib_missing = "Installez LibProfessionDB (CurseForge) pour les niveaux et sources de chaque recette.",
+    pf_done = "Vous avez déjà atteint ce niveau - choisissez un objectif plus haut.",
     pf_scan_hint = "Ouvrez une fois la fenêtre de ce métier pour que FarmAtlas lise ses recettes.",
     op_devshare = "Aider la base de données communautaire",
     op_devshare_hint = "Tant que l'auteur de l'addon est connecté sur votre royaume, vos découvertes (zones de farm, butins, sources de recettes, coins de pêche, entraîneurs) sont envoyées à ce seul personnage, pour être incluses dans la prochaine version pour tous. Uniquement des données de jeu, rien de personnel",

@@ -223,7 +223,22 @@ end
 
 -- open the atlas on an item FarmAtlas knows how to farm
 local function ShowFarm(itemID)
-    if ns.UI and ns.UI.Open then ns.UI:Open(nil, itemID) end
+    local A = ns.UI
+    if not (A and A.Open and itemID) then return end
+    -- search by name (every category) so the item is in the list, then select it
+    local data = ns.Items and ns.Items[itemID]
+    local name = (data and data.name) or P:ItemName(itemID)
+    A:Open(name, itemID)
+    -- in front of this window, not hidden behind it
+    if A.frame then
+        A.frame:SetFrameStrata("DIALOG")
+        A.frame:Raise()
+        -- back to its own layer once you click this window again
+        if UI.frame and not UI.frame.faLowerHooked then
+            UI.frame.faLowerHooked = true
+            UI.frame:HookScript("OnMouseDown", function() if A.frame then A.frame:SetFrameStrata("HIGH") end end)
+        end
+    end
 end
 
 ------------------------------------------------------------------------
@@ -611,7 +626,7 @@ end
 ------------------------------------------------------------------------
 local function SumBox(parent)
     local b = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    b:SetSize(120, 44)
+    b:SetSize(104, 44)
     SetBG(b, C.card)
     b.k = Font(b, 10, unpack(C.muted)); b.k:SetPoint("TOP", 0, -6); b.k:SetJustifyH("CENTER")
     b.v = Font(b, 12); b.v:SetPoint("BOTTOM", 0, 7); b.v:SetJustifyH("CENTER")
@@ -676,7 +691,7 @@ function UI:BuildSkillUp(body)
         local l = ""
         if st.learn then
             if st.learn.kind == "vendor" then
-                l = L("pf_learn_vendor", st.learn.npc or "")
+                l = L("pf_learn_vendor", st.learn.npc or L("pf_src_vendor"))
                 if st.learn.copper then l = l .. " " .. ns:Money(st.learn.copper) end
             elseif st.learn.kind == "ah" then l = L("pf_learn_ah") .. " " .. Money(st.learn.copper)
             else l = L("pf_learn_trainer") end
@@ -689,6 +704,8 @@ function UI:BuildSkillUp(body)
     steps.onClick = function(it) UI.step = it.st; steps.selected = it.key; steps:Refresh(); UI:FillMats() end
     steps.onEnter = function(r, it) if it.st.e then ItemTooltip(r, it.st.e.out) end end
     p.steps = steps
+    p.done = Font(p, 12, unpack(C.muted))
+    p.done:SetPoint("TOP", steps, "TOP", 0, -30)
 
     p.mHead = Font(p, 12, unpack(C.gold))
     p.mHead:SetPoint("TOPLEFT", steps, "BOTTOMLEFT", 0, -8)
@@ -749,6 +766,7 @@ function UI:FillSkillUp()
     local data = {}
     for i, st in ipairs(plan.steps) do data[#data + 1] = { st = st, key = i } end
     p.steps:SetData(data)
+    p.done:SetText((from >= target) and L("pf_done") or "")
     self.step = nil
     p.steps.selected = nil
     p.steps:Refresh()

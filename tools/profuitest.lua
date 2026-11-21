@@ -48,3 +48,18 @@ local saveLS = LibStub; LibStub = nil; P:Invalidate(); UI:Refresh()
 check(#P:List(171) == 2, "scan-only without lib", #P:List(171))
 LibStub = saveLS; P:Invalidate()
 print("PROFUI ERRORS:", getE())
+UI:SetTab("recipes"); UI.pRecipes.search:SetText(""); UI.pRecipes.search:GetScript("OnTextChanged")(UI.pRecipes.search)
+local r1 = UI.pRecipes.list.rows[1]
+print("row1", r1.name.GetText and r1.name:GetText(), r1:IsShown())
+print("count", UI.pRecipes.count:GetText(), "placeholder", UI.pRecipes.search.ph:GetText())
+print("errs", ns.db.profErr and next(ns.db.profErr))
+-- Farm button opens the atlas on the item, in front
+local opened
+ns.UI.Open = function(self, q, id) opened = { q = q, id = id }; self.frame = self.frame or CreateFrame("Frame") end
+UI:SetTab("skillup")
+local row = UI.pSkill.mats.rows[1]
+row.farm.id = 765; row.farm:GetScript("OnClick")(row.farm)
+check(opened and opened.id == 765, "farm opens atlas")
+-- maxed skill
+UI.skill, UI.target = 300, 300
+print("FARM ERRORS:", getE())

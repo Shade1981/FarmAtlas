@@ -184,6 +184,7 @@ ns.Locales.de = {
     pf_list_total = "Fehlende Materialien: %s",
     pf_cooldown = "Hat eine Abklingzeit - nicht für Skill-ups",
     pf_lib_missing = "Installiere LibProfessionDB (CurseForge) für Stufen und Quellen aller Rezepte.",
+    pf_done = "Diese Stufe hast du schon erreicht - wähle ein höheres Ziel.",
     pf_scan_hint = "Öffne einmal das Fenster dieses Berufs, damit FarmAtlas die Rezepte liest.",
     op_devshare = "Die Community-Datenbank unterstützen",
     op_devshare_hint = "Solange der Addon-Autor auf deinem Realm online ist, werden deine Funde (Farmorte, Beute, Rezeptquellen, Angelplätze, Lehrer) nur an diesen Charakter gesendet, damit sie in der nächsten Version für alle enthalten sind. Nur Spieldaten, nichts Persönliches",
