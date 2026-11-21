@@ -118,6 +118,15 @@ SENT_OUT = {}
 OUT = {}; A.SyncDev.Hello()
 Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", OUT[#OUT].m, "CHANNEL", "Shade Tide")
 check(A.SyncDev.IsCollector(), "Shade Tide still collector after echo")
+-- another "Shade ..." (same first name) sends the same CH text: must not be taken as our echo
+OUT = {}; A.SyncDev.Hello()
+local mine = OUT[#OUT].m
+local theirs = mine:gsub("%^[^%^]*$", "^424242")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", theirs, "CHANNEL", "Shade Hun")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^CH^" .. tostring(A.version), "CHANNEL", "Shade Hun")
+check(A.SyncDev.IsCollector(), "other Shade's CH does not disable the collector")
+Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^5", "GUILD", "Shade Walker")
+check(A.SyncDev.IsCollector(), "other Shade's data does not disable the collector")
 Fire(a1, a2, "CHAT_MSG_ADDON", "FarmAtlas", "1^K^3100^5", "GUILD", "Shade Tide")
 check(not dbA.shared["Shade Tide"], "own echo not stored")
 -- the other character "Shade Hun": after its echo it is not a collector

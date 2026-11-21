@@ -151,6 +151,10 @@ ns.SyncSeenVersion = SeenVersion
 
 local recentSent = {}                   -- [full message] = time we sent it (echo detection)
 local selfFull = nil                    -- our name as others see it (WoW Forever: "First Last")
+-- a random mark on our hello messages: only OUR message can come back with it.
+-- (Another player whose first name is also "Shade" sends the very same "CH" -
+-- without this mark his message looked like our own echo.)
+local NONCE = tostring(math.random(100000, 999999)) .. tostring(math.floor((time and time() or 0) % 100000))
 local sentCount = 0
 local function MarkSent(full)
     local now = GetTime()
@@ -190,7 +194,6 @@ local function SendNext()
     local msg = queued[id]
     queued[id] = nil
     if not msg then return end
-    MarkSent(PROTO .. SEP .. msg)
     for _, ch in ipairs(channels) do
         C_ChatInfo.SendAddonMessage(PREFIX, PROTO .. SEP .. msg, ch)
     end
@@ -643,7 +646,7 @@ local function SayHello()
     local items, recipes = OwnCounts()
     local names = {}
     for _, n in ipairs(MyNames()) do names[#names + 1] = Clean(n) end
-    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ","), tostring(ns.version or "") }, SEP)
+    local msg = table.concat({ "H", tostring(items), tostring(recipes), table.concat(names, ","), tostring(ns.version or ""), NONCE }, SEP)
     if #msg > MAX_LEN then return end
     helloAt = GetTime()
     MarkSent(PROTO .. SEP .. msg)
@@ -1268,7 +1271,7 @@ local function CollectorHello()
     if InCombatLockdown and InCombatLockdown() then return end
     local id = ChannelID()
     if not id then JoinDev(); return end
-    local msg = PROTO .. SEP .. "CH" .. SEP .. tostring(ns.version or "")
+    local msg = PROTO .. SEP .. "CH" .. SEP .. tostring(ns.version or "") .. SEP .. NONCE
     MarkSent(msg)
     if pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "CHANNEL", id) then
         helloSent, helloLast = helloSent + 1, GetTime()
