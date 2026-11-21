@@ -699,7 +699,13 @@ local function HandleHello(f, channel, sender, short)
     SeenVersion(f[5])
     local theirItems, theirRecipes = tonumber(f[2]) or 0, tonumber(f[3]) or 0
     if rqTarget then return end                      -- one restore at a time
+    -- WoW Forever: we keep their finds under the full name we saw ("Shade Tide"),
+    -- while their hello lists first names only - so check the sender's own name first
+    local cands, seenC = { short }, { [short] = true }
     for name in (f[4] or ""):gmatch("[^,]+") do
+        if not seenC[name] then seenC[name] = true; cands[#cands + 1] = name end
+    end
+    for _, name in ipairs(cands) do
         local s = ns.db.shared[name]
         local items = s and s.nItems or 0
         local recipes = s and s.nRecipes or 0
@@ -955,7 +961,8 @@ local function OnAddonMessage(prefix, msg, channel, sender)
     if channel ~= "WHISPER" and DevLive then
         local inner = msg:sub(#PROTO + #SEP + 1)
         local name = Cut(Clean(short), 40)
-        if name ~= "" and #inner + #name + 3 <= MAX_LEN then
+        if name ~= "" and #inner + #name + 3 <= MAX_LEN
+            and not (ValidCollectorFn and ValidCollectorFn(sender, short)) then
             DevLive("F:" .. name .. ":" .. inner, "F" .. SEP .. name .. SEP .. inner)
         end
     end

@@ -36,8 +36,8 @@ function ns:CharKey()
     if chars then
         chars[key] = chars[key] or { bags = {}, bank = {}, recipes = {}, goals = {} }
         chars[key].name = name
+        charKeyCache = key          -- only once the saved data is there (migration done)
     end
-    charKeyCache = key
     return key
 end
 

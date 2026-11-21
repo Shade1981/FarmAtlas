@@ -187,3 +187,12 @@ check(live, "live relay")
 -- real db tables are back after a relay build
 check(dbB.learned[2447] and dbB.kills[3100] == 7, "own tables restored")
 print("RELAY ERRORS:", E)
+-- restore with WoW Forever full names: holder B keeps "Shade Tide"; hello from "Shade Tide" lists "Shade"
+ME = "Buddy"; OUT = {}
+dbB.shared["Shade Tide"] = { seen = 1, nItems = 5, nRecipes = 0, kills = { [3100] = 9 },
+  items = { [2447] = { zones = { [1411] = { [B:CellKey(30, 30)] = { x = 30, y = 30, n = 3 } } }, mobs = {} } } }
+Fire(b1, b2, "CHAT_MSG_ADDON", "FarmAtlas", "1^H^0^0^Shade^1.6.2", "GUILD", "Shade Tide")
+RunTimers(); for i = 1, 30 do for _, fn in ipairs(TICKERS or {}) do pcall(fn) end end
+local rs = false for _, o in ipairs(OUT) do if o.m:match("^1%^S%^") or o.m:match("^1%^X") then rs = true end end
+check(rs, "restore starts for full name", #OUT)
+print("RESTORE-NAME ERRORS:", E)
