@@ -27,7 +27,7 @@ end
 
 -- remembered prices are kept per realm and faction: auction houses differ
 local function CacheKey()
-    local realm = GetRealmName and ns.Plain(GetRealmName())
+    local realm = ns:RealmName()
     local faction = UnitFactionGroup and ns.Plain(UnitFactionGroup("player"))
     if type(realm) ~= "string" or realm == "" then return nil end
     return realm .. "-" .. (type(faction) == "string" and faction or "?")

@@ -205,3 +205,17 @@ RunTimers(); for i = 1, 30 do for _, fn in ipairs(TICKERS or {}) do pcall(fn) en
 local rs = false for _, o in ipairs(OUT) do if o.m:match("^1%^S%^") or o.m:match("^1%^X") then rs = true end end
 check(rs, "restore starts for full name", #OUT)
 print("RESTORE-NAME ERRORS:", E)
+-- realm name missing on this login: the collector is still recognised by its GUID realm
+local saveR, saveG = GetRealmName, UnitGUID
+GetRealmName = function() return "" end
+UnitGUID = function(u) return "Player-6855-001B5338" end
+dbA.lastRealm = nil
+ME = "Shade"
+-- a fresh selfFull-free client
+FarmAtlasDB = nil
+local D, d1, d2 = Load(); Fire(d1, d2, "ADDON_LOADED", "FarmAtlas"); Fire(d1, d2, "PLAYER_LOGIN")
+check(D.SyncDev.IsCollector(), "collector by GUID realm when the realm name is empty")
+UnitGUID = function(u) return "Player-1-001B5338" end
+check(not D.SyncDev.IsCollector(), "other realm id: not collector")
+GetRealmName, UnitGUID = saveR, saveG
+print("REALM ERRORS:", E)

@@ -618,7 +618,7 @@ local restorePending = {}           -- [name] = true while we wait to start
 local rq, rqTarget = {}, nil        -- our outgoing restore queue (one target at a time)
 
 local function MyNames()
-    local realm = GetRealmName and ns.Plain(GetRealmName()) or nil
+    local realm = ns:RealmName()
     local out, seen = {}, {}
     local me = ns.Plain(UnitName("player"))
     if me then out[1] = me; seen[me] = true end
@@ -981,7 +981,7 @@ end
 -- after that the normal C / M / K / R / P / O / Q / T messages go to it.
 ------------------------------------------------------------------------
 -- full = the name other players see (WoW Forever: first and last name), lower case, no spaces
-local COLLECTORS = { { name = "Shade", full = "shadetide", realm = "CAMWOWEU5Realm1PvE" } }
+local COLLECTORS = { { name = "Shade", full = "shadetide", realm = "CAMWOWEU5Realm1PvE", realmID = 6855 } }
 local DEV_CHANNEL = "FarmAtlasData"
 local DEV_EVERY = 1.5          -- seconds between two messages to the collector
 local DEV_ACTIVE = 150         -- collector counts as online this long after its last "here"
@@ -994,11 +994,19 @@ local function DevOn()
     return Enabled() and ns.db.settings.devShare ~= false
 end
 
+-- the realm part of our GUID ("Player-6855-...") - always there, even when the
+-- realm name is not
+local function GuidRealm()
+    local g = UnitGUID and ns.Plain(UnitGUID("player"))
+    return type(g) == "string" and tonumber(g:match("^Player%-(%d+)%-")) or nil
+end
+
 function Dev.IsCollector()
     local me = ns.Plain(UnitName("player"))
-    local realm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or "")
+    local realm = NoSpace(ns:RealmName() or "")
+    local rid = GuidRealm()
     for _, c in ipairs(COLLECTORS) do
-        if me == c.name and realm == c.realm then
+        if me == c.name and (realm == c.realm or (rid and rid == c.realmID)) then
             -- once our full name is known, only the right character collects
             if selfFull and NoSpace(selfFull):lower():gsub("%-.*$", "") ~= c.full then return false end
             return true
@@ -1008,8 +1016,14 @@ function Dev.IsCollector()
 end
 IsCollectorFn = Dev.IsCollector
 
+-- for /farm gyujtes on a "Shade" that is not the collector: why not
+function Dev.Why()
+    return ("name=%s realm=%s guidRealm=%s full=%s"):format(tostring(ns.Plain(UnitName("player"))),
+        tostring(ns:RealmName()), tostring(GuidRealm()), tostring(selfFull))
+end
+
 local function ValidCollector(sender, short)
-    local myRealm = NoSpace(GetRealmName and ns.Plain(GetRealmName()) or ""):lower()
+    local myRealm = NoSpace(ns:RealmName() or ""):lower()
     local function Check(s)
         s = NoSpace(s):lower()
         local name, realm = s:match("^([^%-]+)%-(.+)$")
