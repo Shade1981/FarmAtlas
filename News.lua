@@ -5,6 +5,13 @@ local _, ns = ...
 
 -- newest first; hu texts may use ő/ű (fixed below for the WoW font)
 local HISTORY = {
+    { v = "1.6.2", date = "2026-11-21",
+      en = { "Fixed: with a rotating minimap the FarmAtlas icons, areas and trainers pointed the wrong way.", "Better sync between guild and group members.", "Community data: 10 players, 122 items, 257 NPCs with kill counts, 34 trainer positions, 4 fishing schools." },
+      hu = { "Javítva: forgó minimapnál a FarmAtlas ikonjai, területei és trénerei rossz irányba mutattak.", "Jobb szinkronizáció a guild- és partytársak között.", "Közösségi adat: 10 játékos, 122 tárgy, 257 NPC ölésszámmal, 34 trénerhely, 4 halraj." },
+      fr = { "Corrigé : avec une minicarte qui tourne, les icônes, zones et entraîneurs de FarmAtlas pointaient dans la mauvaise direction.", "Meilleure synchronisation entre membres de guilde et de groupe.", "Données communautaires : 10 joueurs, 122 objets, 257 PNJ avec nombre de victimes, 34 entraîneurs, 4 bancs de poissons." },
+      de = { "Behoben: Bei drehender Minikarte zeigten FarmAtlas-Symbole, Gebiete und Lehrer in die falsche Richtung.", "Bessere Synchronisierung zwischen Gilden- und Gruppenmitgliedern.", "Community-Daten: 10 Spieler, 122 Gegenstände, 257 NPCs mit Tötungen, 34 Lehrer, 4 Fischschwärme." },
+      es = { "Corregido: con el minimapa giratorio, los iconos, zonas e instructores de FarmAtlas apuntaban en la dirección equivocada.", "Mejor sincronización entre miembros de hermandad y grupo.", "Datos comunitarios: 10 jugadores, 122 objetos, 257 PNJ con muertes, 34 instructores, 4 bancos de peces." },
+    },
     { v = "1.6.1", date = "2026-11-20",
       en = { "Fixed: a sync problem in party and guild." },
       hu = { "Javítva: szinkronizációs hiba a partyban és a guildben." },

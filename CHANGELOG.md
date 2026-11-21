@@ -1,3 +1,9 @@
+# FarmAtlas 1.6.2
+
+- Fixed: with a rotating minimap the FarmAtlas icons, areas and trainers pointed the wrong way
+- Better sync between guild and group members
+- Community data: 10 players, 122 items, 257 NPCs with kill counts, 34 trainer positions, 4 fishing schools
+
 # FarmAtlas 1.6.1
 
 - Fixed: a sync problem in party and guild
