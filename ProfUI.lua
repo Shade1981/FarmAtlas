@@ -387,7 +387,10 @@ function UI:BuildRecipes(body)
         local e = it.e
         r.ic:SetTexture(P:ItemIcon(e.out))
         r.name:SetText(ColorName(e, UI.skill))
-        r.lvl:SetText(e.learn and tostring(e.learn) or (e.grey and ("<" .. e.grey) or "?"))
+        local lv = e.learn and tostring(e.learn)
+        if not lv and e.req then lv = "~" .. e.req end
+        if not lv then local g = (e.diff and e.diff[4]) or e.grey; lv = g and ("<" .. g) or "?" end
+        r.lvl:SetText(lv)
         local m = ""
         if P:IsFav(e) then m = m .. "|cffffd200*|r" end
         if P:Known(e) then m = m .. "|cff59d959+|r" end
@@ -401,7 +404,7 @@ function UI:BuildRecipes(body)
 
     -- details
     local d = CreateFrame("Frame", nil, p, "BackdropTemplate")
-    d:SetPoint("TOPLEFT", list, "TOPRIGHT", 12, 46)
+    d:SetPoint("TOPLEFT", list, "TOPRIGHT", 12, 0)
     d:SetPoint("BOTTOMRIGHT", 0, 0)
     SetBG(d, C.panel)
     p.detail = d
@@ -413,7 +416,7 @@ function UI:BuildRecipes(body)
     d.iconBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     d.name = Font(d, 15, nil, nil, nil, "GameFontNormalLarge")
     d.name:SetPoint("TOPLEFT", d.icon, "TOPRIGHT", 10, -2)
-    d.name:SetWidth(300)
+    d.name:SetPoint("RIGHT", d, "RIGHT", -44, 0)
     d.state = Font(d, 11, unpack(C.muted))
     d.state:SetPoint("TOPLEFT", d.name, "BOTTOMLEFT", 0, -4)
     d.star = Button(d, "*", 26, 22)
@@ -421,22 +424,26 @@ function UI:BuildRecipes(body)
     d.star:SetScript("OnClick", function() if UI.selected then P:ToggleFav(UI.selected) end end)
     d.tiers = Font(d, 12)
     d.tiers:SetPoint("TOPLEFT", d.icon, "BOTTOMLEFT", 0, -12)
+    d.tiers:SetPoint("RIGHT", d, "RIGHT", -12, 0)
+    d.tiers:SetWordWrap(true)
     d.learn = Font(d, 11, unpack(C.muted))
     d.learn:SetPoint("TOPLEFT", d.tiers, "BOTTOMLEFT", 0, -6)
-    d.learn:SetWidth(470)
+    d.learn:SetPoint("RIGHT", d, "RIGHT", -12, 0)
     d.learn:SetWordWrap(true)
+    d.learn:SetMaxLines(4)
     d.rHead = Font(d, 12, unpack(C.gold))
     d.rHead:SetPoint("TOPLEFT", d.learn, "BOTTOMLEFT", 0, -12)
     d.reag = {}
     for i = 1, 8 do
         local r = CreateFrame("Button", nil, d, "BackdropTemplate")
-        r:SetSize(470, 22)
+        r:SetHeight(22)
         SetBG(r, C.card)
         if i == 1 then r:SetPoint("TOPLEFT", d.rHead, "BOTTOMLEFT", 0, -4) else r:SetPoint("TOPLEFT", d.reag[i - 1], "BOTTOMLEFT", 0, -2) end
+        r:SetPoint("RIGHT", d, "RIGHT", -12, 0)
         r.ic = Icon(r, 16); r.ic:SetPoint("LEFT", 4, 0)
-        r.name = Font(r, 11); r.name:SetPoint("LEFT", r.ic, "RIGHT", 6, 0); r.name:SetWidth(200)
-        r.have = Font(r, 11); r.have:SetPoint("LEFT", 250, 0)
-        r.price = Font(r, 11); r.price:SetPoint("RIGHT", -60, 0); r.price:SetJustifyH("RIGHT")
+        r.name = Font(r, 11); r.name:SetPoint("LEFT", r.ic, "RIGHT", 6, 0); r.name:SetWidth(140)
+        r.have = Font(r, 11); r.have:SetPoint("LEFT", 170, 0)
+        r.price = Font(r, 11); r.price:SetPoint("RIGHT", -58, 0); r.price:SetJustifyH("RIGHT")
         r.farm = Button(r, "", 50, 18); r.farm:SetPoint("RIGHT", -3, 0)
         r.farm:SetScript("OnClick", function(s) if s.id then ShowFarm(s.id) end end)
         r:SetScript("OnEnter", function(s) if s.id then ItemTooltip(s, s.id) end end)
@@ -445,10 +452,12 @@ function UI:BuildRecipes(body)
     end
     d.cost = Font(d, 11)
     d.cost:SetPoint("TOPLEFT", d.reag[8], "BOTTOMLEFT", 0, -8)
+    d.cost:SetPoint("RIGHT", d, "RIGHT", -12, 0)
     d.sale = Font(d, 11)
     d.sale:SetPoint("TOPLEFT", d.cost, "BOTTOMLEFT", 0, -4)
     d.alts = Font(d, 10, unpack(C.muted))
     d.alts:SetPoint("TOPLEFT", d.sale, "BOTTOMLEFT", 0, -4)
+    d.alts:SetPoint("RIGHT", d, "RIGHT", -12, 0)
     d.cd = Font(d, 10, 1, 0.6, 0.3)
     d.cd:SetPoint("TOPLEFT", d.alts, "BOTTOMLEFT", 0, -4)
 
@@ -572,7 +581,7 @@ function UI:FillDetail()
             r.name:SetText(P:ItemName(id))
             r.have:SetText(("%s%d|r / %d"):format(have >= need and "|cff59d959" or "|cffff5959", have, need))
             local pr, kind = P:Price(id)
-            r.price:SetText(pr and (ns:Money(pr * need) .. (kind == "vendor" and " |cff8c96a8(" .. L("pf_vendor_short") .. ")|r" or "")) or ("|cff8c96a8" .. L("pf_unpriced") .. "|r"))
+            r.price:SetText(pr and (ns:Money(pr * need) .. (kind == "vendor" and " |cff8c96a8*|r" or "")) or ("|cff8c96a8" .. L("pf_unpriced") .. "|r"))
             r.farm.id = id
             r.farm.text:SetText(L("pf_farm"))
             r.farm.tooltip = L("pf_farm_tip")
@@ -583,7 +592,10 @@ function UI:FillDetail()
         end
     end
     local cost, unpriced = P:CraftCost(e)
-    d.cost:SetText(L("pf_cost", Money(cost)) .. (unpriced and (" |cff8c96a8(" .. L("pf_unpriced") .. ")|r") or ""))
+    local anyVendor = false
+    for _, id in ipairs(ids) do if select(2, P:Price(id)) == "vendor" then anyVendor = true end end
+    d.cost:SetText(L("pf_cost", Money(cost)) .. (unpriced and (" |cff8c96a8(" .. L("pf_unpriced") .. ")|r") or "")
+        .. (anyVendor and ("   |cff8c96a8* = " .. L("pf_vendor_short") .. "|r") or ""))
     local sale = P:SalePrice(e)
     d.sale:SetText(sale and L("pf_sale", Money(sale)) or "")
     local alts = P:KnownBy(e)
