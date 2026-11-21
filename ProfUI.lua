@@ -803,8 +803,15 @@ function UI:BuildProfit(body)
     p.known:SetPoint("TOPLEFT", 0, -2)
     p.hint = Font(p, 10, unpack(C.muted))
     p.hint:SetPoint("LEFT", p.known, "RIGHT", 16, 0)
-    p.head = Font(p, 10, unpack(C.muted))
-    p.head:SetPoint("TOPLEFT", 26, -30)
+    p.heads = {}
+    for i, x in ipairs({ 26, 320, 440, 560 }) do
+        local h = Font(p, 10, unpack(C.muted))
+        h:SetPoint("TOPLEFT", x, -30)
+        p.heads[i] = h
+    end
+    p.heads[5] = Font(p, 10, unpack(C.muted))
+    p.heads[5]:SetPoint("TOPRIGHT", -10, -30)
+    p.heads[5]:SetJustifyH("RIGHT")
     local list = List(p, 19, ROW, function(r)
         r.ic = Icon(r, 16); r.ic:SetPoint("LEFT", 4, 0)
         r.name = Font(r, 11); r.name:SetPoint("LEFT", r.ic, "RIGHT", 6, 0); r.name:SetWidth(280)
@@ -839,7 +846,7 @@ function UI:FillProfit()
     if not (p and self.profID) then return end
     p.known:Update(L("pf_known_only"))
     p.hint:SetText(L("pf_profit_hint"))
-    p.head:SetText(L("pf_col_recipe") .. string.rep(" ", 70))
+    for i, k in ipairs({ "pf_h_recipe", "pf_h_cost", "pf_h_sale", "pf_h_profit", "pf_h_margin" }) do p.heads[i]:SetText(L(k)) end
     local data = {}
     for _, x in ipairs(P:Profit(self.profID, ns.db.settings.pfProfitKnown ~= false)) do data[#data + 1] = { x = x, key = x.e.id } end
     p.list:SetData(data)
@@ -1089,6 +1096,54 @@ function UI:Open(key)
     if key then self.prof = key; self.profID = P:ID(key) end
     self.frame:Show()
     self:Safe(self.Refresh)
+end
+
+
+------------------------------------------------------------------------
+-- author tool: screenshots of the window for the project page (the game's
+-- own Screenshot(); the window's place is saved so the picture can be cut)
+------------------------------------------------------------------------
+function UI:Shots()
+    local plan = {
+        { tab = "recipes", prof = "alchemy", pick = 1250777 },
+        { tab = "skillup", prof = "alchemy" },
+        { tab = "profit", prof = "alchemy" },
+        { tab = "list", prof = "alchemy", fill = true },
+    }
+    local saved = ns.db.shopList
+    ns.db.shotRects = {}
+    local i = 0
+    local function step()
+        i = i + 1
+        local st = plan[i]
+        if not st then
+            ns.db.shopList = saved
+            UI:Safe(UI.Refresh)
+            ns:Print("shots: done - /reload")
+            return
+        end
+        UI:Open(st.prof)
+        if st.fill then
+            ns.db.shopList = {}
+            if UI.plan then P:AddPlan(UI.plan) end
+        end
+        UI:SetTab(st.tab)
+        if st.pick then
+            local e = P:Get(P:ID(st.prof), st.pick)
+            if e then UI:ShowRecipe(e) end
+        end
+        C_Timer.After(1.2, function()
+            local f = UI.frame
+            local sc, us = f:GetEffectiveScale(), UIParent:GetEffectiveScale()
+            local W, H = UIParent:GetWidth() * us, UIParent:GetHeight() * us
+            ns.db.shotRects[#ns.db.shotRects + 1] = { tab = st.tab, t = time(),
+                l = f:GetLeft() * sc / W, r = f:GetRight() * sc / W, top = f:GetTop() * sc / H, b = f:GetBottom() * sc / H }
+            if Screenshot then Screenshot() end
+            C_Timer.After(1.5, step)
+        end)
+    end
+    if UI.frame then UI.frame:Hide() end
+    step()
 end
 
 -- redraw at most twice a second when data changes

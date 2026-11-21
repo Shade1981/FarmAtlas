@@ -1,3 +1,14 @@
+# FarmAtlas 1.7.0 - Master Crafter
+
+- New: Professions window ("Professions" button at the top, or /farm prof): every recipe of all 12 professions, known or not - learn skill and the orange / yellow / green / grey levels, where to learn it (trainer, vendor with its price, drop, quest), reagents with how many you have, cost of one craft and its auction house price
+- New: skill-up planner - the cheapest way from your skill to 75 / 150 / 225 / 300 with auction house and vendor prices, your own materials first; recipes with a cooldown (camp items, transmutes, Mooncloth) are left out
+- New: profit list (what is worth crafting now, 5% AH cut taken off), favourites, and a shopping list with missing materials and their cost
+- New: every material FarmAtlas knows how to farm has a Farm button that opens the atlas on it
+- Skill levels and sources: LibProfessionDB (MIT, by Pimptasty), installed with FarmAtlas by the CurseForge app; recipes and reagents are read from your own profession windows; vendor prices you see at merchants are remembered
+- Fixed: known recipes, bags and bank are kept per character again - also when two characters share a first name (WoW Forever "First Last" names) or the game does not tell the realm name
+- Fixed: synchronisation and restore in guild and group with WoW Forever full names
+- Community data: 12 players, 125 items, 276 NPCs with kill counts, 37 trainer positions, 4 fishing schools
+
 # FarmAtlas 1.6.2
 
 - Fixed: characters sharing a first name overwrote each other's known recipes and bags - open each profession once more after updating

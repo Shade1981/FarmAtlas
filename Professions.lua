@@ -524,7 +524,7 @@ function P:Profit(profID, knownOnly)
             local sale = self:SalePrice(e)
             if sale then
                 local cost, unpriced = self:CraftCost(e)
-                if not unpriced and cost > 0 and sale > cost then
+                if not unpriced and cost > 0 and math.floor(sale - cost) >= 1 then
                     out[#out + 1] = { e = e, cost = cost, sale = sale, profit = sale - cost,
                         margin = (sale - cost) / cost }
                 end
