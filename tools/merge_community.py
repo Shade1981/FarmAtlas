@@ -150,7 +150,7 @@ def merge(files):
     store = {}
     for path in files:
         db = load_saved(path)
-        chars = [str(c).split('-', 1)[-1] for c in (db.get('chars') or {})]
+        chars = [str(c).split('-', 1)[-1].split('@')[0] for c in (db.get('chars') or {})]
         own_origin = chars[0] if chars else os.path.basename(os.path.dirname(os.path.dirname(path))) or path
         aliases = set(chars)
         own = {k: v for k, v in (db.get('learned') or {}).items()
